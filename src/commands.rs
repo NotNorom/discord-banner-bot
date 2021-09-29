@@ -8,7 +8,7 @@ use crate::{Context, Error};
 pub async fn start(
     ctx: Context<'_>,
     #[description = "Imgur album"] album: String,
-    #[description = "After how many minutes the image should change. Default is 30 minutes"]
+    #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
 ) -> Result<(), Error> {
     // guild id
@@ -23,16 +23,18 @@ pub async fn start(
     // album url
     let album = album.parse::<Url>()?;
 
-    // debug
-    poise::say_reply(
-        ctx,
-        format!(
-            "Album: {:?}, Interval: {:?}, Guild ID: {:?}",
-            &album, &interval, &guild_id
-        ),
-    )
+    // answer the user
+    poise::send_reply(ctx, |f| {
+        let content = format!(
+            "Scheduling banner change for every {} using this album: {}",
+            &interval,
+            &album.as_str()
+        );
+        f.content(content).ephemeral(true)
+    })
     .await?;
 
+    // scheduling it!
     let user_data = ctx.data();
     user_data.enque(guild_id, album, interval).await?;
 
@@ -44,8 +46,14 @@ pub async fn start(
 pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or("No guild id available")?;
 
-    poise::say_reply(ctx, format!("Stopped")).await?;
+    // answer the user
+    poise::send_reply(ctx, |f| {
+        let content = format!("Stopped currently running timer");
+        f.content(content).ephemeral(true)
+    })
+    .await?;
 
+    // unscheduling it!
     let user_data = ctx.data();
     user_data.deque(guild_id).await?;
 
@@ -55,7 +63,7 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
 /// Tells you the album that is being used right now
 #[poise::command(prefix_command, slash_command)]
 pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
-    poise::say_reply(ctx, format!("insert album link here")).await?;
+    poise::say_reply(ctx, format!("This command is work in progress")).await?;
 
     Ok(())
 }
