@@ -71,7 +71,18 @@ pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
 /// Link to the current image
 #[poise::command(prefix_command, slash_command)]
 pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
-    poise::say_reply(ctx, format!("insert current image link here")).await?;
+    let guild_id = ctx.guild_id().ok_or("No guild id available")?;
+
+    let guild = guild_id.to_partial_guild(&ctx.discord().http).await?;
+    let banner = guild.banner_url().ok_or("Guild has no banner")?;
+
+    // answer the user
+    poise::send_reply(ctx, |f| {
+        f.content(&banner)
+            .ephemeral(true)
+            .embed(|e| e.image(&banner).colour((255, 0, 255)))
+    })
+    .await?;
 
     Ok(())
 }
