@@ -126,9 +126,15 @@ pub async fn setup_user_data(
                         //   dequeue in-between? Should I cancel the existing entry
                         //   and reschedule?
                         ScheduleMessage::Enqueue(guild_id, album, interval) => {
+                            // if we have a timer, cancel it
+                            if let Some(key) = guild_id_to_key.get(&guild_id) {
+                                queue.remove(key);
+                            }
+
+                            // now enqueue the new item
                             // interval is in minutes, so we multiply by 60 seconds
                             let interval = Duration::from_secs(interval);
-                            let key = queue.insert(QueueItem::new(guild_id.clone(), album.clone(), interval), interval);
+                            let key = queue.insert(QueueItem::new(guild_id, album, interval), interval);
                             guild_id_to_key.insert(guild_id, key);
                         },
                         ScheduleMessage::Dequeue(guild_id) => {
