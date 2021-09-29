@@ -48,25 +48,35 @@ impl UserData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct QueueItem {
     guild_id: GuildId,
     album: Url,
+    interval: Duration,
 }
 
 impl QueueItem {
-    pub(crate) fn new(guild_id: GuildId, album: Url) -> Self {
-        Self { guild_id, album }
+    pub(crate) fn new(guild_id: GuildId, album: Url, interval: Duration) -> Self {
+        Self {
+            guild_id,
+            album,
+            interval,
+        }
     }
 
     /// Get a reference to the queue item's guild id.
-    pub(crate) fn guild_id(&self) -> &GuildId {
-        &self.guild_id
+    pub(crate) fn guild_id(&self) -> GuildId {
+        self.guild_id
     }
 
     /// Get a reference to the queue item's album.
     pub(crate) fn album(&self) -> &Url {
         &self.album
+    }
+
+    /// Get a reference to the queue item's interval.
+    pub(crate) fn interval(&self) -> Duration {
+        self.interval
     }
 }
 
@@ -84,7 +94,7 @@ pub async fn setup_user_data(
 
         let capacity = 128;
         let mut queue = DelayQueue::<QueueItem>::with_capacity(capacity);
-        let mut id_to_key = HashMap::with_capacity(capacity);
+        let mut guild_id_to_key = HashMap::with_capacity(capacity);
 
         loop {
             // either handle an item from the queue:
@@ -94,13 +104,19 @@ pub async fn setup_user_data(
                 // If a guild is ready to have their banner changed
                 Some(Ok(item)) = queue.next() => {
                     println!("Queue entry: {:?}", &item);
-                    let inner = item.get_ref();
-                    if let Err(e) = set_random_image_for_guild(ctx.http.as_ref(), inner.guild_id(), inner.album()).await {
+
+                    let inner = item.into_inner();
+                    let guild_id = inner.guild_id();
+                    let interval = inner.interval();
+
+                    // change the banner
+                    if let Err(e) = set_random_image_for_guild(ctx.http.as_ref(), &guild_id, &inner.album()).await {
                         eprintln!("Error: {:?}", e);
                     };
-                    // todo: re-enqueue item with the same interval it has been enqueued with,
-                    //   so uhhh, item.deadline() doesn't work... guess'll have to save
-                    //   the interval in the QueueItem
+
+                    // re-enqueue the item
+                    let key = queue.insert(inner, interval);
+                    guild_id_to_key.insert(guild_id, key);
                 },
                 // If a guild is to be added or removed from the queue
                 Some(msg) = rx.recv() => {
@@ -112,11 +128,11 @@ pub async fn setup_user_data(
                         ScheduleMessage::Enqueue(guild_id, album, interval) => {
                             // interval is in minutes, so we multiply by 60 seconds
                             let interval = Duration::from_secs(interval);
-                            let key = queue.insert(QueueItem::new(guild_id.clone(), album.clone()), interval);
-                            id_to_key.insert(guild_id, key);
+                            let key = queue.insert(QueueItem::new(guild_id.clone(), album.clone(), interval), interval);
+                            guild_id_to_key.insert(guild_id, key);
                         },
                         ScheduleMessage::Dequeue(guild_id) => {
-                            if let Some(key) = id_to_key.remove(&guild_id) {
+                            if let Some(key) = guild_id_to_key.remove(&guild_id) {
                                 queue.remove(&key);
                             }
                         },
