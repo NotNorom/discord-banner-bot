@@ -22,7 +22,9 @@ pub enum ScheduleMessage {
     Dequeue(GuildId),
 }
 
+/// The User data struct used in poise
 pub struct UserData {
+    /// Used to communicate with the scheduler without needing a &mut self
     scheduler: Sender<ScheduleMessage>,
 }
 
@@ -49,14 +51,14 @@ impl UserData {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct QueueItem {
+pub struct QueueItem {
     guild_id: GuildId,
     album: Url,
     interval: Duration,
 }
 
 impl QueueItem {
-    pub(crate) fn new(guild_id: GuildId, album: Url, interval: Duration) -> Self {
+    pub fn new(guild_id: GuildId, album: Url, interval: Duration) -> Self {
         Self {
             guild_id,
             album,
@@ -65,17 +67,17 @@ impl QueueItem {
     }
 
     /// Get a reference to the queue item's guild id.
-    pub(crate) fn guild_id(&self) -> GuildId {
+    pub fn guild_id(&self) -> GuildId {
         self.guild_id
     }
 
     /// Get a reference to the queue item's album.
-    pub(crate) fn album(&self) -> &Url {
+    pub fn album(&self) -> &Url {
         &self.album
     }
 
     /// Get a reference to the queue item's interval.
-    pub(crate) fn interval(&self) -> Duration {
+    pub fn interval(&self) -> Duration {
         self.interval
     }
 }
@@ -86,14 +88,15 @@ pub async fn setup_user_data(
     _framework: &Framework<Data, Error>,
 ) -> Result<Data, Error> {
     let ctx = Arc::new(ctx.clone());
+    let capacity = 128;
 
-    let (tx, mut rx) = mpsc::channel::<ScheduleMessage>(128);
+    let (tx, mut rx) = mpsc::channel::<ScheduleMessage>(capacity);
 
     tokio::spawn(async move {
         let ctx = Arc::clone(&ctx);
 
-        let capacity = 128;
         let mut queue = DelayQueue::<QueueItem>::with_capacity(capacity);
+        // maps the guild id to the key used in the queue
         let mut guild_id_to_key = HashMap::with_capacity(capacity);
 
         loop {
