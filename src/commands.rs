@@ -12,7 +12,7 @@ pub async fn start(
     interval: Option<u64>,
 ) -> Result<(), Error> {
     // guild id
-    let guild_id = ctx.guild_id().ok_or("No guild id available")?;
+    let mut guild_id = ctx.guild_id().ok_or("No guild id available")?;
 
     // interval
     let interval = interval.unwrap_or(30);
@@ -34,8 +34,17 @@ pub async fn start(
     })
     .await?;
 
-    // scheduling it!
     let user_data = ctx.data();
+    // set it once
+    set_random_banner_for_guild(
+        &ctx.discord().http,
+        &user_data.reqw_client(),
+        &mut guild_id,
+        &album,
+    )
+    .await?;
+
+    // schedule it
     user_data.enque(guild_id, album, interval).await?;
 
     Ok(())
