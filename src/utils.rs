@@ -35,7 +35,7 @@ pub async fn set_random_image_for_guild(
 
     guild_id
         .edit(&http, |g| {
-            g.icon(Some(&format!("data:image/{};base64,{}", extension, b64)))
+            g.banner(Some(&format!("data:image/{};base64,{}", extension, b64)))
         })
         .await?;
 
