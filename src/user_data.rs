@@ -135,7 +135,7 @@ pub async fn setup_user_data(
                         &ctx.http,
                         &reqw_client,
                         &mut guild_id,
-                        &inner.album()).await
+                        inner.album()).await
                     {
                         error!("Error: {:?}", e);
                     };

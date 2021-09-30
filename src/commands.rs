@@ -1,4 +1,3 @@
-use poise;
 use url::Url;
 
 use crate::{utils::set_random_banner_for_guild, Context, Error};
@@ -17,7 +16,7 @@ pub async fn start(
     // interval
     let interval = interval.unwrap_or(30);
     if interval < 15 {
-        return Err("Interval must be at least 15 minutes")?;
+        return Err("Interval must be at least 15 minutes".into());
     }
 
     // album url
@@ -38,7 +37,7 @@ pub async fn start(
     // set it once
     set_random_banner_for_guild(
         &ctx.discord().http,
-        &user_data.reqw_client(),
+        user_data.reqw_client(),
         &mut guild_id,
         &album,
     )
@@ -57,8 +56,7 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
 
     // answer the user
     poise::send_reply(ctx, |f| {
-        let content = format!("Stopped currently running timer");
-        f.content(content).ephemeral(true)
+        f.content("Stopped currently running timer").ephemeral(true)
     })
     .await?;
 
@@ -72,7 +70,7 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
 /// Tells you the album that is being used right now
 #[poise::command(prefix_command, slash_command)]
 pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
-    poise::say_reply(ctx, format!("This command is work in progress")).await?;
+    poise::say_reply(ctx, "This command is work in progress").await?;
 
     Ok(())
 }

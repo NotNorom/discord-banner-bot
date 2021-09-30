@@ -24,7 +24,7 @@ pub async fn set_random_banner_for_guild(
         .ok_or("Could not pick a url")?;
     let extension = url
         .as_str()
-        .split(".")
+        .split('.')
         .last()
         .ok_or("No file extension on image url")?;
 
@@ -43,7 +43,7 @@ pub async fn set_random_banner_for_guild(
 /// Enter imgur album url, get back links to all the images
 pub async fn get_images_from_imgur_album(client: &Client, album: &Url) -> Result<Vec<Url>, Error> {
     let imgur_client_id = dotenv::var("IMGUR_CLIENT_ID")?;
-    let album_hash = extract_album_hash(&album).ok_or("No album hash found")?;
+    let album_hash = extract_album_hash(album).ok_or("No album hash found")?;
     let response = client
         .request(
             Method::GET,
@@ -59,7 +59,7 @@ pub async fn get_images_from_imgur_album(client: &Client, album: &Url) -> Result
         .ok_or("Json has no data field")?
         .as_array()
         .ok_or("Data field is not an array")?
-        .into_iter()
+        .iter()
         .filter_map(|obj| obj.get("link"))
         .filter_map(|value| value.as_str())
         .filter_map(|link| Url::from_str(link).ok())
@@ -69,6 +69,6 @@ pub async fn get_images_from_imgur_album(client: &Client, album: &Url) -> Result
 }
 
 /// Given an imgur link like https://imgur.com/a/YM1yHhx, return just the YM1yHhx part.
-fn extract_album_hash<'a>(album: &'a Url) -> Option<&'a str> {
-    Some(album.path_segments()?.nth(1)?)
+fn extract_album_hash(album: &Url) -> Option<&str> {
+    album.path_segments()?.nth(1)
 }

@@ -2,7 +2,6 @@ mod commands;
 mod user_data;
 mod utils;
 
-use dotenv;
 use poise::serenity_prelude::GatewayIntents;
 use poise::serenity_prelude::UserId;
 use poise::FrameworkOptions;
@@ -28,12 +27,12 @@ async fn main() -> Result<(), Error> {
     // get environment variables
     let _ = dotenv::dotenv().ok();
     let token = dotenv::var("DISCORD_TOKEN").expect("No token in env");
-    let prefix = dotenv::var("PREFIX").unwrap_or("b!".to_string());
+    let prefix = dotenv::var("PREFIX").unwrap_or_else(|_| "b!".to_string());
     let owners = dotenv::var("OWNERS")
-        .unwrap_or("160518747713437696".to_string())
+        .unwrap_or_else(|_| "160518747713437696".to_string())
         .split_ascii_whitespace()
         .filter_map(|a| a.parse().ok())
-        .map(|id: u64| UserId(id))
+        .map(UserId)
         .collect();
 
     // install global collector configured based on RUST_LOG env var.
