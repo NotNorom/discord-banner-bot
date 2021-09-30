@@ -16,9 +16,6 @@ pub async fn set_random_image_for_guild(
     guild_id: &mut GuildId,
     album: &Url,
 ) -> Result<(), Error> {
-    println!("Would download an image for {} from {}", guild_id, album);
-    //let image = todo!("image downloading");
-    //guild_id.edit(&http, |g| g.icon(Some(image))).await?;
     let image_urls = get_images_from_imgur_album(reqw_client, album).await?;
 
     let url = image_urls
@@ -66,8 +63,6 @@ pub async fn get_images_from_imgur_album(client: &Client, album: &Url) -> Result
         .filter_map(|value| value.as_str())
         .filter_map(|link| Url::from_str(link).ok())
         .collect();
-
-    println!("{:#?}", json);
 
     Ok(images)
 }

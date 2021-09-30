@@ -114,8 +114,6 @@ pub async fn setup_user_data(
             select!(
                 // If a guild is ready to have their banner changed
                 Some(Ok(item)) = queue.next() => {
-                    println!("Queue entry: {:?}", &item);
-
                     let inner = item.into_inner();
                     let mut guild_id = inner.guild_id();
                     let interval = inner.interval();
@@ -136,7 +134,7 @@ pub async fn setup_user_data(
                 },
                 // If a guild is to be added or removed from the queue
                 Some(msg) = rx.recv() => {
-                    println!("Message for the queue: {:#?}", &msg);
+                    
                     match msg {
                         // todo: what happens if this is called twice without a
                         //   dequeue in-between? Should I cancel the existing entry
