@@ -6,6 +6,7 @@ use dotenv;
 use poise::serenity_prelude::GatewayIntents;
 use poise::serenity_prelude::UserId;
 use poise::FrameworkOptions;
+use tracing::error;
 use user_data::UserData;
 
 use crate::user_data::setup_user_data;
@@ -35,6 +36,9 @@ async fn main() -> Result<(), Error> {
         .map(|id: u64| UserId(id))
         .collect();
 
+    // install global collector configured based on RUST_LOG env var.
+    tracing_subscriber::fmt::init();
+
     // set up & start client
     let result = poise::Framework::build()
         .prefix(prefix)
@@ -61,7 +65,7 @@ async fn main() -> Result<(), Error> {
     
     // If there is an error starting up the client
     if let Err(e) = result {
-        eprintln!("Startup Error: {:?}", e);
+        error!("Startup Error: {:?}", e);
     }
 
     Ok(())

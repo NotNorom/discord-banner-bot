@@ -26,7 +26,7 @@ pub async fn start(
     // answer the user
     poise::send_reply(ctx, |f| {
         let content = format!(
-            "Scheduling banner change for every {} using this album: {}",
+            "Scheduling banner change for every {} minutes using this album: <{}>",
             &interval,
             &album.as_str()
         );

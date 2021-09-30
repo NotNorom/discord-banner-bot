@@ -11,6 +11,7 @@ use tokio::{
 };
 use tokio_stream::StreamExt;
 use tokio_util::time::DelayQueue;
+use tracing::{error, info};
 use url::Url;
 
 use crate::{utils::set_random_image_for_guild, Data, Error};
@@ -118,6 +119,8 @@ pub async fn setup_user_data(
                     let mut guild_id = inner.guild_id();
                     let interval = inner.interval();
 
+                    info!("Changing the banner for {}", guild_id);
+
                     // change the banner
                     if let Err(e) = set_random_image_for_guild(
                         &ctx.http,
@@ -125,7 +128,7 @@ pub async fn setup_user_data(
                         &mut guild_id,
                         &inner.album()).await
                     {
-                        eprintln!("Error: {:?}", e);
+                        error!("Error: {:?}", e);
                     };
 
                     // re-enqueue the item
@@ -140,6 +143,7 @@ pub async fn setup_user_data(
                         //   dequeue in-between? Should I cancel the existing entry
                         //   and reschedule?
                         ScheduleMessage::Enqueue(guild_id, album, interval) => {
+                            info!("Starting schedule for: {}, with {}, every {} minutes", guild_id, album, interval * 60);
                             // if we have a timer, cancel it
                             if let Some(key) = guild_id_to_key.get(&guild_id) {
                                 queue.remove(key);
@@ -152,6 +156,7 @@ pub async fn setup_user_data(
                             guild_id_to_key.insert(guild_id, key);
                         },
                         ScheduleMessage::Dequeue(guild_id) => {
+                            info!("Stopping schedule for: {}", guild_id);
                             if let Some(key) = guild_id_to_key.remove(&guild_id) {
                                 queue.remove(&key);
                             }
