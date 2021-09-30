@@ -62,7 +62,7 @@ async fn main() -> Result<(), Error> {
         .command(commands::current(), |f| f)
         .run()
         .await;
-    
+
     // If there is an error starting up the client
     if let Err(e) = result {
         error!("Startup Error: {:?}", e);

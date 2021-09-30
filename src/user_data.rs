@@ -14,7 +14,7 @@ use tokio_util::time::DelayQueue;
 use tracing::{error, info};
 use url::Url;
 
-use crate::{utils::set_random_image_for_guild, Data, Error};
+use crate::{utils::set_random_banner_for_guild, Data, Error};
 
 #[derive(Debug)]
 pub enum ScheduleMessage {
@@ -52,6 +52,11 @@ impl UserData {
         let message = ScheduleMessage::Dequeue(guild_id);
         self.scheduler.send(message).await
     }
+
+    /// Get a reference to the user data's reqwest client.
+    pub fn reqw_client(&self) -> &Client {
+        &self.reqw_client
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -62,6 +67,7 @@ pub struct QueueItem {
 }
 
 impl QueueItem {
+    /// Creates a new QueueItem
     pub fn new(guild_id: GuildId, album: Url, interval: Duration) -> Self {
         Self {
             guild_id,
@@ -86,6 +92,9 @@ impl QueueItem {
     }
 }
 
+/// Sets up the user data:
+/// - Creates a task that handles the banner queue
+/// - Sets up a reqwest client
 pub async fn setup_user_data(
     ctx: &serenity_prelude::Context,
     _ready: &serenity_prelude::Ready,
@@ -122,7 +131,7 @@ pub async fn setup_user_data(
                     info!("Changing the banner for {}", guild_id);
 
                     // change the banner
-                    if let Err(e) = set_random_image_for_guild(
+                    if let Err(e) = set_random_banner_for_guild(
                         &ctx.http,
                         &reqw_client,
                         &mut guild_id,
@@ -151,7 +160,7 @@ pub async fn setup_user_data(
 
                             // now enqueue the new item
                             // interval is in minutes, so we multiply by 60 seconds
-                            let interval = Duration::from_secs(interval);
+                            let interval = Duration::from_secs(interval * 60);
                             let key = queue.insert(QueueItem::new(guild_id, album, interval), interval);
                             guild_id_to_key.insert(guild_id, key);
                         },

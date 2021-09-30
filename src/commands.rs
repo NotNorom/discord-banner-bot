@@ -1,7 +1,7 @@
 use poise;
 use url::Url;
 
-use crate::{Context, Error};
+use crate::{utils::set_random_banner_for_guild, Context, Error};
 
 /// Picks a random image from the album every n minutes and sets it as the banner.
 #[poise::command(prefix_command, slash_command)]
@@ -62,7 +62,7 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
     })
     .await?;
 
-    // unscheduling it!
+    // unschedule it!
     let user_data = ctx.data();
     user_data.deque(guild_id).await?;
 

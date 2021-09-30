@@ -10,7 +10,8 @@ use url::Url;
 
 use crate::Error;
 
-pub async fn set_random_image_for_guild(
+// Selects a random image from an imgur album as the server banner
+pub async fn set_random_banner_for_guild(
     http: &Http,
     reqw_client: &Client,
     guild_id: &mut GuildId,
