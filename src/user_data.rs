@@ -4,6 +4,7 @@ use poise::{
     serenity_prelude::{self, GuildId},
     Framework,
 };
+use reqwest::Client;
 use tokio::{
     select,
     sync::mpsc::{self, Sender},
@@ -26,6 +27,8 @@ pub enum ScheduleMessage {
 pub struct UserData {
     /// Used to communicate with the scheduler without needing a &mut self
     scheduler: Sender<ScheduleMessage>,
+    /// Client for http request
+    reqw_client: Client,
 }
 
 impl UserData {
@@ -92,9 +95,14 @@ pub async fn setup_user_data(
 
     let (tx, mut rx) = mpsc::channel::<ScheduleMessage>(capacity);
 
-    tokio::spawn(async move {
-        let ctx = Arc::clone(&ctx);
+    let user_data_reqw_client = Client::builder()
+        .timeout(Duration::from_secs(30))
+        .user_agent("Discord Banner Bot")
+        .build()?;
 
+    let reqw_client = Clone::clone(&user_data_reqw_client);
+
+    tokio::spawn(async move {
         let mut queue = DelayQueue::<QueueItem>::with_capacity(capacity);
         // maps the guild id to the key used in the queue
         let mut guild_id_to_key = HashMap::with_capacity(capacity);
@@ -109,11 +117,16 @@ pub async fn setup_user_data(
                     println!("Queue entry: {:?}", &item);
 
                     let inner = item.into_inner();
-                    let guild_id = inner.guild_id();
+                    let mut guild_id = inner.guild_id();
                     let interval = inner.interval();
 
                     // change the banner
-                    if let Err(e) = set_random_image_for_guild(ctx.http.as_ref(), &guild_id, &inner.album()).await {
+                    if let Err(e) = set_random_image_for_guild(
+                        &ctx.http,
+                        &reqw_client,
+                        &mut guild_id,
+                        &inner.album()).await
+                    {
                         eprintln!("Error: {:?}", e);
                     };
 
@@ -151,5 +164,8 @@ pub async fn setup_user_data(
         }
     });
 
-    Ok(UserData { scheduler: tx })
+    Ok(UserData {
+        scheduler: tx,
+        reqw_client: user_data_reqw_client,
+    })
 }

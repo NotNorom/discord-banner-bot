@@ -18,22 +18,6 @@ features = ["time"]
 [dependencies.tokio-stream]
 version = "0.1"
 
-# [dependencies.serenity]
-# version = "0.10"
-# default-features = false
-# features = [
-#     "builder",
-#     "cache",
-#     "collector",
-#     "client",
-#     "gateway",
-#     "http",
-#     "model",
-#     "utils",
-#     "rustls_backend",
-#     "unstable_discord_api",
-# ]
-
 [dependencies.dotenv]
 version = "0.15"
 
@@ -50,3 +34,13 @@ version = "0.9"
 
 [dependencies.url]
 version = "2"
+
+[dependencies.reqwest]
+version = "0.11"
+features = ["json"]
+
+[dependencies.rand]
+version = "0.8"
+
+[dependencies.base64]
+version = "0.13"
