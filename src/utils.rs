@@ -20,7 +20,16 @@ pub async fn set_random_banner_for_guild(
     let provider: &dyn Provider = { &mut ImgurAlbum::new(reqw_client, &imgur_client_id) };
     let url = provider.random_entry(album).await?;
 
-    // encode the image data as b64
+    set_guild_banner_from_url(http, reqw_client, guild_id, &url).await
+}
+
+/// Given a url to an image, set the guild banner
+pub async fn set_guild_banner_from_url(
+    http: &Http,
+    reqw_client: &Client,
+    guild_id: &mut GuildId,
+    url: &Url,
+) -> Result<(), Error> {
     let extension = url
         .as_str()
         .split('.')
