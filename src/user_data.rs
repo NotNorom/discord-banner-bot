@@ -146,7 +146,7 @@ pub async fn setup_user_data(
                 },
                 // If a guild is to be added or removed from the queue
                 Some(msg) = rx.recv() => {
-                    
+
                     match msg {
                         // todo: what happens if this is called twice without a
                         //   dequeue in-between? Should I cancel the existing entry
