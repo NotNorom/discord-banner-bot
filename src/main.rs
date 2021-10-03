@@ -1,5 +1,6 @@
 mod album_provider;
 mod commands;
+mod database;
 mod user_data;
 mod utils;
 

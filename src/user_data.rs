@@ -5,6 +5,10 @@ use poise::{
     Framework,
 };
 use reqwest::Client;
+use sqlx::{
+    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous},
+    SqlitePool,
+};
 use tokio::{
     select,
     sync::mpsc::{self, Sender},
@@ -30,6 +34,8 @@ pub struct UserData {
     scheduler: Sender<ScheduleMessage>,
     /// Client for http request
     reqw_client: Client,
+    /// database pool
+    db_pool: SqlitePool,
 }
 
 impl UserData {
@@ -95,6 +101,7 @@ impl QueueItem {
 /// Sets up the user data:
 /// - Creates a task that handles the banner queue
 /// - Sets up a reqwest client
+/// - Sets up the database pool
 pub async fn setup_user_data(
     ctx: &serenity_prelude::Context,
     _ready: &serenity_prelude::Ready,
@@ -111,6 +118,14 @@ pub async fn setup_user_data(
         .build()?;
 
     let reqw_client = Clone::clone(&user_data_reqw_client);
+
+    let db_pool = SqlitePool::connect_with(
+        SqliteConnectOptions::new()
+            .journal_mode(SqliteJournalMode::Wal)
+            .synchronous(SqliteSynchronous::Normal)
+            .filename("sqlite::memory:"),
+    )
+    .await?;
 
     tokio::spawn(async move {
         let mut queue = DelayQueue::<QueueItem>::with_capacity(capacity);
@@ -179,5 +194,6 @@ pub async fn setup_user_data(
     Ok(UserData {
         scheduler: tx,
         reqw_client: user_data_reqw_client,
+        db_pool,
     })
 }
