@@ -47,3 +47,7 @@ version = "0.1"
 
 [dependencies.tracing-subscriber]
 version = "0.2"
+
+[dependencies.sqlx]
+version = "0.5"
+features = ["runtime-tokio-rustls", "sqlite"]
