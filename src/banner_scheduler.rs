@@ -77,9 +77,14 @@ pub async fn scheduler(
                 let inner = item.into_inner();
                 let mut guild_id = inner.guild_id();
                 let interval = inner.interval();
-                let album = inner.album();
-                let provider = inner.provider();
+                let album = inner.album().clone();
+                let provider = inner.provider().clone();
 
+                // re-enqueue the item
+                let key = queue.insert(inner, interval);
+                guild_id_to_key.insert(guild_id, key);
+
+                // get the images from the provider
                 let images = match provider.images(&reqw_client, &album).await {
                     Ok(images) => images,
                     Err(e) => {
@@ -88,16 +93,12 @@ pub async fn scheduler(
                     },
                 };
 
-                info!("Changing the banner for {}", guild_id);
+                info!("Changing banner for {}", guild_id);
 
                 // change the banner
                 if let Err(e) = guild_id.set_random_banner(&ctx.http, &reqw_client, &images).await {
                     error!("Error: {:?}", e);
                 }
-
-                // re-enqueue the item
-                let key = queue.insert(inner, interval);
-                guild_id_to_key.insert(guild_id, key);
             },
             // If a guild is to be added or removed from the queue
             Some(msg) = rx.recv() => {
