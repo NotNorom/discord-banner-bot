@@ -104,14 +104,27 @@ pub async fn scheduler(
             Some(msg) = rx.recv() => {
 
                 match msg {
-                    // todo: what happens if this is called twice without a
-                    //   dequeue in-between? Should I cancel the existing entry
-                    //   and reschedule?
-                    ScheduleMessage::Enqueue(guild_id, album, interval, provider) => {
-                        info!("Starting schedule for: {}, with {}, every {} minutes", guild_id, album, interval * 60);
+                    ScheduleMessage::Enqueue(mut guild_id, album, interval, provider) => {
+                        info!("Starting schedule for: {}, with {}, every {} minutes", guild_id, album, interval);
                         // if we have a timer, cancel it
                         if let Some(key) = guild_id_to_key.get(&guild_id) {
                             queue.remove(key);
+                        }
+
+                        // change the banner manually once, before enqueing
+
+                        // get the images from the provider
+                        let images = match provider.images(&reqw_client, &album).await {
+                            Ok(images) => images,
+                            Err(e) => {
+                                error!("Error: {:?}", e);
+                                continue;
+                            },
+                        };
+
+                        // change the banner
+                        if let Err(e) = guild_id.set_random_banner(&ctx.http, &reqw_client, &images).await {
+                            error!("Error: {:?}", e);
                         }
 
                         // now enqueue the new item
