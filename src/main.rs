@@ -1,6 +1,7 @@
 mod album_provider;
 mod commands;
 mod database;
+mod error;
 mod user_data;
 mod utils;
 
@@ -51,7 +52,7 @@ async fn main() -> Result<(), Error> {
             serenity_builder.intents(GatewayIntents::non_privileged())
         })
         .options(FrameworkOptions {
-            on_error: |err, ctx| Box::pin(poise::samples::on_error(err, ctx)),
+            on_error: |err, ctx| Box::pin(crate::error::on_error(err, ctx)),
             owners,
 
             ..Default::default()
