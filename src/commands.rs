@@ -1,6 +1,8 @@
+use std::convert::TryFrom;
+
 use url::Url;
 
-use crate::{utils::set_random_banner_for_guild, Context, Error};
+use crate::{Context, Error, album_provider::ProviderKind};
 
 /// Picks a random image from the album every n minutes and sets it as the banner.
 #[poise::command(prefix_command, slash_command)]
@@ -11,7 +13,7 @@ pub async fn start(
     interval: Option<u64>,
 ) -> Result<(), Error> {
     // guild id
-    let mut guild_id = ctx.guild_id().ok_or("No guild id available")?;
+    let guild_id = ctx.guild_id().ok_or("No guild id available")?;
 
     // interval
     let interval = interval.unwrap_or(30);
@@ -21,6 +23,8 @@ pub async fn start(
 
     // album url
     let album = album.parse::<Url>()?;
+
+    let provider = ProviderKind::try_from(&album)?;
 
     // answer the user
     poise::send_reply(ctx, |f| {
@@ -34,17 +38,9 @@ pub async fn start(
     .await?;
 
     let user_data = ctx.data();
-    // set it once
-    set_random_banner_for_guild(
-        &ctx.discord().http,
-        user_data.reqw_client(),
-        &mut guild_id,
-        &album,
-    )
-    .await?;
 
     // schedule it
-    user_data.enque(guild_id, album, interval).await?;
+    user_data.enque(guild_id, album, interval, provider).await?;
 
     Ok(())
 }

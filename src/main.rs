@@ -1,9 +1,10 @@
 mod album_provider;
+mod banner_scheduler;
 mod commands;
 mod database;
 mod error;
 mod user_data;
-mod utils;
+mod guild_id_ext;
 
 use poise::serenity_prelude::GatewayIntents;
 use poise::serenity_prelude::UserId;

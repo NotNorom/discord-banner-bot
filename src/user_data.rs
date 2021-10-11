@@ -1,33 +1,27 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use poise::{
     serenity_prelude::{self, GuildId},
     Framework,
 };
 use reqwest::Client;
+use sqlx::prelude::*;
 use sqlx::{
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous},
-    SqlitePool,
+    Row, SqlitePool,
 };
-use tokio::{
-    select,
-    sync::mpsc::{self, Sender},
-};
-use tokio_stream::StreamExt;
-use tokio_util::time::DelayQueue;
-use tracing::{error, info};
+use tokio::sync::mpsc::{self, Sender};
+
+use tracing::info;
 use url::Url;
 
-use crate::{utils::set_random_banner_for_guild, Data, Error};
+use crate::{
+    album_provider::ProviderKind,
+    banner_scheduler::{scheduler, ScheduleMessage},
+    Data, Error,
+};
 
-#[derive(Debug)]
-pub enum ScheduleMessage {
-    /// discord guild id, album url, interval in minutes
-    Enqueue(GuildId, Url, u64),
-    /// discord guild id
-    Dequeue(GuildId),
-}
-
+#[allow(dead_code)]
 /// The User data struct used in poise
 pub struct UserData {
     /// Used to communicate with the scheduler without needing a &mut self
@@ -36,6 +30,8 @@ pub struct UserData {
     reqw_client: Client,
     /// database pool
     db_pool: SqlitePool,
+    /// imgur_client_id
+    imgur_client_id: String,
 }
 
 impl UserData {
@@ -45,8 +41,9 @@ impl UserData {
         guild_id: GuildId,
         album: Url,
         interval: u64,
+        provider: ProviderKind,
     ) -> Result<(), mpsc::error::SendError<ScheduleMessage>> {
-        let message = ScheduleMessage::Enqueue(guild_id, album, interval);
+        let message = ScheduleMessage::Enqueue(guild_id, album, interval, provider);
         self.scheduler.send(message).await
     }
 
@@ -59,42 +56,10 @@ impl UserData {
         self.scheduler.send(message).await
     }
 
+    #[allow(dead_code)]
     /// Get a reference to the user data's reqwest client.
     pub fn reqw_client(&self) -> &Client {
         &self.reqw_client
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct QueueItem {
-    guild_id: GuildId,
-    album: Url,
-    interval: Duration,
-}
-
-impl QueueItem {
-    /// Creates a new QueueItem
-    pub fn new(guild_id: GuildId, album: Url, interval: Duration) -> Self {
-        Self {
-            guild_id,
-            album,
-            interval,
-        }
-    }
-
-    /// Get a reference to the queue item's guild id.
-    pub fn guild_id(&self) -> GuildId {
-        self.guild_id
-    }
-
-    /// Get a reference to the queue item's album.
-    pub fn album(&self) -> &Url {
-        &self.album
-    }
-
-    /// Get a reference to the queue item's interval.
-    pub fn interval(&self) -> Duration {
-        self.interval
     }
 }
 
@@ -107,10 +72,12 @@ pub async fn setup_user_data(
     _ready: &serenity_prelude::Ready,
     _framework: &Framework<Data, Error>,
 ) -> Result<Data, Error> {
+    info!("Setting up user data");
+
     let ctx = Arc::new(ctx.clone());
     let capacity = 128;
 
-    let (tx, mut rx) = mpsc::channel::<ScheduleMessage>(capacity);
+    let (tx, rx) = mpsc::channel::<ScheduleMessage>(capacity);
 
     let user_data_reqw_client = Client::builder()
         .timeout(Duration::from_secs(30))
@@ -127,73 +94,16 @@ pub async fn setup_user_data(
     )
     .await?;
 
-    tokio::spawn(async move {
-        let mut queue = DelayQueue::<QueueItem>::with_capacity(capacity);
-        // maps the guild id to the key used in the queue
-        let mut guild_id_to_key = HashMap::with_capacity(capacity);
+    info!("Spawning scheduler task");
+    // Spawn the scheduler in a separate task so it can concurrently
+    tokio::spawn(scheduler(ctx, reqw_client, rx, capacity));
 
-        loop {
-            // either handle an item from the queue:
-            //   change the banner
-            // or enqueue/ dequeue an item from the queue
-            select!(
-                // If a guild is ready to have their banner changed
-                Some(Ok(item)) = queue.next() => {
-                    let inner = item.into_inner();
-                    let mut guild_id = inner.guild_id();
-                    let interval = inner.interval();
-
-                    info!("Changing the banner for {}", guild_id);
-
-                    // change the banner
-                    if let Err(e) = set_random_banner_for_guild(
-                        &ctx.http,
-                        &reqw_client,
-                        &mut guild_id,
-                        inner.album()).await
-                    {
-                        error!("Error: {:?}", e);
-                    };
-
-                    // re-enqueue the item
-                    let key = queue.insert(inner, interval);
-                    guild_id_to_key.insert(guild_id, key);
-                },
-                // If a guild is to be added or removed from the queue
-                Some(msg) = rx.recv() => {
-
-                    match msg {
-                        // todo: what happens if this is called twice without a
-                        //   dequeue in-between? Should I cancel the existing entry
-                        //   and reschedule?
-                        ScheduleMessage::Enqueue(guild_id, album, interval) => {
-                            info!("Starting schedule for: {}, with {}, every {} minutes", guild_id, album, interval * 60);
-                            // if we have a timer, cancel it
-                            if let Some(key) = guild_id_to_key.get(&guild_id) {
-                                queue.remove(key);
-                            }
-
-                            // now enqueue the new item
-                            // interval is in minutes, so we multiply by 60 seconds
-                            let interval = Duration::from_secs(interval * 60);
-                            let key = queue.insert(QueueItem::new(guild_id, album, interval), interval);
-                            guild_id_to_key.insert(guild_id, key);
-                        },
-                        ScheduleMessage::Dequeue(guild_id) => {
-                            info!("Stopping schedule for: {}", guild_id);
-                            if let Some(key) = guild_id_to_key.remove(&guild_id) {
-                                queue.remove(&key);
-                            }
-                        },
-                    };
-                }
-            );
-        }
-    });
+    let imgur_client_id = dotenv::var("IMGUR_CLIENT_ID").expect("No imgur client id");
 
     Ok(UserData {
         scheduler: tx,
         reqw_client: user_data_reqw_client,
         db_pool,
+        imgur_client_id,
     })
 }

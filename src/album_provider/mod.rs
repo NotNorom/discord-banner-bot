@@ -1,23 +1,39 @@
-use poise::async_trait;
-use rand::prelude::SliceRandom;
-use reqwest::Url;
+use std::{convert::TryFrom};
+
+
+use reqwest::{Client, Url};
+
+mod imgur_album;
 
 use crate::Error;
 
-pub mod imgur_album;
-pub use imgur_album::ImgurAlbum;
+#[non_exhaustive]
+#[derive(Debug, Clone)]
+pub enum ProviderKind {
+    /// Provider for an Imgur album like "https://imgur.com/a/YM1yHhx"
+    Imgur { client_id: String },
+}
 
-#[async_trait]
-pub trait Provider: Sync {
-    /// Given a link to the online provider, return all the images
-    async fn album(&self, album: &Url) -> Result<Vec<Url>, Error>;
+impl ProviderKind {
+    pub async fn images(&self, reqw_client: &Client, album: &Url) -> Result<Vec<Url>, Error> {
+        match self {
+            ProviderKind::Imgur { client_id } => {
+                self.images_imgur(client_id, reqw_client, album).await
+            }
+        }
+    }
+}
 
-    /// Given a link to the online provider, return a random image
-    async fn random_entry<'a>(&self, album: &Url) -> Result<Url, Error> {
-        let image_urls = self.album(album).await?;
-        image_urls
-            .choose(&mut rand::thread_rng())
-            .ok_or_else(|| "Could not pick a url".into())
-            .map(Clone::clone)
+impl TryFrom<&Url> for ProviderKind {
+    type Error = Error;
+    fn try_from(url: &Url) -> Result<Self, Self::Error> {
+        let domain = url.domain().ok_or("Must be domain, not IP address")?;
+        match domain {
+            "imgur.com" => {
+                let client_id = dotenv::var("IMGUR_CLIENT_ID")?;
+                Ok(Self::Imgur { client_id })
+            }
+            _ => Err("Unsupported provider domain".into()),
+        }
     }
 }
