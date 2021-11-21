@@ -14,7 +14,7 @@ pub(crate) trait RandomBanner {
         &mut self,
         http: impl AsRef<Http> + Sync + Send + 'async_trait,
         reqw_client: &Client,
-        urls: &Vec<Url>,
+        urls: &[Url],
     ) -> Result<(), Error> {
         let url = urls
             .choose(&mut rand::thread_rng())

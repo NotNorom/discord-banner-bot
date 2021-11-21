@@ -36,5 +36,11 @@ pub async fn on_error<D>(e: Error, ctx: ErrorContext<'_, D, Error>) {
                 error!("Error while user command error: {:?}", e);
             }
         }
+        ErrorContext::Autocomplete(err) => {
+            error!(
+                "Error processing autocomplete. Wile checking: {}",
+                err.while_checking
+            );
+        }
     }
 }

@@ -3,12 +3,13 @@ mod banner_scheduler;
 mod commands;
 mod database;
 mod error;
-mod user_data;
 mod guild_id_ext;
+mod user_data;
 
 use poise::serenity_prelude::GatewayIntents;
 use poise::serenity_prelude::UserId;
 use poise::FrameworkOptions;
+use poise::PrefixFrameworkOptions;
 use tracing::error;
 use user_data::UserData;
 
@@ -41,10 +42,8 @@ async fn main() -> Result<(), Error> {
 
     // install global collector configured based on RUST_LOG env var.
     tracing_subscriber::fmt::init();
-
     // set up & start client
     let result = poise::Framework::build()
-        .prefix(prefix)
         .token(&token)
         .user_data_setup(move |ctx, ready, framework| {
             Box::pin(setup_user_data(ctx, ready, framework))
@@ -55,6 +54,11 @@ async fn main() -> Result<(), Error> {
         .options(FrameworkOptions {
             on_error: |err, ctx| Box::pin(crate::error::on_error(err, ctx)),
             owners,
+            prefix_options: PrefixFrameworkOptions {
+                prefix: Some(prefix),
+
+                ..Default::default()
+            },
 
             ..Default::default()
         })
