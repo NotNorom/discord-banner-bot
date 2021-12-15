@@ -19,11 +19,17 @@ type Data = UserData;
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
-/// Register application commands in this guild or globally
-/// Run with no arguments to register in guild, run with argument "global" to register globally.
+/// Register application commands in this guild
 #[poise::command(prefix_command, owners_only)]
 async fn register(ctx: Context<'_>) -> Result<(), Error> {
     poise::samples::register_application_commands(ctx, false).await?;
+    Ok(())
+}
+
+/// Register application commands globally
+#[poise::command(prefix_command, owners_only)]
+async fn register_globally(ctx: Context<'_>) -> Result<(), Error> {
+    poise::samples::register_application_commands(ctx, true).await?;
     Ok(())
 }
 
@@ -63,6 +69,7 @@ async fn main() -> Result<(), Error> {
             ..Default::default()
         })
         .command(register(), |f| f)
+        .command(register_globally(), |f| f)
         .command(commands::start(), |f| f)
         .command(commands::stop(), |f| f)
         .command(commands::album(), |f| f)
