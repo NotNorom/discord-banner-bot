@@ -1,15 +1,11 @@
 use std::{sync::Arc, time::Duration};
 
+use fred::client::RedisClient;
 use poise::{
     serenity_prelude::{self, GuildId},
     Framework,
 };
 use reqwest::Client;
-use sqlx::prelude::*;
-use sqlx::{
-    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous},
-    Row, SqlitePool,
-};
 use tokio::sync::mpsc::{self, Sender};
 
 use tracing::info;
@@ -18,7 +14,7 @@ use url::Url;
 use crate::{
     album_provider::ProviderKind,
     banner_scheduler::{scheduler, ScheduleMessage},
-    Data, Error,
+    database, Data, Error,
 };
 
 #[allow(dead_code)]
@@ -29,7 +25,7 @@ pub struct UserData {
     /// Client for http request
     reqw_client: Client,
     /// database pool
-    db_pool: SqlitePool,
+    redis_client: RedisClient,
     /// imgur_client_id
     imgur_client_id: String,
 }
@@ -86,13 +82,7 @@ pub async fn setup_user_data(
 
     let reqw_client = Clone::clone(&user_data_reqw_client);
 
-    let db_pool = SqlitePool::connect_with(
-        SqliteConnectOptions::new()
-            .journal_mode(SqliteJournalMode::Wal)
-            .synchronous(SqliteSynchronous::Normal)
-            .filename("sqlite::memory:"),
-    )
-    .await?;
+    let redis_client = database::setup().await?;
 
     info!("Spawning scheduler task");
     // Spawn the scheduler in a separate task so it can concurrently
@@ -103,7 +93,7 @@ pub async fn setup_user_data(
     Ok(UserData {
         scheduler: tx,
         reqw_client: user_data_reqw_client,
-        db_pool,
+        redis_client,
         imgur_client_id,
     })
 }
