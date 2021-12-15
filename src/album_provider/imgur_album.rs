@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use poise::serde_json::Value;
+use poise::serenity_prelude::json::Value;
 use reqwest::{Client, Method, Url};
 
 use crate::Error;

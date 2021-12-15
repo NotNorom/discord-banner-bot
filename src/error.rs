@@ -1,6 +1,6 @@
 use std::process::exit;
 
-use poise::{say_reply, ArgumentParseError, CommandErrorContext, ErrorContext};
+use poise::{say_reply, ArgumentParseError, ErrorContext};
 use tracing::error;
 
 use crate::Error;
@@ -22,10 +22,8 @@ pub async fn on_error<D>(e: Error, ctx: ErrorContext<'_, D, Error>) {
                 // command explanation if available
 
                 let mut usage = "Please check the help menu for usage information".into();
-                if let CommandErrorContext::Prefix(ctx) = &ctx {
-                    if let Some(multiline_help) = &ctx.command.options.multiline_help {
-                        usage = multiline_help();
-                    }
+                if let Some(multiline_help) = &ctx.command().id().multiline_help {
+                    usage = multiline_help();
                 }
                 format!("**{}**\n{}", e, usage)
             } else {
@@ -36,10 +34,11 @@ pub async fn on_error<D>(e: Error, ctx: ErrorContext<'_, D, Error>) {
                 error!("Error while user command error: {:?}", e);
             }
         }
-        ErrorContext::Autocomplete(err) => {
+        ErrorContext::Autocomplete(err_ctx) => {
             error!(
-                "Error processing autocomplete. Wile checking: {}",
-                err.while_checking
+                "Error in autocomplete callback for command {:?}: {}",
+                err_ctx.ctx.command.slash_or_context_menu_name(),
+                e
             );
         }
     }
