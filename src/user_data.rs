@@ -15,7 +15,8 @@ use crate::{
     album_provider::ProviderKind,
     banner_scheduler::{scheduler, ScheduleMessage},
     constants::USER_AGENT,
-    database, Data, Error,
+    database::{self, key},
+    Data, Error,
 };
 
 #[allow(dead_code)]
@@ -26,7 +27,7 @@ pub struct UserData {
     /// Client for http request
     reqw_client: Client,
     /// database pool
-    redis_client: RedisClient,
+    redis_client: Arc<RedisClient>,
     /// imgur_client_id
     imgur_client_id: String,
 }
@@ -84,7 +85,18 @@ pub async fn setup_user_data(
 
     info!("Spawning scheduler task");
     // Spawn the scheduler in a separate task so it can concurrently
-    tokio::spawn(scheduler(ctx, reqw_client, rx, capacity));
+    tokio::spawn(scheduler(ctx, rx, reqw_client, redis_client.clone(), capacity));
+
+    // ask for existing guild ids
+    {
+        let known_guild_ids: Vec<u64> = redis_client.smembers(key(":known_guilds")).await?;
+
+        for id in known_guild_ids {
+            // @todo: enque existing entries
+            let entry = redis_client.hgetall(key(format!(":{}", id))).await?;
+            info!("{:?}", entry);
+        }
+    }
 
     let imgur_client_id = dotenv::var("IMGUR_CLIENT_ID").expect("No imgur client id");
 

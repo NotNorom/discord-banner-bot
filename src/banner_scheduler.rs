@@ -1,5 +1,10 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{
+    collections::HashMap,
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
+use fred::client::RedisClient;
 use poise::serenity_prelude::GuildId;
 use reqwest::{Client, Url};
 use tokio::{select, sync::mpsc::Receiver};
@@ -7,7 +12,11 @@ use tokio_stream::StreamExt;
 use tokio_util::time::DelayQueue;
 use tracing::{error, info};
 
-use crate::{album_provider::ProviderKind, guild_id_ext::RandomBanner};
+use crate::{
+    album_provider::ProviderKind,
+    database::{key as redis_key, DbEntry},
+    guild_id_ext::RandomBanner,
+};
 
 #[derive(Debug)]
 pub enum ScheduleMessage {
@@ -59,8 +68,9 @@ impl QueueItem {
 
 pub async fn scheduler(
     ctx: Arc<poise::serenity_prelude::Context>,
-    reqw_client: Client,
     mut rx: Receiver<ScheduleMessage>,
+    reqw_client: Client,
+    redis_client: Arc<RedisClient>,
     capacity: usize,
 ) {
     let mut queue = DelayQueue::<QueueItem>::with_capacity(capacity);
@@ -99,10 +109,21 @@ pub async fn scheduler(
                 if let Err(e) = guild_id.set_random_banner(&ctx.http, &reqw_client, &images).await {
                     error!("Error: {:?}", e);
                 }
+
+                // insert into redis
+                {
+                    let current_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+                    let redis_entry = DbEntry::new(guild_id.0, album.to_string(), interval.as_secs(), current_time);
+
+                    let x: Result<(), _> = redis_client.hmset(redis_key(format!("{}", guild_id.0)), redis_entry).await;
+                    info!("created new entry {:?}", x);
+
+                    let x: Result<(), _> = redis_client.sadd(redis_key(":known_guilds"), guild_id.0.to_string()).await;
+                    info!("added new guild {:?}", x)
+                }
             },
             // If a guild is to be added or removed from the queue
             Some(msg) = rx.recv() => {
-
                 match msg {
                     ScheduleMessage::Enqueue(mut guild_id, album, interval, provider) => {
                         info!("Starting schedule for: {}, with {}, every {} minutes", guild_id, album, interval);
