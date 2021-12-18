@@ -45,10 +45,7 @@ impl UserData {
     }
 
     /// Dequeue a guild
-    pub async fn deque(
-        &self,
-        guild_id: GuildId,
-    ) -> Result<(), mpsc::error::SendError<ScheduleMessage>> {
+    pub async fn deque(&self, guild_id: GuildId) -> Result<(), mpsc::error::SendError<ScheduleMessage>> {
         let message = ScheduleMessage::Dequeue(guild_id);
         self.scheduler.send(message).await
     }
