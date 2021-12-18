@@ -1,6 +1,7 @@
 mod album_provider;
 mod banner_scheduler;
 mod commands;
+mod constants;
 mod database;
 mod error;
 mod guild_id_ext;

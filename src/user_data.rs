@@ -14,6 +14,7 @@ use url::Url;
 use crate::{
     album_provider::ProviderKind,
     banner_scheduler::{scheduler, ScheduleMessage},
+    constants::USER_AGENT,
     database, Data, Error,
 };
 
@@ -77,7 +78,7 @@ pub async fn setup_user_data(
 
     let user_data_reqw_client = Client::builder()
         .timeout(Duration::from_secs(30))
-        .user_agent("Discord Banner Bot")
+        .user_agent(USER_AGENT)
         .build()?;
 
     let reqw_client = Clone::clone(&user_data_reqw_client);
