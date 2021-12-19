@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
 
+use poise::serenity_prelude::GuildId;
 use url::Url;
 
 use crate::{
@@ -12,7 +13,8 @@ use crate::{
 #[poise::command(prefix_command, slash_command)]
 pub async fn start(
     ctx: Context<'_>,
-    #[description = "Imgur album"] album: String,
+    #[description = "Imgur album"]
+    album: String,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
 ) -> Result<(), Error> {
@@ -90,6 +92,51 @@ pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
             .embed(|e| e.image(&banner).colour((255, 0, 255)))
     })
     .await?;
+
+    Ok(())
+}
+
+
+/// Picks a random image from the album every n minutes and sets it as the banner for the guild
+/// with the given id.
+#[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
+pub async fn start_for_guild(ctx: Context<'_>,
+    #[description = "Guild ID"]
+    guild_id: u64,
+    #[description = "Imgur album"]
+    album: String,
+    #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
+    interval: Option<u64>,
+) -> Result<(), Error> { 
+    // guild id
+    let guild_id = GuildId(guild_id);
+
+    // interval
+    let interval = interval.unwrap_or(DEFAULT_INTERVAL);
+    if interval < MINIMUM_INTERVAL {
+        return Err("Interval must be at least 15 minutes".into());
+    }
+
+    // album url
+    let album = album.parse::<Url>()?;
+
+    let provider = ProviderKind::try_from(&album)?;
+
+    // answer the user
+    poise::send_reply(ctx, |f| {
+        let content = format!(
+            "Scheduling banner change for every {} minutes using this album: <{}>",
+            &interval,
+            &album.as_str()
+        );
+        f.content(content).ephemeral(true)
+    })
+    .await?;
+
+    let user_data = ctx.data();
+
+    // schedule it
+    user_data.enque(guild_id, album, interval, provider).await?;
 
     Ok(())
 }

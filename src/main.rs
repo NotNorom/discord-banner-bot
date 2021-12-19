@@ -71,6 +71,7 @@ async fn main() -> Result<(), Error> {
         .command(commands::stop(), |f| f)
         .command(commands::album(), |f| f)
         .command(commands::current(), |f| f)
+        .command(commands::start_for_guild(), |f| f)
         .run()
         .await;
 
