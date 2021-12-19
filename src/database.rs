@@ -44,12 +44,27 @@ impl DbEntry {
 impl From<DbEntry> for RedisMap {
     fn from(entry: DbEntry) -> Self {
         let mut map = RedisMap::new();
-        map.insert("guild_id".to_string(), RedisValue::Integer(entry.guild_id as i64));
+        map.insert(
+            "guild_id".to_string(),
+            RedisValue::String(entry.guild_id.to_string()),
+        );
         map.insert("album".to_string(), RedisValue::String(entry.album));
-        map.insert("interval".to_string(), RedisValue::Integer(entry.interval as i64));
-        map.insert("last_run".to_string(), RedisValue::Integer(entry.last_run as i64));
+        map.insert(
+            "interval".to_string(),
+            RedisValue::String(entry.interval.to_string()),
+        );
+        map.insert(
+            "last_run".to_string(),
+            RedisValue::String(entry.last_run.to_string()),
+        );
 
         map
+    }
+}
+
+impl From<RedisMap> for DbEntry {
+    fn from(_: RedisMap) -> Self {
+        todo!()
     }
 }
 
