@@ -2,7 +2,11 @@ use std::convert::TryFrom;
 
 use url::Url;
 
-use crate::{Context, Error, album_provider::ProviderKind};
+use crate::{
+    album_provider::ProviderKind,
+    constants::{DEFAULT_INTERVAL, MINIMUM_INTERVAL},
+    Context, Error,
+};
 
 /// Picks a random image from the album every n minutes and sets it as the banner.
 #[poise::command(prefix_command, slash_command)]
@@ -16,9 +20,9 @@ pub async fn start(
     let guild_id = ctx.guild_id().ok_or("No guild id available")?;
 
     // interval
-    let interval = interval.unwrap_or(30);
-    if interval < 15 {
-        return Err("Interval must be at least 15 minutes".into());
+    let interval = interval.unwrap_or(DEFAULT_INTERVAL);
+    if interval < MINIMUM_INTERVAL {
+        return Err(format!("Interval must be at least {} minutes", MINIMUM_INTERVAL).into());
     }
 
     // album url
