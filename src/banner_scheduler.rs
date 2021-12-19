@@ -1,21 +1,18 @@
-use std::{
-    collections::HashMap,
-    sync::Arc,
-    time::{Duration, SystemTime},
-};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use fred::client::RedisClient;
 use poise::serenity_prelude::GuildId;
 use reqwest::{Client, Url};
 use tokio::{select, sync::mpsc::Receiver};
 use tokio_stream::StreamExt;
-use tokio_util::time::DelayQueue;
+use tokio_util::time::{delay_queue::Key, DelayQueue};
 use tracing::{error, info};
 
 use crate::{
     album_provider::ProviderKind,
     database::{key as redis_key, DbEntry},
     guild_id_ext::RandomBanner,
+    utils::timestamp_seconds,
+    Data, Error,
 };
 
 #[derive(Debug)]
@@ -112,8 +109,7 @@ pub async fn scheduler(
 
                 // insert into redis
                 {
-                    let current_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
-                    let redis_entry = DbEntry::new(guild_id.0, album.to_string(), interval.as_secs(), current_time);
+                    let redis_entry = DbEntry::new(guild_id.0, album.to_string(), interval.as_secs(), timestamp_seconds());
 
                     let x: Result<(), _> = redis_client.hmset(redis_key(format!("{}", guild_id.0)), redis_entry).await;
                     info!("created new entry {:?}", x);

@@ -6,6 +6,7 @@ mod database;
 mod error;
 mod guild_id_ext;
 mod user_data;
+mod utils;
 
 use poise::serenity_prelude::GatewayIntents;
 use poise::serenity_prelude::UserId;
