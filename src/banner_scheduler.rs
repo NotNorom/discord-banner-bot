@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use poise::serenity_prelude::GuildId;
-use reqwest::{Client, Url};
+use reqwest::Url;
 use tokio::{select, sync::mpsc::Receiver};
 use tokio_stream::StreamExt;
 use tokio_util::time::{delay_queue::Key, DelayQueue};
@@ -16,11 +16,34 @@ use crate::{
 };
 
 #[derive(Debug)]
+pub struct ScheduleMessageEnqueue {
+    guild_id: GuildId,
+    album: Url,
+    interval: u64,
+    provider: ProviderKind,
+}
+
+#[derive(Debug)]
 pub enum ScheduleMessage {
     /// discord guild id, album url, interval in minutes
-    Enqueue(GuildId, Url, u64, ProviderKind),
+    Enqueue(ScheduleMessageEnqueue),
     /// discord guild id
     Dequeue(GuildId),
+}
+
+impl ScheduleMessage {
+    pub fn new_enqueue(guild_id: GuildId, album: Url, interval: u64, provider: ProviderKind) -> Self {
+        Self::Enqueue(ScheduleMessageEnqueue {
+            guild_id,
+            album,
+            interval,
+            provider,
+        })
+    }
+
+    pub fn new_dequeue(guild_id: GuildId) -> Self {
+        Self::Dequeue(guild_id)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -66,8 +89,7 @@ impl QueueItem {
 pub async fn scheduler(
     ctx: Arc<poise::serenity_prelude::Context>,
     mut rx: Receiver<ScheduleMessage>,
-    reqw_client: Client,
-    redis_client: Arc<RedisClient>,
+    user_data: Data,
     capacity: usize,
 ) {
     let mut queue = DelayQueue::<QueueItem>::with_capacity(capacity);
@@ -92,7 +114,7 @@ pub async fn scheduler(
                 guild_id_to_key.insert(guild_id, key);
 
                 // get the images from the provider
-                let images = match provider.images(&reqw_client, &album).await {
+                let images = match provider.images(user_data.reqw_client(), &album).await {
                     Ok(images) => images,
                     Err(e) => {
                         error!("Error: {:?}", e);
@@ -103,7 +125,7 @@ pub async fn scheduler(
                 info!("Changing banner for {}", guild_id);
 
                 // change the banner
-                if let Err(e) = guild_id.set_random_banner(&ctx.http, &reqw_client, &images).await {
+                if let Err(e) = guild_id.set_random_banner(&ctx.http, user_data.reqw_client(), &images).await {
                     error!("Error: {:?}", e);
                 }
 
@@ -111,44 +133,17 @@ pub async fn scheduler(
                 {
                     let redis_entry = DbEntry::new(guild_id.0, album.to_string(), interval.as_secs(), timestamp_seconds());
 
-                    let x: Result<(), _> = redis_client.hmset(redis_key(format!("{}", guild_id.0)), redis_entry).await;
-                    info!("created new entry {:?}", x);
-
-                    let x: Result<(), _> = redis_client.sadd(redis_key(":known_guilds"), guild_id.0.to_string()).await;
-                    info!("added new guild {:?}", x)
+                    let x: Result<(), _> = user_data.redis_client().hmset(redis_key(format!("{}", guild_id.0)), redis_entry).await;
+                    info!("updated entry {:?}", x);
                 }
             },
             // If a guild is to be added or removed from the queue
             Some(msg) = rx.recv() => {
                 match msg {
-                    ScheduleMessage::Enqueue(mut guild_id, album, interval, provider) => {
-                        info!("Starting schedule for: {}, with {}, every {} minutes", guild_id, album, interval);
-                        // if we have a timer, cancel it
-                        if let Some(key) = guild_id_to_key.get(&guild_id) {
-                            queue.remove(key);
+                    ScheduleMessage::Enqueue(enqueue_msg) => {
+                        if let Err(e) = enqueue(ctx.clone(), user_data.clone(), enqueue_msg, &mut queue, &mut guild_id_to_key, ).await {
+                            error!("{:?}", e);
                         }
-
-                        // change the banner manually once, before enqueing
-
-                        // get the images from the provider
-                        let images = match provider.images(&reqw_client, &album).await {
-                            Ok(images) => images,
-                            Err(e) => {
-                                error!("Error: {:?}", e);
-                                continue;
-                            },
-                        };
-
-                        // change the banner
-                        if let Err(e) = guild_id.set_random_banner(&ctx.http, &reqw_client, &images).await {
-                            error!("Error: {:?}", e);
-                        }
-
-                        // now enqueue the new item
-                        // interval is in minutes, so we multiply by 60 seconds
-                        let interval = Duration::from_secs(interval * 60);
-                        let key = queue.insert(QueueItem::new(guild_id, album, interval, provider), interval);
-                        guild_id_to_key.insert(guild_id, key);
                     },
                     ScheduleMessage::Dequeue(guild_id) => {
                         info!("Stopping schedule for: {}", guild_id);
@@ -160,4 +155,74 @@ pub async fn scheduler(
             }
         );
     }
+}
+
+async fn enqueue(
+    ctx: Arc<poise::serenity_prelude::Context>,
+    user_data: Data,
+    enqueue_msg: ScheduleMessageEnqueue,
+    queue: &mut DelayQueue<QueueItem>,
+    guild_id_to_key: &mut HashMap<GuildId, Key>,
+) -> Result<(), Error> {
+    let ScheduleMessageEnqueue {
+        album,
+        mut guild_id,
+        interval,
+        provider,
+    } = enqueue_msg;
+    info!(
+        "Starting schedule for: {}, with {}, every {} minutes",
+        guild_id, album, interval
+    );
+
+    // if we have a timer, cancel it
+    if let Some(key) = guild_id_to_key.get(&guild_id) {
+        queue.remove(key);
+    }
+
+    // change the banner manually once, before enqueing
+
+    // get the images from the provider
+    let images = provider.images(user_data.reqw_client(), &album).await?;
+
+    // change the banner
+    if let Err(e) = guild_id
+        .set_random_banner(&ctx.http, user_data.reqw_client(), &images)
+        .await
+    {
+        error!("Error: {:?}", e);
+    }
+
+    // now enqueue the new item
+    // interval is in minutes, so we multiply by 60 seconds
+    let interval = Duration::from_secs(interval * 60);
+    let key = queue.insert(
+        QueueItem::new(guild_id, album.clone(), interval, provider),
+        interval,
+    );
+    guild_id_to_key.insert(guild_id, key);
+
+    // insert into redis
+    {
+        let redis_entry = DbEntry::new(
+            guild_id.0,
+            album.to_string(),
+            interval.as_secs(),
+            timestamp_seconds(),
+        );
+
+        let x: Result<(), _> = user_data
+            .redis_client()
+            .hmset(redis_key(format!("{}", guild_id.0)), redis_entry)
+            .await;
+        info!("created new entry {:?}", x);
+
+        let x: Result<(), _> = user_data
+            .redis_client()
+            .sadd(redis_key("known_guilds"), guild_id.0.to_string())
+            .await;
+        info!("added new guild {:?}", x)
+    }
+
+    Ok(())
 }
