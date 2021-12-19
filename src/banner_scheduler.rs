@@ -21,6 +21,7 @@ pub struct ScheduleMessageEnqueue {
     album: Url,
     interval: u64,
     provider: ProviderKind,
+    offset: u64,
 }
 
 #[derive(Debug)]
@@ -32,12 +33,19 @@ pub enum ScheduleMessage {
 }
 
 impl ScheduleMessage {
-    pub fn new_enqueue(guild_id: GuildId, album: Url, interval: u64, provider: ProviderKind) -> Self {
+    pub fn new_enqueue(
+        guild_id: GuildId,
+        album: Url,
+        provider: ProviderKind,
+        interval: u64,
+        offset: Option<u64>,
+    ) -> Self {
         Self::Enqueue(ScheduleMessageEnqueue {
             guild_id,
             album,
-            interval,
             provider,
+            interval,
+            offset: offset.unwrap_or_default(),
         })
     }
 
@@ -50,18 +58,18 @@ impl ScheduleMessage {
 pub struct QueueItem {
     guild_id: GuildId,
     album: Url,
-    interval: Duration,
     provider: ProviderKind,
+    interval: Duration,
 }
 
 impl QueueItem {
     /// Creates a new QueueItem
-    pub fn new(guild_id: GuildId, album: Url, interval: Duration, provider: ProviderKind) -> Self {
+    pub fn new(guild_id: GuildId, album: Url, provider: ProviderKind, interval: Duration) -> Self {
         Self {
             guild_id,
             album,
-            interval,
             provider,
+            interval,
         }
     }
 
@@ -165,10 +173,11 @@ async fn enqueue(
     guild_id_to_key: &mut HashMap<GuildId, Key>,
 ) -> Result<(), Error> {
     let ScheduleMessageEnqueue {
-        album,
         mut guild_id,
+        album,
         interval,
         provider,
+        offset,
     } = enqueue_msg;
     info!(
         "Starting schedule for: {}, with {}, every {} minutes",
@@ -196,9 +205,10 @@ async fn enqueue(
     // now enqueue the new item
     // interval is in minutes, so we multiply by 60 seconds
     let interval = Duration::from_secs(interval * 60);
+    let offset = interval + Duration::from_secs(offset);
     let key = queue.insert(
-        QueueItem::new(guild_id, album.clone(), interval, provider),
-        interval,
+        QueueItem::new(guild_id, album.clone(), provider, interval),
+        offset,
     );
     guild_id_to_key.insert(guild_id, key);
 

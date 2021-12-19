@@ -39,6 +39,10 @@ impl DbEntry {
     pub fn last_run(&self) -> u64 {
         self.last_run
     }
+
+    pub fn next_run(&self) -> u64 {
+        0
+    }
 }
 
 impl From<DbEntry> for RedisMap {

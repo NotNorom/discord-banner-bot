@@ -46,7 +46,7 @@ pub async fn start(
     let user_data = ctx.data();
 
     // schedule it
-    user_data.enque(guild_id, album, interval, provider).await?;
+    user_data.enque(guild_id, album, provider, interval, None).await?;
 
     Ok(())
 }
@@ -136,7 +136,7 @@ pub async fn start_for_guild(ctx: Context<'_>,
     let user_data = ctx.data();
 
     // schedule it
-    user_data.enque(guild_id, album, interval, provider).await?;
+    user_data.enque(guild_id, album, provider, interval, None).await?;
 
     Ok(())
 }

@@ -39,10 +39,11 @@ impl UserData {
         &self,
         guild_id: GuildId,
         album: Url,
-        interval: u64,
         provider: ProviderKind,
+        interval: u64,
+        offset: Option<u64>
     ) -> Result<(), mpsc::error::SendError<ScheduleMessage>> {
-        let message = ScheduleMessage::new_enqueue(guild_id, album, interval, provider);
+        let message = ScheduleMessage::new_enqueue(guild_id, album, provider, interval, offset);
         self.scheduler.send(message).await
     }
 
