@@ -1,7 +1,5 @@
 //! here be database stuff
 
-use std::sync::Arc;
-
 use fred::prelude::*;
 
 #[derive(Clone, Debug)]
@@ -66,12 +64,12 @@ where
     format!("{}:{}", REDIS_PREFIX, key)
 }
 
-pub async fn setup() -> Result<Arc<RedisClient>, crate::Error> {
+pub async fn setup() -> Result<RedisClient, crate::Error> {
     let config = RedisConfig::default();
     let policy = ReconnectPolicy::new_exponential(0, 100, 30_000, 2);
     let client = RedisClient::new(config);
     let _ = client.connect(Some(policy));
     let _ = client.wait_for_connect().await?;
 
-    Ok(Arc::new(client))
+    Ok(client)
 }

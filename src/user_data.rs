@@ -27,7 +27,7 @@ pub struct UserData {
     /// Client for http request
     reqw_client: Client,
     /// database pool
-    redis_client: Arc<RedisClient>,
+    redis_client: RedisClient,
     /// imgur_client_id
     imgur_client_id: String,
 }
@@ -55,6 +55,11 @@ impl UserData {
     /// Get a reference to the user data's reqwest client.
     pub fn reqw_client(&self) -> &Client {
         &self.reqw_client
+    }
+
+    /// Get a reference to the user data's redis client.
+    pub fn redis_client(&self) -> &RedisClient {
+        &self.redis_client
     }
 }
 
