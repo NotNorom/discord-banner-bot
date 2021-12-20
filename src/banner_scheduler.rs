@@ -138,28 +138,19 @@ pub async fn scheduler(
                 }
 
                 // insert into redis
-                {
-                    let redis_entry = DbEntry::new(guild_id.0, album.to_string(), interval.as_secs(), timestamp_seconds());
+                let redis_entry = DbEntry::new(guild_id.0, album.to_string(), interval.as_secs(), timestamp_seconds());
 
-                    let x: Result<(), _> = user_data.redis_client().hmset(redis_key(format!("{}", guild_id.0)), redis_entry).await;
-                    info!("updated entry {:?}", x);
-                }
+                let x: Result<(), _> = user_data.redis_client().hmset(redis_key(format!("{}", guild_id.0)), redis_entry).await;
+                info!("updated entry {:?}", x);
             },
             // If a guild is to be added or removed from the queue
             Some(msg) = rx.recv() => {
-                match msg {
-                    ScheduleMessage::Enqueue(enqueue_msg) => {
-                        if let Err(e) = enqueue(ctx.clone(), user_data.clone(), enqueue_msg, &mut queue, &mut guild_id_to_key, ).await {
-                            error!("{:?}", e);
-                        }
-                    },
-                    ScheduleMessage::Dequeue(guild_id) => {
-                        info!("Stopping schedule for: {}", guild_id);
-                        if let Some(key) = guild_id_to_key.remove(&guild_id) {
-                            queue.remove(&key);
-                        }
-                    },
-                };
+                if let Err(e) = match msg {
+                    ScheduleMessage::Enqueue(enqueue_msg) => enqueue(ctx.clone(), user_data.clone(), enqueue_msg, &mut queue, &mut guild_id_to_key, ).await,
+                    ScheduleMessage::Dequeue(guild_id) => dequeue(ctx.clone(), user_data.clone(), guild_id, &mut queue, &mut guild_id_to_key).await,
+                } {
+                    error!("{:?}", e);
+                }
             }
         );
     }
@@ -213,26 +204,51 @@ async fn enqueue(
     guild_id_to_key.insert(guild_id, key);
 
     // insert into redis
-    {
-        let redis_entry = DbEntry::new(
-            guild_id.0,
-            album.to_string(),
-            interval.as_secs(),
-            timestamp_seconds(),
-        );
+    let redis_entry = DbEntry::new(
+        guild_id.0,
+        album.to_string(),
+        interval.as_secs(),
+        timestamp_seconds(),
+    );
 
-        let x: Result<(), _> = user_data
-            .redis_client()
-            .hmset(redis_key(format!("{}", guild_id.0)), redis_entry)
-            .await;
-        info!("created new entry {:?}", x);
+    let x: Result<(), _> = user_data
+        .redis_client()
+        .hmset(redis_key(format!("{}", guild_id.0)), redis_entry)
+        .await;
+    info!("created new entry {:?}", x);
 
-        let x: Result<(), _> = user_data
-            .redis_client()
-            .sadd(redis_key("known_guilds"), guild_id.0.to_string())
-            .await;
-        info!("added new guild {:?}", x)
+    let x: Result<(), _> = user_data
+        .redis_client()
+        .sadd(redis_key("known_guilds"), guild_id.0.to_string())
+        .await;
+    info!("added new guild {:?}", x);
+
+    Ok(())
+}
+
+async fn dequeue(
+    ctx: Arc<poise::serenity_prelude::Context>,
+    user_data: Data,
+    guild_id: GuildId,
+    queue: &mut DelayQueue<QueueItem>,
+    guild_id_to_key: &mut HashMap<GuildId, Key>,
+) -> Result<(), Error> {
+    info!("Stopping schedule for: {}", guild_id);
+    if let Some(key) = guild_id_to_key.remove(&guild_id) {
+        queue.remove(&key);
     }
+
+    let x: Result<(), _> = user_data
+        .redis_client()
+        .del(redis_key(format!("{}", guild_id.0)))
+        .await;
+    info!("removed entry {:?}", x);
+
+    let x: Result<(), _> = user_data
+        .redis_client()
+        .srem(redis_key("known_guilds"), guild_id.0.to_string())
+        .await;
+    info!("removed guild {:?}", x);
 
     Ok(())
 }
