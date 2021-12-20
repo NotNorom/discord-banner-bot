@@ -211,17 +211,17 @@ async fn enqueue(
         timestamp_seconds(),
     );
 
-    let x: Result<(), _> = user_data
+    info!("creating new entry {:#?}", &redis_entry);
+    let _: Result<(), _> = user_data
         .redis_client()
         .hmset(redis_key(format!("{}", guild_id.0)), redis_entry)
         .await;
-    info!("created new entry {:?}", x);
 
-    let x: Result<(), _> = user_data
+    info!("adding new guild {:?}", guild_id.0);
+    let _: Result<(), _> = user_data
         .redis_client()
         .sadd(redis_key("known_guilds"), guild_id.0.to_string())
         .await;
-    info!("added new guild {:?}", x);
 
     Ok(())
 }
@@ -238,17 +238,17 @@ async fn dequeue(
         queue.remove(&key);
     }
 
-    let x: Result<(), _> = user_data
+    info!("removing entry {:?}", &guild_id.0);
+    let _: Result<(), _> = user_data
         .redis_client()
         .del(redis_key(format!("{}", guild_id.0)))
         .await;
-    info!("removed entry {:?}", x);
 
-    let x: Result<(), _> = user_data
+    info!("removing guild {:?}", &guild_id.0);
+    let _: Result<(), _> = user_data
         .redis_client()
         .srem(redis_key("known_guilds"), guild_id.0.to_string())
         .await;
-    info!("removed guild {:?}", x);
 
     Ok(())
 }
