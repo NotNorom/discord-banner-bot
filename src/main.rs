@@ -5,7 +5,7 @@ mod constants;
 mod database;
 mod error;
 mod guild_id_ext;
-mod user_data;
+mod startup;
 mod utils;
 
 use poise::{
@@ -13,9 +13,9 @@ use poise::{
     FrameworkOptions, PrefixFrameworkOptions,
 };
 use tracing::error;
-use user_data::UserData;
+use startup::UserData;
 
-use crate::user_data::setup_user_data;
+use crate::startup::setup_user_data;
 
 type Data = UserData;
 type Error = Box<dyn std::error::Error + Send + Sync>;
