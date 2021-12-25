@@ -47,12 +47,18 @@ impl DbEntry {
 
 impl From<DbEntry> for RedisMap {
     fn from(entry: DbEntry) -> Self {
+        (&entry).into()
+    }
+}
+
+impl From<&DbEntry> for RedisMap {
+    fn from(entry: &DbEntry) -> Self {
         let mut map = RedisMap::new();
         map.insert(
             "guild_id".to_string(),
             RedisValue::String(entry.guild_id.to_string()),
         );
-        map.insert("album".to_string(), RedisValue::String(entry.album));
+        map.insert("album".to_string(), RedisValue::String(entry.album.to_owned()));
         map.insert(
             "interval".to_string(),
             RedisValue::String(entry.interval.to_string()),

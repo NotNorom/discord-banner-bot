@@ -140,8 +140,9 @@ pub async fn scheduler(
                 // insert into redis
                 let redis_entry = DbEntry::new(guild_id.0, album.to_string(), interval.as_secs(), timestamp_seconds());
 
-                let x: Result<(), _> = user_data.redis_client().hmset(redis_key(format!("{}", guild_id.0)), redis_entry).await;
-                info!("updated entry {:?}", x);
+                let _: Result<(), _> = user_data.redis_client().hmset(redis_key(format!("{}", guild_id.0)), &redis_entry).await;
+                let _: Result<(), _> = user_data.redis_client().sadd(redis_key("known_guilds"), guild_id.0.to_string()).await;
+                info!("updated entry {:?}", redis_entry);
             },
             // If a guild is to be added or removed from the queue
             Some(msg) = rx.recv() => {
@@ -204,26 +205,6 @@ async fn enqueue(
         offset,
     );
     guild_id_to_key.insert(guild_id, key);
-
-    // insert into redis
-    let redis_entry = DbEntry::new(
-        guild_id.0,
-        album.to_string(),
-        interval.as_secs(),
-        timestamp_seconds(),
-    );
-
-    info!("creating new entry {:#?}", &redis_entry);
-    let _: Result<(), _> = user_data
-        .redis_client()
-        .hmset(redis_key(format!("{}", guild_id.0)), redis_entry)
-        .await;
-
-    info!("adding new guild {:?}", guild_id.0);
-    let _: Result<(), _> = user_data
-        .redis_client()
-        .sadd(redis_key("known_guilds"), guild_id.0.to_string())
-        .await;
 
     Ok(())
 }
