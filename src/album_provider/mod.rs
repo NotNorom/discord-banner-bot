@@ -1,5 +1,4 @@
-use std::{convert::TryFrom};
-
+use std::convert::TryFrom;
 
 use reqwest::{Client, Url};
 
@@ -17,9 +16,7 @@ pub enum ProviderKind {
 impl ProviderKind {
     pub async fn images(&self, reqw_client: &Client, album: &Url) -> Result<Vec<Url>, Error> {
         match self {
-            ProviderKind::Imgur { client_id } => {
-                self.images_imgur(client_id, reqw_client, album).await
-            }
+            ProviderKind::Imgur { client_id } => self.images_imgur(client_id, reqw_client, album).await,
         }
     }
 }

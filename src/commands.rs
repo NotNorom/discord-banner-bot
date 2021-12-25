@@ -47,7 +47,9 @@ pub async fn start(
 
     // schedule it
     // interval is in minutes, so we multiply by 60 seconds
-    user_data.enque(guild_id, album, provider, interval * 60, None).await?;
+    user_data
+        .enque(guild_id, album, provider, interval * 60, None)
+        .await?;
 
     Ok(())
 }
@@ -97,7 +99,6 @@ pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-
 /// Picks a random image from the album every n minutes and sets it as the banner for the guild
 /// with the given id.
 #[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
@@ -108,7 +109,7 @@ pub async fn start_for_guild(ctx: Context<'_>,
     album: String,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
-) -> Result<(), Error> { 
+) -> Result<(), Error> {
     // guild id
     let guild_id = GuildId(guild_id);
 
@@ -138,7 +139,9 @@ pub async fn start_for_guild(ctx: Context<'_>,
 
     // schedule it
     // interval is in minutes, so we multiply by 60 seconds
-    user_data.enque(guild_id, album, provider, interval * 60, None).await?;
+    user_data
+        .enque(guild_id, album, provider, interval * 60, None)
+        .await?;
 
     Ok(())
 }

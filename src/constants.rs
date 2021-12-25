@@ -7,6 +7,5 @@ pub const USER_AGENT: &str = concat!(
 /// Minimum amount of minutes between banner changes
 pub const MINIMUM_INTERVAL: u64 = 15;
 
-
 /// Defaulkt amount of minutes between banner changes
 pub const DEFAULT_INTERVAL: u64 = 30;
