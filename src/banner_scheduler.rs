@@ -132,14 +132,17 @@ pub async fn scheduler(
 
                 info!("Changing banner for {}", guild_id);
 
+                // creating the redis entry just before the banner is set,
+                // because the timestamp must be when we _start_ setting the banner,
+                // not when the command finally returns from discord (which might take a few seconds)
+                let redis_entry = DbEntry::new(guild_id.0, album.to_string(), interval.as_secs(), timestamp_seconds());
+
                 // change the banner
                 if let Err(e) = guild_id.set_random_banner(&ctx.http, user_data.reqw_client(), &images).await {
                     error!("Error: {:?}", e);
                 }
 
                 // insert into redis
-                let redis_entry = DbEntry::new(guild_id.0, album.to_string(), interval.as_secs(), timestamp_seconds());
-
                 let _: Result<(), _> = user_data.redis_client().hmset(redis_key(format!("{}", guild_id.0)), &redis_entry).await;
                 let _: Result<(), _> = user_data.redis_client().sadd(redis_key("known_guilds"), guild_id.0.to_string()).await;
                 info!("updated entry {:?}", redis_entry);
