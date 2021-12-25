@@ -219,22 +219,20 @@ async fn dequeue(
     queue: &mut DelayQueue<QueueItem>,
     guild_id_to_key: &mut HashMap<GuildId, Key>,
 ) -> Result<(), Error> {
-    info!("Stopping schedule for: {}", guild_id);
     if let Some(key) = guild_id_to_key.remove(&guild_id) {
         queue.remove(&key);
     }
 
-    info!("removing entry {:?}", &guild_id.0);
     let _: Result<(), _> = user_data
         .redis_client()
         .del(redis_key(format!("{}", guild_id.0)))
         .await;
 
-    info!("removing guild {:?}", &guild_id.0);
     let _: Result<(), _> = user_data
         .redis_client()
         .srem(redis_key("known_guilds"), guild_id.0.to_string())
         .await;
+    info!("Removed guild {:?}", &guild_id.0);
 
     Ok(())
 }
