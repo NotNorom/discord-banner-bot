@@ -172,7 +172,7 @@ async fn enqueue(
         offset,
     } = enqueue_msg;
     info!(
-        "Starting schedule for: {}, with {}, every {} minutes. Next run at: {}",
+        "Starting schedule for: {}, with {}, every {:>6} seconds. Next run at: {}",
         guild_id,
         album,
         interval,
