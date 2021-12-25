@@ -198,7 +198,7 @@ async fn enqueue(
 
     // now enqueue the new item
     let interval = Duration::from_secs(interval);
-    let offset = interval + Duration::from_secs(offset);
+    let offset = Duration::from_secs(offset);
     let key = queue.insert(
         QueueItem::new(guild_id, album.clone(), provider, interval),
         offset,
