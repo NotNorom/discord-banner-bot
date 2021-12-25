@@ -8,6 +8,7 @@ mod guild_id_ext;
 mod user_data;
 mod utils;
 
+use commands::help::help;
 use poise::{
     serenity_prelude::{json::Value, GatewayIntents, UserId},
     FrameworkOptions, PrefixFrameworkOptions,
@@ -91,6 +92,7 @@ async fn main() -> Result<(), Error> {
 
             ..Default::default()
         })
+        .command(help(), |f| f)
         .command(register(), |f| f)
         .command(register_globally(), |f| f)
         .command(unregister(), |f| f)

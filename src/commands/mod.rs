@@ -1,3 +1,5 @@
+pub mod help;
+
 use std::convert::TryFrom;
 
 use poise::serenity_prelude::GuildId;
