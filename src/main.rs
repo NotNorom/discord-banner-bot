@@ -8,9 +8,8 @@ mod guild_id_ext;
 mod user_data;
 mod utils;
 
-use commands::{help::help, register, register_globally, unregister};
 use poise::{
-    serenity_prelude::{json::Value, GatewayIntents, UserId},
+    serenity_prelude::{GatewayIntents, UserId},
     FrameworkOptions, PrefixFrameworkOptions,
 };
 use tracing::error;
@@ -53,15 +52,15 @@ async fn main() -> Result<(), Error> {
 
             ..Default::default()
         })
-        .command(help(), |f| f)
-        .command(register(), |f| f)
-        .command(register_globally(), |f| f)
-        .command(unregister(), |f| f)
-        .command(commands::start(), |f| f)
-        .command(commands::stop(), |f| f)
-        .command(commands::album(), |f| f)
-        .command(commands::current(), |f| f)
-        .command(commands::start_for_guild(), |f| f)
+        .command(commands::help::help(), |f| f)
+        .command(commands::register(), |f| f)
+        .command(commands::register_globally(), |f| f)
+        .command(commands::unregister(), |f| f)
+        .command(commands::banner::start(), |f| f)
+        .command(commands::banner::stop(), |f| f)
+        .command(commands::banner::album(), |f| f)
+        .command(commands::banner::current(), |f| f)
+        .command(commands::banner::start_for_guild(), |f| f)
         .run()
         .await;
 
