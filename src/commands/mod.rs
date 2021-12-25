@@ -19,7 +19,7 @@ pub async fn start(
     interval: Option<u64>,
 ) -> Result<(), Error> {
     // guild id
-    let guild_id = ctx.guild_id().ok_or("No guild id available")?;
+    let guild_id = ctx.guild_id().ok_or("Command must be run in server")?;
 
     // interval
     let interval = interval.unwrap_or(DEFAULT_INTERVAL);
@@ -57,7 +57,7 @@ pub async fn start(
 /// Stops picking random images
 #[poise::command(prefix_command, slash_command)]
 pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
-    let guild_id = ctx.guild_id().ok_or("No guild id available")?;
+    let guild_id = ctx.guild_id().ok_or("Command must be run in server")?;
 
     // answer the user
     poise::send_reply(ctx, |f| {
@@ -83,7 +83,7 @@ pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
 /// Link to the current image
 #[poise::command(prefix_command, slash_command)]
 pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
-    let guild_id = ctx.guild_id().ok_or("No guild id available")?;
+    let guild_id = ctx.guild_id().ok_or("Command must be run in server")?;
 
     let guild = guild_id.to_partial_guild(&ctx.discord().http).await?;
     let banner = guild.banner_url().ok_or("Guild has no banner")?;
