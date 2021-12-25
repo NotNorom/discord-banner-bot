@@ -171,8 +171,11 @@ async fn enqueue(
         offset,
     } = enqueue_msg;
     info!(
-        "Starting schedule for: {}, with {}, every {} minutes",
-        guild_id, album, interval
+        "Starting schedule for: {}, with {}, every {} minutes. Next run at: {}",
+        guild_id,
+        album,
+        interval,
+        timestamp_seconds() + offset
     );
 
     // if we have a timer, cancel it
@@ -194,8 +197,7 @@ async fn enqueue(
     }
 
     // now enqueue the new item
-    // interval is in minutes, so we multiply by 60 seconds
-    let interval = Duration::from_secs(interval * 60);
+    let interval = Duration::from_secs(interval);
     let offset = interval + Duration::from_secs(offset);
     let key = queue.insert(
         QueueItem::new(guild_id, album.clone(), provider, interval),
@@ -227,7 +229,7 @@ async fn enqueue(
 }
 
 async fn dequeue(
-    ctx: Arc<poise::serenity_prelude::Context>,
+    _ctx: Arc<poise::serenity_prelude::Context>,
     user_data: Data,
     guild_id: GuildId,
     queue: &mut DelayQueue<QueueItem>,

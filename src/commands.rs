@@ -46,7 +46,8 @@ pub async fn start(
     let user_data = ctx.data();
 
     // schedule it
-    user_data.enque(guild_id, album, provider, interval, None).await?;
+    // interval is in minutes, so we multiply by 60 seconds
+    user_data.enque(guild_id, album, provider, interval * 60, None).await?;
 
     Ok(())
 }
@@ -136,7 +137,8 @@ pub async fn start_for_guild(ctx: Context<'_>,
     let user_data = ctx.data();
 
     // schedule it
-    user_data.enque(guild_id, album, provider, interval, None).await?;
+    // interval is in minutes, so we multiply by 60 seconds
+    user_data.enque(guild_id, album, provider, interval * 60, None).await?;
 
     Ok(())
 }

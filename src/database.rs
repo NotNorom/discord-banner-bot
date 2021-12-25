@@ -1,6 +1,6 @@
 //! here be database stuff
 
-use fred::prelude::*;
+use fred::{error::RedisErrorKind, prelude::*};
 
 #[derive(Clone, Debug)]
 pub struct DbEntry {
@@ -66,9 +66,39 @@ impl From<DbEntry> for RedisMap {
     }
 }
 
-impl From<RedisMap> for DbEntry {
-    fn from(_: RedisMap) -> Self {
-        todo!()
+impl RedisResponse for DbEntry {
+    fn from_value(value: RedisValue) -> Result<Self, RedisError> {
+        use RedisErrorKind::{NotFound, Unknown};
+
+        let value = value.into_map()?;
+
+        let guild_id = value
+            .get("guild_id")
+            .ok_or(RedisError::new(NotFound, "guild_id"))?
+            .as_u64()
+            .ok_or(RedisError::new(Unknown, "guild_id is not u64"))?;
+        let album = value
+            .get("album")
+            .ok_or(RedisError::new(NotFound, "album"))?
+            .as_string()
+            .ok_or(RedisError::new(Unknown, "album is not string"))?;
+        let interval = value
+            .get("interval")
+            .ok_or(RedisError::new(NotFound, "interval"))?
+            .as_u64()
+            .ok_or(RedisError::new(Unknown, "album is not u64"))?;
+        let last_run = value
+            .get("last_run")
+            .ok_or(RedisError::new(NotFound, "last_run"))?
+            .as_u64()
+            .ok_or(RedisError::new(Unknown, "album is not u64"))?;
+
+        Ok(Self {
+            guild_id,
+            album,
+            interval,
+            last_run,
+        })
     }
 }
 

@@ -8,14 +8,15 @@ use poise::{
 use reqwest::Client;
 use tokio::sync::mpsc::{self, Sender};
 
-use tracing::info;
+use tracing::{error, info};
 use url::Url;
 
 use crate::{
     album_provider::ProviderKind,
     banner_scheduler::{scheduler, ScheduleMessage},
     constants::USER_AGENT,
-    database::{self, key},
+    database::{self, key, DbEntry},
+    utils::timestamp_seconds,
     Data, Error,
 };
 
@@ -41,7 +42,7 @@ impl UserData {
         album: Url,
         provider: ProviderKind,
         interval: u64,
-        offset: Option<u64>
+        offset: Option<u64>,
     ) -> Result<(), mpsc::error::SendError<ScheduleMessage>> {
         let message = ScheduleMessage::new_enqueue(guild_id, album, provider, interval, offset);
         self.scheduler.send(message).await
@@ -89,24 +90,58 @@ pub async fn setup_user_data(
     let redis_client = database::setup().await?;
     let imgur_client_id = dotenv::var("IMGUR_CLIENT_ID").expect("No imgur client id");
 
-    // ask for existing guild ids
-    {
-        let known_guild_ids: Vec<u64> = redis_client.smembers(key("known_guilds")).await?;
-        info!("Look at all these IDs: {:?}", known_guild_ids);
-
-        for id in known_guild_ids {
-            // @todo: enque existing entries
-            let entry = redis_client.hgetall(key(format!(":{}", id))).await?;
-            info!("{:?}", entry);
-        }
-    }
-
     let user_data = UserData {
         scheduler: tx,
         reqw_client,
         redis_client,
         imgur_client_id,
     };
+
+    // ask for existing guild ids
+    {
+        let known_guild_ids: Vec<u64> = user_data.redis_client().smembers(key("known_guilds")).await?;
+        info!("Look at all these IDs: {:?}", known_guild_ids);
+
+        for id in known_guild_ids {
+            // @todo: enque existing entries
+            match user_data
+                .redis_client()
+                .hgetall::<DbEntry, _>(key(format!("{}", id)))
+                .await
+            {
+                Ok(entry) => {
+                    let album = Url::parse(entry.album()).expect("has already been parsed before");
+                    let provider = ProviderKind::try_from(&album).expect("it's been in the db already");
+
+                    let interval = entry.interval();
+                    let last_run = entry.last_run();
+                    let current_time = timestamp_seconds();
+                    let offset = (current_time - last_run) % interval;
+
+                    info!("{:?}", entry);
+                    info!(
+                        "guild_id: {}, interval: {}, last_run: {}, current_time: {}, offset: {}",
+                        entry.guild_id(),
+                        interval,
+                        last_run,
+                        current_time,
+                        offset
+                    );
+
+                    let _ = user_data
+                        .enque(
+                            GuildId(entry.guild_id()),
+                            album,
+                            provider,
+                            entry.interval(),
+                            Some(offset),
+                        )
+                        .await;
+                }
+                Err(e) => error!("{:?}", e),
+            }
+        }
+    }
 
     info!("Spawning scheduler task");
     // Spawn the scheduler in a separate task so it can concurrently
