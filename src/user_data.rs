@@ -116,7 +116,7 @@ pub async fn setup_user_data(
                     let interval = entry.interval();
                     let last_run = entry.last_run();
                     let current_time = timestamp_seconds();
-                    let offset = (current_time - last_run) % interval;
+                    let offset = interval - (current_time - last_run) % interval;
 
                     info!("{:?}", entry);
                     info!(
