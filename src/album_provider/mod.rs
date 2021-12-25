@@ -8,20 +8,20 @@ use crate::Error;
 
 #[non_exhaustive]
 #[derive(Debug, Clone)]
-pub enum ProviderKind {
+pub enum Provider {
     /// Provider for an Imgur album like "https://imgur.com/a/YM1yHhx"
     Imgur { client_id: String },
 }
 
-impl ProviderKind {
+impl Provider {
     pub async fn images(&self, reqw_client: &Client, album: &Url) -> Result<Vec<Url>, Error> {
         match self {
-            ProviderKind::Imgur { client_id } => self.images_imgur(client_id, reqw_client, album).await,
+            Provider::Imgur { client_id } => self.images_imgur(client_id, reqw_client, album).await,
         }
     }
 }
 
-impl TryFrom<&Url> for ProviderKind {
+impl TryFrom<&Url> for Provider {
     type Error = Error;
     fn try_from(url: &Url) -> Result<Self, Self::Error> {
         let domain = url.domain().ok_or("Must be domain, not IP address")?;

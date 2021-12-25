@@ -12,7 +12,7 @@ use tracing::{error, info};
 use url::Url;
 
 use crate::{
-    album_provider::ProviderKind,
+    album_provider::Provider,
     banner_scheduler::{scheduler, ScheduleMessage},
     constants::USER_AGENT,
     database::{self, key, DbEntry},
@@ -40,7 +40,7 @@ impl UserData {
         &self,
         guild_id: GuildId,
         album: Url,
-        provider: ProviderKind,
+        provider: Provider,
         interval: u64,
         offset: Option<u64>,
     ) -> Result<(), mpsc::error::SendError<ScheduleMessage>> {
@@ -111,7 +111,7 @@ pub async fn setup_user_data(
             {
                 Ok(entry) => {
                     let album = Url::parse(entry.album()).expect("has already been parsed before");
-                    let provider = ProviderKind::try_from(&album).expect("it's been in the db already");
+                    let provider = Provider::try_from(&album).expect("it's been in the db already");
 
                     let interval = entry.interval();
                     let last_run = entry.last_run();

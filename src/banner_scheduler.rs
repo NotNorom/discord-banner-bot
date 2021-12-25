@@ -8,7 +8,7 @@ use tokio_util::time::{delay_queue::Key, DelayQueue};
 use tracing::{error, info};
 
 use crate::{
-    album_provider::ProviderKind,
+    album_provider::Provider,
     database::{key as redis_key, DbEntry},
     guild_id_ext::RandomBanner,
     utils::timestamp_seconds,
@@ -20,7 +20,7 @@ pub struct ScheduleMessageEnqueue {
     guild_id: GuildId,
     album: Url,
     interval: u64,
-    provider: ProviderKind,
+    provider: Provider,
     offset: u64,
 }
 
@@ -36,7 +36,7 @@ impl ScheduleMessage {
     pub fn new_enqueue(
         guild_id: GuildId,
         album: Url,
-        provider: ProviderKind,
+        provider: Provider,
         interval: u64,
         offset: Option<u64>,
     ) -> Self {
@@ -58,13 +58,13 @@ impl ScheduleMessage {
 pub struct QueueItem {
     guild_id: GuildId,
     album: Url,
-    provider: ProviderKind,
+    provider: Provider,
     interval: Duration,
 }
 
 impl QueueItem {
     /// Creates a new QueueItem
-    pub fn new(guild_id: GuildId, album: Url, provider: ProviderKind, interval: Duration) -> Self {
+    pub fn new(guild_id: GuildId, album: Url, provider: Provider, interval: Duration) -> Self {
         Self {
             guild_id,
             album,
@@ -89,7 +89,7 @@ impl QueueItem {
     }
 
     /// Get a reference to the queue item's provider.
-    pub fn provider(&self) -> &ProviderKind {
+    pub fn provider(&self) -> &Provider {
         &self.provider
     }
 }

@@ -4,7 +4,7 @@ use poise::serenity_prelude::GuildId;
 use url::Url;
 
 use crate::{
-    album_provider::ProviderKind,
+    album_provider::Provider,
     constants::{DEFAULT_INTERVAL, MINIMUM_INTERVAL},
     Context, Error,
 };
@@ -30,7 +30,7 @@ pub async fn start(
     // album url
     let album = album.parse::<Url>()?;
 
-    let provider = ProviderKind::try_from(&album)?;
+    let provider = Provider::try_from(&album)?;
 
     // answer the user
     poise::send_reply(ctx, |f| {
@@ -122,7 +122,7 @@ pub async fn start_for_guild(ctx: Context<'_>,
     // album url
     let album = album.parse::<Url>()?;
 
-    let provider = ProviderKind::try_from(&album)?;
+    let provider = Provider::try_from(&album)?;
 
     // answer the user
     poise::send_reply(ctx, |f| {

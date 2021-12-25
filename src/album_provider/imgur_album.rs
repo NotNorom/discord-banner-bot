@@ -5,9 +5,9 @@ use reqwest::{Client, Method, Url};
 
 use crate::Error;
 
-use super::ProviderKind;
+use super::Provider;
 
-impl ProviderKind {
+impl Provider {
     pub(super) async fn images_imgur(
         &self,
         client_id: &str,
