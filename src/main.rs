@@ -8,7 +8,7 @@ mod guild_id_ext;
 mod user_data;
 mod utils;
 
-use commands::help::help;
+use commands::{help::help, register, register_globally, unregister};
 use poise::{
     serenity_prelude::{json::Value, GatewayIntents, UserId},
     FrameworkOptions, PrefixFrameworkOptions,
@@ -21,45 +21,6 @@ use crate::user_data::setup_user_data;
 type Data = UserData;
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
-
-/// Register application commands in this guild
-#[poise::command(prefix_command)]
-async fn register(ctx: Context<'_>) -> Result<(), Error> {
-    poise::samples::register_application_commands(ctx, false).await?;
-    Ok(())
-}
-
-/// Register application commands globally
-#[poise::command(prefix_command, owners_only)]
-async fn register_globally(ctx: Context<'_>) -> Result<(), Error> {
-    poise::samples::register_application_commands(ctx, true).await?;
-    Ok(())
-}
-
-/// Unregister application commands in this guild
-#[poise::command(prefix_command)]
-async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
-    let guild = match ctx.guild() {
-        Some(x) => x,
-        None => {
-            ctx.say("Must be called in guild").await?;
-            return Ok(());
-        }
-    };
-    let is_guild_owner = ctx.author().id == guild.owner_id;
-
-    if !is_guild_owner {
-        ctx.say("Can only be used by server owner").await?;
-        return Ok(());
-    }
-
-    ctx.say("Deleting all commands...").await?;
-    ctx.discord()
-        .http
-        .create_guild_application_commands(guild.id.0, &Value::Array(vec![]))
-        .await?;
-    Ok(())
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
