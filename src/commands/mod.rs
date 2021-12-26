@@ -6,21 +6,21 @@ use poise::serenity_prelude::json::Value;
 use crate::{Context, Error};
 
 /// Register application commands in this guild
-#[poise::command(prefix_command)]
+#[poise::command(prefix_command, hide_in_help)]
 pub async fn register(ctx: Context<'_>) -> Result<(), Error> {
     poise::samples::register_application_commands(ctx, false).await?;
     Ok(())
 }
 
 /// Register application commands globally
-#[poise::command(prefix_command, owners_only)]
+#[poise::command(prefix_command, hide_in_help, owners_only)]
 pub async fn register_globally(ctx: Context<'_>) -> Result<(), Error> {
     poise::samples::register_application_commands(ctx, true).await?;
     Ok(())
 }
 
 /// Unregister application commands in this guild
-#[poise::command(prefix_command)]
+#[poise::command(prefix_command, hide_in_help)]
 pub async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
     let guild = match ctx.guild() {
         Some(x) => x,
