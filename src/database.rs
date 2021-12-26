@@ -80,24 +80,24 @@ impl RedisResponse for DbEntry {
 
         let guild_id = value
             .get("guild_id")
-            .ok_or(RedisError::new(NotFound, "guild_id"))?
+            .ok_or_else(|| RedisError::new(NotFound, "guild_id"))?
             .as_u64()
-            .ok_or(RedisError::new(Unknown, "guild_id is not u64"))?;
+            .ok_or_else(|| RedisError::new(Unknown, "guild_id is not u64"))?;
         let album = value
             .get("album")
-            .ok_or(RedisError::new(NotFound, "album"))?
+            .ok_or_else(|| RedisError::new(NotFound, "album"))?
             .as_string()
-            .ok_or(RedisError::new(Unknown, "album is not string"))?;
+            .ok_or_else(|| RedisError::new(Unknown, "album is not string"))?;
         let interval = value
             .get("interval")
-            .ok_or(RedisError::new(NotFound, "interval"))?
+            .ok_or_else(|| RedisError::new(NotFound, "interval"))?
             .as_u64()
-            .ok_or(RedisError::new(Unknown, "album is not u64"))?;
+            .ok_or_else(|| RedisError::new(Unknown, "album is not u64"))?;
         let last_run = value
             .get("last_run")
-            .ok_or(RedisError::new(NotFound, "last_run"))?
+            .ok_or_else(|| RedisError::new(NotFound, "last_run"))?
             .as_u64()
-            .ok_or(RedisError::new(Unknown, "album is not u64"))?;
+            .ok_or_else(|| RedisError::new(Unknown, "album is not u64"))?;
 
         Ok(Self {
             guild_id,
