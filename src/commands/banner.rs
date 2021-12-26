@@ -4,7 +4,11 @@ use reqwest::Url;
 use crate::{album_provider::Provider, constants::{MINIMUM_INTERVAL, DEFAULT_INTERVAL}, Context, Error};
 
 /// Picks a random image from the album every n minutes and sets it as the banner.
-#[poise::command(prefix_command, slash_command)]
+#[poise::command(
+    prefix_command,
+    slash_command,
+    required_permissions = "MANAGE_GUILD"
+)]
 pub async fn start(
     ctx: Context<'_>,
     #[description = "Imgur album"]
@@ -49,7 +53,11 @@ pub async fn start(
 }
 
 /// Stops picking random images
-#[poise::command(prefix_command, slash_command)]
+#[poise::command(
+    prefix_command,
+    slash_command,
+    required_permissions = "MANAGE_GUILD"
+)]
 pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or("Command must be run in server")?;
 
@@ -93,8 +101,7 @@ pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-/// Picks a random image from the album every n minutes and sets it as the banner for the guild
-/// with the given id.
+/// Picks a random image from the album every n minutes and sets it as the banner for that server.
 #[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
 pub async fn start_for_guild(ctx: Context<'_>,
     #[description = "Guild ID"]
