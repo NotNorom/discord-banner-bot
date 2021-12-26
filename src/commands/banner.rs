@@ -1,7 +1,7 @@
 use poise::serenity_prelude::GuildId;
 use reqwest::Url;
 
-use crate::{album_provider::Provider, constants::{MINIMUM_INTERVAL, DEFAULT_INTERVAL}, Context, Error};
+use crate::{album_provider::Provider, constants::{MINIMUM_INTERVAL, DEFAULT_INTERVAL, MAXIMUM_INTERVAL}, Context, Error};
 
 /// Picks a random image from the album every n minutes and sets it as the banner.
 #[poise::command(
@@ -23,6 +23,10 @@ pub async fn start(
     let interval = interval.unwrap_or(DEFAULT_INTERVAL);
     if interval < MINIMUM_INTERVAL {
         return Err(format!("Interval must be at least {} minutes", MINIMUM_INTERVAL).into());
+    }
+
+    if interval > MAXIMUM_INTERVAL {
+        return Err(format!("Interval must be at most {} minutes", MAXIMUM_INTERVAL).into());
     }
 
     // album url
@@ -118,6 +122,10 @@ pub async fn start_for_guild(ctx: Context<'_>,
     let interval = interval.unwrap_or(DEFAULT_INTERVAL);
     if interval < MINIMUM_INTERVAL {
         return Err("Interval must be at least 15 minutes".into());
+    }
+
+    if interval > MAXIMUM_INTERVAL {
+        return Err(format!("Interval must be at most {} minutes", MAXIMUM_INTERVAL).into());
     }
 
     // album url

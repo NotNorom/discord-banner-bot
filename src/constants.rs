@@ -9,3 +9,6 @@ pub const MINIMUM_INTERVAL: u64 = 15;
 
 /// Defaulkt amount of minutes between banner changes
 pub const DEFAULT_INTERVAL: u64 = 30;
+
+/// Maximum amount of minutes between banner changes
+pub const MAXIMUM_INTERVAL: u64 = 2880; // 48h
