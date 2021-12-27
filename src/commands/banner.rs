@@ -81,7 +81,10 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
 /// Tells you the album that is being used right now
 #[poise::command(prefix_command, slash_command)]
 pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
-    poise::say_reply(ctx, "This command is work in progress").await?;
+    poise::send_reply(ctx, |f| {
+        f.content("This command is work in progress").ephemeral(true)
+    })
+    .await?;
 
     Ok(())
 }
