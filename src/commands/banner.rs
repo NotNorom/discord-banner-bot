@@ -1,14 +1,14 @@
 use poise::serenity_prelude::GuildId;
 use reqwest::Url;
 
-use crate::{album_provider::Provider, constants::{MINIMUM_INTERVAL, DEFAULT_INTERVAL, MAXIMUM_INTERVAL}, Context, Error};
+use crate::{
+    album_provider::Provider,
+    constants::{DEFAULT_INTERVAL, MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
+    Context, Error,
+};
 
 /// Picks a random image from the album every n minutes and sets it as the banner.
-#[poise::command(
-    prefix_command,
-    slash_command,
-    required_permissions = "MANAGE_GUILD"
-)]
+#[poise::command(prefix_command, slash_command, required_permissions = "MANAGE_GUILD")]
 pub async fn start(
     ctx: Context<'_>,
     #[description = "Imgur album"]
@@ -57,11 +57,7 @@ pub async fn start(
 }
 
 /// Stops picking random images
-#[poise::command(
-    prefix_command,
-    slash_command,
-    required_permissions = "MANAGE_GUILD"
-)]
+#[poise::command(prefix_command, slash_command, required_permissions = "MANAGE_GUILD")]
 pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or("Command must be run in server")?;
 
