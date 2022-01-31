@@ -1,6 +1,6 @@
 # Discord Banner Bot
 
-Invite the bot using this link: [invite](https://discord.com/api/oauth2/authorize?client_id=586680217049759744&permissions=274877910112&scope=bot).
+Invite the bot using this link: [invite](https://discord.com/api/oauth2/authorize?client_id=586680217049759744&permissions=274877910112&scope=applications.commands%20bot).
 
 This bot will change the banner of a discord server every few minutes.
 Minimum is 15 minutes.
