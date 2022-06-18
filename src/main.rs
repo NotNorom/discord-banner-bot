@@ -12,8 +12,8 @@ use poise::{
     serenity_prelude::{GatewayIntents, UserId},
     FrameworkOptions, PrefixFrameworkOptions,
 };
-use tracing::error;
 use startup::UserData;
+use tracing::error;
 
 use crate::startup::setup_user_data;
 
@@ -42,25 +42,33 @@ async fn main() -> Result<(), Error> {
         .user_data_setup(move |ctx, ready, framework| Box::pin(setup_user_data(ctx, ready, framework)))
         .client_settings(|serenity_builder| serenity_builder.intents(GatewayIntents::non_privileged()))
         .options(FrameworkOptions {
-            on_error: |err, ctx| Box::pin(crate::error::on_error(err, ctx)),
+            on_error: |err| {
+                Box::pin(async move {
+                    if let Err(e) = crate::error::on_error(err).await {
+                        error!("{e:?}");
+                    };
+                })
+            },
             owners,
             prefix_options: PrefixFrameworkOptions {
                 prefix: Some(prefix),
 
                 ..Default::default()
             },
+            commands: vec![
+                commands::help::help(),
+                commands::register(),
+                commands::register_globally(),
+                commands::unregister(),
+                commands::banner::start(),
+                commands::banner::stop(),
+                commands::banner::album(),
+                commands::banner::current(),
+                commands::banner::start_for_guild(),
+            ],
 
             ..Default::default()
         })
-        .command(commands::help::help(), |f| f)
-        .command(commands::register(), |f| f)
-        .command(commands::register_globally(), |f| f)
-        .command(commands::unregister(), |f| f)
-        .command(commands::banner::start(), |f| f)
-        .command(commands::banner::stop(), |f| f)
-        .command(commands::banner::album(), |f| f)
-        .command(commands::banner::current(), |f| f)
-        .command(commands::banner::start_for_guild(), |f| f)
         .run()
         .await;
 

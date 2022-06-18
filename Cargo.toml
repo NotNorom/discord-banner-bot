@@ -23,8 +23,7 @@ version = "0.1"
 version = "0.15"
 
 [dependencies.poise]
-git = "https://github.com/kangalioo/poise"
-branch = "master"
+version = "0.2"
 features = ["collector"]
 
 [dependencies.env_logger]
