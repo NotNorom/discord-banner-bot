@@ -111,7 +111,7 @@ pub async fn scheduler(
         // or enqueue/ dequeue an item from the queue
         select!(
             // If a guild is ready to have their banner changed
-            Some(Ok(item)) = queue.next() => {
+            Some(item) = queue.next() => {
                 let inner = item.into_inner();
                 let mut guild_id = inner.guild_id();
                 let interval = inner.interval();
