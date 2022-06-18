@@ -1,6 +1,12 @@
 //! here be database stuff
 
-use fred::{error::RedisErrorKind, prelude::*};
+use std::collections::HashMap;
+
+use fred::{
+    error::RedisErrorKind,
+    prelude::*,
+    types::{RedisKey, RedisMap},
+};
 
 #[derive(Clone, Debug)]
 pub struct DbEntry {
@@ -53,48 +59,40 @@ impl From<DbEntry> for RedisMap {
 
 impl From<&DbEntry> for RedisMap {
     fn from(entry: &DbEntry) -> Self {
-        let mut map = RedisMap::new();
-        map.insert(
-            "guild_id".to_string(),
-            RedisValue::String(entry.guild_id.to_string()),
-        );
-        map.insert("album".to_string(), RedisValue::String(entry.album.to_owned()));
-        map.insert(
-            "interval".to_string(),
-            RedisValue::String(entry.interval.to_string()),
-        );
-        map.insert(
-            "last_run".to_string(),
-            RedisValue::String(entry.last_run.to_string()),
-        );
+        let mut map = HashMap::with_capacity(4);
+        map.insert("guild_id", entry.guild_id.to_string());
+        map.insert("album", entry.album.to_owned());
+        map.insert("interval", entry.interval.to_string());
+        map.insert("last_run", entry.last_run.to_string());
 
-        map
+        // this cannot fail
+        RedisMap::try_from(map).unwrap()
     }
 }
 
-impl RedisResponse for DbEntry {
+impl FromRedis for DbEntry {
     fn from_value(value: RedisValue) -> Result<Self, RedisError> {
         use RedisErrorKind::{NotFound, Unknown};
 
         let value = value.into_map()?;
 
         let guild_id = value
-            .get("guild_id")
+            .get(&RedisKey::from_static_str("guild_id"))
             .ok_or_else(|| RedisError::new(NotFound, "guild_id"))?
             .as_u64()
             .ok_or_else(|| RedisError::new(Unknown, "guild_id is not u64"))?;
         let album = value
-            .get("album")
+            .get(&RedisKey::from_static_str("album"))
             .ok_or_else(|| RedisError::new(NotFound, "album"))?
             .as_string()
             .ok_or_else(|| RedisError::new(Unknown, "album is not string"))?;
         let interval = value
-            .get("interval")
+            .get(&RedisKey::from_static_str("interval"))
             .ok_or_else(|| RedisError::new(NotFound, "interval"))?
             .as_u64()
             .ok_or_else(|| RedisError::new(Unknown, "album is not u64"))?;
         let last_run = value
-            .get("last_run")
+            .get(&RedisKey::from_static_str("last_run"))
             .ok_or_else(|| RedisError::new(NotFound, "last_run"))?
             .as_u64()
             .ok_or_else(|| RedisError::new(Unknown, "album is not u64"))?;

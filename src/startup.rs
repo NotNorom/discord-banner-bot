@@ -1,6 +1,9 @@
 use std::{sync::Arc, time::Duration};
 
-use fred::client::RedisClient;
+use fred::{
+    clients::RedisClient,
+    interfaces::{HashesInterface, SetsInterface},
+};
 use poise::{
     serenity_prelude::{self, GuildId},
     Framework,

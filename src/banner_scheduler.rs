@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
+use fred::interfaces::{HashesInterface, KeysInterface, SetsInterface};
 use poise::serenity_prelude::GuildId;
 use reqwest::Url;
 use tokio::{select, sync::mpsc::Receiver};

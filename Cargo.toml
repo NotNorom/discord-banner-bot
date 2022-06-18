@@ -49,4 +49,4 @@ version = "0.1"
 version = "0.3"
 
 [dependencies.fred]
-version = "4.3"
+version = "5.1"
