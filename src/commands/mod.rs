@@ -29,10 +29,15 @@ pub async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
             return Ok(());
         }
     };
-    let is_guild_owner = ctx.author().id == guild.owner_id;
 
-    if !is_guild_owner {
-        ctx.say("Can only be used by server owner").await?;
+    let is_allowed = {
+        let is_guild_owner = ctx.author().id == guild.owner_id;
+        let is_bot_owner = ctx.framework().options().owners.contains(&ctx.author().id);
+        is_guild_owner || is_bot_owner
+    };
+
+    if !is_allowed {
+        ctx.say("Can only be used by server owner or bot owners").await?;
         return Ok(());
     }
 
