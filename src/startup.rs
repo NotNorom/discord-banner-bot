@@ -19,7 +19,7 @@ use crate::{
     banner_scheduler::{scheduler, ScheduleMessage},
     constants::USER_AGENT,
     database::{self, key, DbEntry},
-    utils::timestamp_seconds,
+    utils::current_unix_timestamp,
     Data, Error,
 };
 
@@ -118,7 +118,7 @@ pub async fn setup_user_data(
 
                     let interval = entry.interval();
                     let last_run = entry.last_run();
-                    let current_time = timestamp_seconds();
+                    let current_time = current_unix_timestamp();
                     let offset = interval - (current_time - last_run) % interval;
 
                     info!("{:?}", entry);

@@ -12,7 +12,7 @@ use crate::{
     album_provider::Provider,
     database::{key as redis_key, DbEntry},
     guild_id_ext::RandomBanner,
-    utils::timestamp_seconds,
+    utils::current_unix_timestamp,
     Data, Error,
 };
 
@@ -141,7 +141,7 @@ pub async fn scheduler(
                 // creating the redis entry just before the banner is set,
                 // because the timestamp must be when we _start_ setting the banner,
                 // not when the command finally returns from discord (which might take a few seconds)
-                let redis_entry = DbEntry::new(guild_id.0, album.to_string(), interval.as_secs(), timestamp_seconds());
+                let redis_entry = DbEntry::new(guild_id.0, album.to_string(), interval.as_secs(), current_unix_timestamp());
 
                 // change the banner
                 if let Err(e) = guild_id.set_random_banner(&ctx.http, user_data.reqw_client(), &images).await {
@@ -192,7 +192,7 @@ async fn enqueue(
         guild_id,
         album,
         interval,
-        timestamp_seconds() + offset
+        current_unix_timestamp() + offset
     );
 
     // if we have a timer, cancel it
