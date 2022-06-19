@@ -210,7 +210,10 @@ async fn enqueue(
         .set_random_banner(&ctx.http, user_data.reqw_client(), &images)
         .await
     {
-        error!("Error: {:?}", e);
+        // If we can not change the banner now, we might not be able to change it
+        // in future iterations. That's why we return and don't enqueue
+        error!("Error setting a banner on the first time: {:?}", e);
+        return Err(e);
     }
 
     // now enqueue the new item
