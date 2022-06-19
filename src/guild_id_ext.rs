@@ -1,3 +1,6 @@
+//! This module is for extending the [GuildId](GuildId) struct
+//! with functions for setting the banner from an URL.
+
 use poise::{
     async_trait,
     serenity_prelude::{GuildId, Http},
@@ -10,6 +13,8 @@ use crate::Error;
 
 #[async_trait]
 pub(crate) trait RandomBanner {
+    /// Given a slice of [Url](Url), pick a random entry
+    /// and try and set it as the guild banner
     async fn set_random_banner(
         &mut self,
         http: impl AsRef<Http> + Sync + Send + 'async_trait,
@@ -23,7 +28,7 @@ pub(crate) trait RandomBanner {
         self.set_banner_from_url(http, reqw_client, url).await
     }
 
-    /// Given a url to an image, set the guild banner
+    /// Given an [Url](Url) to an image, set the guild banner
     /// This will download the image into memory,
     /// convert the bytes to base64 and then send it to discord
     async fn set_banner_from_url(

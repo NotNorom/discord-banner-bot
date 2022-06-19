@@ -95,6 +95,11 @@ impl QueueItem {
     }
 }
 
+
+/// Start the scheduler task
+/// 
+/// This function handles enqueue and dequeue commands.
+/// This needs to be run in a separate tokio task using e.g. [tokio::task::spawn]
 pub async fn scheduler(
     ctx: Arc<poise::serenity_prelude::Context>,
     mut rx: Receiver<ScheduleMessage>,
@@ -161,6 +166,13 @@ pub async fn scheduler(
     }
 }
 
+/// Add a guild to be scheduled for banner changes.
+///
+/// If a guild is already scheduled, the old schedule will be
+/// removed and a new one will be created.
+/// The banner will be changed once before a schedule is a created.
+/// If the banner can not changed, no new schedule will be created,
+/// this means that no schedule will be running.
 async fn enqueue(
     ctx: Arc<poise::serenity_prelude::Context>,
     user_data: Data,
@@ -213,6 +225,8 @@ async fn enqueue(
     Ok(())
 }
 
+
+/// Remove guild from schedule for banner changes
 async fn dequeue(
     _ctx: Arc<poise::serenity_prelude::Context>,
     user_data: Data,
