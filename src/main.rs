@@ -39,8 +39,8 @@ async fn main() -> Result<(), Error> {
     // set up & start client
     let result = poise::Framework::build()
         .token(&token)
+        .intents(GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT)
         .user_data_setup(move |ctx, ready, framework| Box::pin(setup_user_data(ctx, ready, framework)))
-        .client_settings(|serenity_builder| serenity_builder.intents(GatewayIntents::non_privileged()))
         .options(FrameworkOptions {
             on_error: |err| {
                 Box::pin(async move {
