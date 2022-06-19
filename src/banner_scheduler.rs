@@ -220,6 +220,10 @@ async fn enqueue(
         // If we can not change the banner now, we might not be able to change it
         // in future iterations. That's why we return and don't enqueue
         error!("Error setting a banner on the first time: {:?}", e);
+        let invites = guild_id.invites(&ctx).await;
+        let guild_name = guild_id.name(&ctx);
+
+        warn!("Guild {guild_id} '{guild_name:?}' has been dequeued because of error: {invites:?}");
         return Err(e);
     }
 
