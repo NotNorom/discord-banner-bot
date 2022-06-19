@@ -6,7 +6,7 @@ use reqwest::Url;
 use tokio::{select, sync::mpsc::Receiver};
 use tokio_stream::StreamExt;
 use tokio_util::time::{delay_queue::Key, DelayQueue};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::{
     album_provider::Provider,
@@ -95,9 +95,8 @@ impl QueueItem {
     }
 }
 
-
 /// Start the scheduler task
-/// 
+///
 /// This function handles enqueue and dequeue commands.
 /// This needs to be run in a separate tokio task using e.g. [tokio::task::spawn]
 pub async fn scheduler(
@@ -136,7 +135,7 @@ pub async fn scheduler(
                     },
                 };
 
-                info!("Changing banner for {}", guild_id);
+                info!("Trying to change the banner for {guild_id}");
 
                 // creating the redis entry just before the banner is set,
                 // because the timestamp must be when we _start_ setting the banner,
@@ -145,7 +144,15 @@ pub async fn scheduler(
 
                 // change the banner
                 if let Err(e) = guild_id.set_random_banner(&ctx.http, user_data.reqw_client(), &images).await {
-                    error!("Error: {:?}", e);
+                    error!("Error when changing banner: {:?}", e);
+                    let _ = dequeue(ctx.clone(), user_data.clone(), guild_id, &mut queue, &mut guild_id_to_key).await;
+
+
+                    let invites = guild_id.invites(&ctx).await;
+                    let guild_name = guild_id.name(&ctx);
+
+                    warn!("Guild {guild_id} '{guild_name:?}' has been dequeued because of error: {invites:?}");
+                    return;
                 }
 
                 // insert into redis
@@ -227,7 +234,6 @@ async fn enqueue(
 
     Ok(())
 }
-
 
 /// Remove guild from schedule for banner changes
 async fn dequeue(
