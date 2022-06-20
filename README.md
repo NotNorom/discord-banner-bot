@@ -4,17 +4,19 @@ Invite the bot using this link: [invite](https://discord.com/api/oauth2/authoriz
 
 This bot will change the banner of a discord server every few minutes.
 Minimum is 15 minutes.
-Maximum is currently 2880 minutes.
+Maximum is currently 2880 minutes (48h).
 
 This is a work in progress, please message me if you have any questions:
 - Discord: norom#1972
 - Twitter: [@\_norom\_](https://twitter.com/_norom_)
 - Email: noromoron \[at\] gmail \[dot\] com
 
+
 ## Usage
 Text in \[\] brackets are mandatory arguments.<br>
 Text in \<\> brackets are optional arguments.<br>
 When entering the commands in discord, don't actually type any brackets.
+
 
 ### /start
 `/start [ALBUM] <INTERVAL>`
@@ -34,6 +36,11 @@ Interval range:
 Stop automatic banner changing.
 
 
+### /album
+`/album`
+Shows the album link you are using. In case you forgot :D
+
+
 ### /help
 `/help <COMMAND>`
 Display a help message. If COMMAND is provided, display help about that command. 
@@ -50,8 +57,9 @@ This bot needs these permissions to work:
 - `Send Messages in Threads` for using prefix commands (and error responses)
 - `Add Reactions` for nice visuals :D
 
-Right now only server members with the `Manage Server` permission can use the `/start` and `/stop`commands.
+Right now only server members with the `Manage Server` permission can use the `/start`, `/stop` and `/album` commands.
 This might change in the future.
+
 
 ## Credits
 
