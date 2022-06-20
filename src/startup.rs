@@ -67,6 +67,15 @@ impl UserData {
     pub fn redis_client(&self) -> &RedisClient {
         &self.redis_client
     }
+
+    /// Gets the current album link
+    pub async fn get_album(&self, guild_id: GuildId) -> Result<String, Error> {
+        let db_entry = self
+            .redis_client
+            .hgetall::<DbEntry, _>(key(format!("{}", guild_id.0)))
+            .await?;
+        Ok(db_entry.album().to_string())
+    }
 }
 
 /// Sets up the user data:

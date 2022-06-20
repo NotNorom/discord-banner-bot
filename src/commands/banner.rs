@@ -75,12 +75,14 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 /// Tells you the album that is being used right now
-#[poise::command(prefix_command, slash_command)]
+#[poise::command(prefix_command, slash_command, required_permissions = "MANAGE_GUILD")]
 pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
-    poise::send_reply(ctx, |f| {
-        f.content("This command is work in progress").ephemeral(true)
-    })
-    .await?;
+    let guild_id = ctx.guild_id().ok_or("Command must be run in server")?;
+
+    let user_data = ctx.data();
+    let album = user_data.get_album(guild_id).await?;
+
+    poise::send_reply(ctx, |f| f.content(format!("{album}")).ephemeral(true)).await?;
 
     Ok(())
 }
@@ -106,7 +108,8 @@ pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
 
 /// Picks a random image from the album every n minutes and sets it as the banner for that server.
 #[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
-pub async fn start_for_guild(ctx: Context<'_>,
+pub async fn start_for_guild(
+    ctx: Context<'_>,
     #[description = "Guild ID"]
     guild_id: u64,
     #[description = "Imgur album"]
