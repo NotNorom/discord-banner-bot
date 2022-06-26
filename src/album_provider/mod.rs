@@ -10,7 +10,10 @@ use reqwest::{Client, Url};
 
 mod imgur_album;
 
-use crate::Error;
+use crate::{
+    error::Error::{UnsupportedProvider, UseDomainNotIpAddress},
+    Error,
+};
 
 /// This enum differentiates between different providers
 #[non_exhaustive]
@@ -36,13 +39,13 @@ impl Provider {
 impl TryFrom<&Url> for Provider {
     type Error = Error;
     fn try_from(url: &Url) -> Result<Self, Self::Error> {
-        let domain = url.domain().ok_or("Must be domain, not IP address")?;
+        let domain = url.domain().ok_or(UseDomainNotIpAddress)?;
         match domain {
             "imgur.com" => {
                 let client_id = dotenv::var("IMGUR_CLIENT_ID")?;
                 Ok(Self::Imgur { client_id })
             }
-            _ => Err("Unsupported provider domain".into()),
+            _ => Err(UnsupportedProvider.into()),
         }
     }
 }

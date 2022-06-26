@@ -20,7 +20,7 @@ use crate::{
     constants::USER_AGENT,
     database::{self, key, DbEntry},
     utils::current_unix_timestamp,
-    Data, Error,
+    Data, Error, error::Scheduling,
 };
 
 #[derive(Clone)]
@@ -46,15 +46,15 @@ impl UserData {
         provider: Provider,
         interval: u64,
         offset: Option<u64>,
-    ) -> Result<(), mpsc::error::SendError<ScheduleMessage>> {
+    ) -> Result<(), Scheduling> {
         let message = ScheduleMessage::new_enqueue(guild_id, album, provider, interval, offset);
-        self.scheduler.send(message).await
+        self.scheduler.send(message).await.map_err(|_| Scheduling::Enqueue)
     }
 
     /// Dequeue a guild
-    pub async fn deque(&self, guild_id: GuildId) -> Result<(), mpsc::error::SendError<ScheduleMessage>> {
+    pub async fn deque(&self, guild_id: GuildId) -> Result<(), Scheduling> {
         let message = ScheduleMessage::new_dequeue(guild_id);
-        self.scheduler.send(message).await
+        self.scheduler.send(message).await.map_err(|_| Scheduling::Dequeue)
     }
 
     #[allow(dead_code)]

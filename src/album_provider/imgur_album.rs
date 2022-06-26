@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use anyhow::anyhow;
 use poise::serenity_prelude::json::Value;
 use reqwest::{Client, Method, Url};
 
@@ -14,7 +15,7 @@ impl Provider {
         reqw_client: &Client,
         album: &Url,
     ) -> Result<Vec<Url>, Error> {
-        let album_hash = extract_album_hash(album).ok_or("No album hash found")?;
+        let album_hash = extract_album_hash(album).ok_or(anyhow!("No album hash found"))?;
         let response = reqw_client
             .request(
                 Method::GET,
@@ -27,9 +28,9 @@ impl Provider {
         let json = response.json::<Value>().await?;
         let images: Vec<_> = json
             .get("data")
-            .ok_or("Json has no data field")?
+            .ok_or(anyhow!("Json has no data field"))?
             .as_array()
-            .ok_or("Data field is not an array")?
+            .ok_or(anyhow!("Data field is not an array"))?
             .iter()
             .filter_map(|obj| obj.get("link"))
             .filter_map(|value| value.as_str())

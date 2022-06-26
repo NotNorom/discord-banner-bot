@@ -16,17 +16,19 @@ pub async fn start(
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
 ) -> Result<(), Error> {
+    use crate::error::Command::*;
+
     // guild id
-    let guild_id = ctx.guild_id().ok_or("Command must be run in server")?;
+    let guild_id = ctx.guild_id().ok_or(GuildOnly)?;
 
     // interval
     let interval = interval.unwrap_or(DEFAULT_INTERVAL);
     if interval < MINIMUM_INTERVAL {
-        return Err(format!("Interval must be at least {} minutes", MINIMUM_INTERVAL).into());
+        return Err(BelowMinTimeout.into());
     }
 
     if interval > MAXIMUM_INTERVAL {
-        return Err(format!("Interval must be at most {} minutes", MAXIMUM_INTERVAL).into());
+        return Err(AboveMaxTimeout.into());
     }
 
     // album url
@@ -59,7 +61,8 @@ pub async fn start(
 /// Stops picking random images
 #[poise::command(prefix_command, slash_command, required_permissions = "MANAGE_GUILD")]
 pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
-    let guild_id = ctx.guild_id().ok_or("Command must be run in server")?;
+    use crate::error::Command::*;
+    let guild_id = ctx.guild_id().ok_or(GuildOnly)?;
 
     // answer the user
     poise::send_reply(ctx, |f| {
@@ -77,7 +80,8 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
 /// Tells you the album that is being used right now
 #[poise::command(prefix_command, slash_command, required_permissions = "MANAGE_GUILD")]
 pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
-    let guild_id = ctx.guild_id().ok_or("Command must be run in server")?;
+    use crate::error::Command::*;
+    let guild_id = ctx.guild_id().ok_or(GuildOnly)?;
 
     let user_data = ctx.data();
     let album = user_data.get_album(guild_id).await?;
@@ -90,10 +94,11 @@ pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
 /// Link to the current image
 #[poise::command(prefix_command, slash_command)]
 pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
-    let guild_id = ctx.guild_id().ok_or("Command must be run in server")?;
+    use crate::error::Command::*;
+    let guild_id = ctx.guild_id().ok_or(GuildOnly)?;
 
     let guild = guild_id.to_partial_guild(&ctx.discord().http).await?;
-    let banner = guild.banner_url().ok_or("Guild has no banner")?;
+    let banner = guild.banner_url().ok_or(GuildHasNoBanner)?;
 
     // answer the user
     poise::send_reply(ctx, |f| {
@@ -117,17 +122,19 @@ pub async fn start_for_guild(
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
 ) -> Result<(), Error> {
+    use crate::error::Command::*;
+
     // guild id
     let guild_id = GuildId(guild_id);
 
     // interval
     let interval = interval.unwrap_or(DEFAULT_INTERVAL);
     if interval < MINIMUM_INTERVAL {
-        return Err("Interval must be at least 15 minutes".into());
+        return Err(BelowMinTimeout.into());
     }
 
     if interval > MAXIMUM_INTERVAL {
-        return Err(format!("Interval must be at most {} minutes", MAXIMUM_INTERVAL).into());
+        return Err(AboveMaxTimeout.into());
     }
 
     // album url

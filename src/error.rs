@@ -1,5 +1,51 @@
 use std::process::exit;
 
+use crate::constants::{MAXIMUM_INTERVAL, MINIMUM_INTERVAL};
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("Http")]
+    Http(#[from] reqwest::Error),
+    #[error("Redis")]
+    Redis(#[from] fred::error::RedisError),
+    #[error("Serenity")]
+    Serenity(#[from] poise::serenity::Error),
+    #[error("Url")]
+    Url(#[from] url::ParseError),
+    #[error("Dotenv")]
+    Dotenv(#[from] dotenv::Error),
+    #[error("Scheduling")]
+    Scheduling(#[from] Scheduling),
+    #[error("This provider is not supported")]
+    UnsupportedProvider,
+    #[error("Use a domain, not an ip address")]
+    UseDomainNotIpAddress,
+    #[error(transparent)]
+    Command(#[from] Command),
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum Command {
+    #[error("Command must be run in a server")]
+    GuildOnly,
+    #[error("Interval must be at least {} minutes", MINIMUM_INTERVAL)]
+    BelowMinTimeout,
+    #[error("Interval must be at most {} minutes", MAXIMUM_INTERVAL)]
+    AboveMaxTimeout,
+    #[error("Guild has no banner")]
+    GuildHasNoBanner,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum Scheduling {
+    #[error("Error enqueing")]
+    Enqueue,
+    #[error("Error dequeueing")]
+    Dequeue,
+}
+
 pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
     error: poise::FrameworkError<'_, U, E>,
 ) -> Result<(), poise::serenity::Error> {
