@@ -1,4 +1,39 @@
 use std::process::exit;
+use thiserror::Error;
+
+use crate::banner_scheduler::ScheduleMessage;
+
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error(transparent)]
+    Reqwest(#[from] reqwest::Error),
+
+    #[error(transparent)]
+    Serenity(#[from] poise::serenity::Error),
+
+    #[error(transparent)]
+    Redis(#[from] fred::error::RedisError),
+
+    #[error(transparent)]
+    Dotenv(#[from] dotenv::Error),
+
+    #[error(transparent)]
+    InvalidUrl(#[from] url::ParseError),
+
+    #[error("Scheduluer Error: {msg:?}")]
+    Scheduler {
+        msg: ScheduleMessage,
+    },
+
+    #[error("Unsupported provider: {0}")]
+    UnsupportedProvider(String),
+
+    #[error("Extraction of imgur hash failed: {0}")]
+    ImgurHashExtraction(String),
+
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
+}
 
 pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
     error: poise::FrameworkError<'_, U, E>,

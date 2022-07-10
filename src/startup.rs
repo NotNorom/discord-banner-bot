@@ -46,15 +46,21 @@ impl UserData {
         provider: Provider,
         interval: u64,
         offset: Option<u64>,
-    ) -> Result<(), mpsc::error::SendError<ScheduleMessage>> {
+    ) -> Result<(), Error> {
         let message = ScheduleMessage::new_enqueue(guild_id, album, provider, interval, offset);
-        self.scheduler.send(message).await
+        self.scheduler
+            .send(message)
+            .await
+            .map_err(|err| Error::Scheduler { msg: err.0 })
     }
 
     /// Dequeue a guild
-    pub async fn deque(&self, guild_id: GuildId) -> Result<(), mpsc::error::SendError<ScheduleMessage>> {
+    pub async fn deque(&self, guild_id: GuildId) -> Result<(), Error> {
         let message = ScheduleMessage::new_dequeue(guild_id);
-        self.scheduler.send(message).await
+        self.scheduler
+            .send(message)
+            .await
+            .map_err(|err| Error::Scheduler { msg: err.0 })
     }
 
     #[allow(dead_code)]

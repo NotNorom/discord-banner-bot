@@ -1,12 +1,12 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use fred::interfaces::{HashesInterface, KeysInterface, SetsInterface};
-use poise::serenity_prelude::GuildId;
+use poise::serenity_prelude::{CacheHttp, GuildId, MessageBuilder, UserId};
 use reqwest::Url;
 use tokio::{select, sync::mpsc::Receiver};
 use tokio_stream::StreamExt;
 use tokio_util::time::{delay_queue::Key, DelayQueue};
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 use crate::{
     album_provider::Provider,
@@ -144,15 +144,9 @@ pub async fn scheduler(
 
                 // change the banner
                 if let Err(e) = guild_id.set_random_banner(&ctx.http, user_data.reqw_client(), &images).await {
-                    error!("Error when changing banner: {:?}", e);
-                    let _ = dequeue(ctx.clone(), user_data.clone(), guild_id, &mut queue, &mut guild_id_to_key).await;
-
-
-                    let invites = guild_id.invites(&ctx).await;
-                    let guild_name = guild_id.name(&ctx);
-
-                    warn!("Guild {guild_id} '{guild_name:?}' has been dequeued because of error: {invites:?}");
-                    return;
+                    if let Err(handler_e) =  handle_banner_error(&ctx, guild_id, &e).await {
+                        error!("When handling {:?}, another error occurced {:?}", e, handler_e);
+                    }
                 }
 
                 // insert into redis
@@ -166,7 +160,7 @@ pub async fn scheduler(
                     ScheduleMessage::Enqueue(enqueue_msg) => enqueue(ctx.clone(), user_data.clone(), enqueue_msg, &mut queue, &mut guild_id_to_key, ).await,
                     ScheduleMessage::Dequeue(guild_id) => dequeue(ctx.clone(), user_data.clone(), guild_id, &mut queue, &mut guild_id_to_key).await,
                 } {
-                    error!("{:?}", e);
+                    error!("Error when enqueing/ dequeing: {:?}", e);
                 }
             }
         );
@@ -217,15 +211,9 @@ async fn enqueue(
         .set_random_banner(&ctx.http, user_data.reqw_client(), &images)
         .await
     {
-        // If we can not change the banner now, we might not be able to change it
-        // in future iterations. That's why we return and don't enqueue
-        error!("Error setting a banner on the first time: {:?}", e);
-        let _ = dequeue(ctx.clone(), user_data.clone(), guild_id, queue, guild_id_to_key).await;
-        let invites = guild_id.invites(&ctx).await;
-        let guild_name = guild_id.name(&ctx);
-
-        warn!("Guild {guild_id} '{guild_name:?}' has been dequeued because of error: {invites:?}");
-        return Err(e);
+        if let Err(handler_e) = handle_banner_error(&ctx, guild_id, &e).await {
+            error!("When handling {:?}, another error occurced {:?}", e, handler_e);
+        }
     }
 
     // now enqueue the new item
@@ -263,5 +251,44 @@ async fn dequeue(
         .await;
     info!("Removed guild {:?}", &guild_id.0);
 
+    Ok(())
+}
+
+async fn handle_banner_error(
+    ctx: &Arc<poise::serenity_prelude::Context>,
+    guild_id: GuildId,
+    error: &Error,
+) -> Result<(), Error> {
+    let guild_name = guild_id.name(&ctx).unwrap_or_default();
+    let invites = guild_id
+        .invites(&ctx)
+        .await?
+        .iter()
+        .map(|inv| {
+            format!(
+                "Channel: {} ({:?}), Invite: {} created at {}",
+                inv.channel.name,
+                inv.channel.kind,
+                inv.url(),
+                inv.created_at
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let message = MessageBuilder::new()
+        .push_bold("Error in guild: ")
+        .push_italic_safe(&guild_name)
+        .push_line("")
+        .push_codeblock(error.to_string(), Some("rust"))
+        .push("Invites: ")
+        .push(invites.join(", "))
+        .build();
+
+    // this is a dirty hack and I need a better way of figuring out how to get the bot owner at this point
+    // yes, that is _my_ user id
+    let owner = UserId(160518747713437696).create_dm_channel(ctx.http()).await?;
+    owner.say(ctx.http(), message).await?;
+
+    error!("Error when changing banner: {error:?}\n Guild {guild_id} '{guild_name:?}' has these invites: {invites:?}");
     Ok(())
 }

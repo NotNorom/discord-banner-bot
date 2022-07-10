@@ -1,6 +1,7 @@
 //! This module is for extending the [GuildId](GuildId) struct
 //! with functions for setting the banner from an URL.
 
+use anyhow::anyhow;
 use poise::{
     async_trait,
     serenity_prelude::{GuildId, Http},
@@ -23,7 +24,7 @@ pub(crate) trait RandomBanner {
     ) -> Result<(), Error> {
         let url = urls
             .choose(&mut rand::thread_rng())
-            .ok_or("Could not pick a url")?;
+            .ok_or(anyhow!("Could not pick a url"))?;
 
         self.set_banner_from_url(http, reqw_client, url).await
     }
@@ -51,7 +52,7 @@ impl RandomBanner for GuildId {
             .as_str()
             .split('.')
             .last()
-            .ok_or("No file extension on image url")?;
+            .ok_or(anyhow!("No file extension on image url"))?;
 
         let image_bytes = reqw_client.get(url.as_ref()).send().await?.bytes().await?;
         let b64 = base64::encode(&image_bytes);
