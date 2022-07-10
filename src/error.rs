@@ -1,7 +1,10 @@
 use std::process::exit;
 use thiserror::Error;
 
-use crate::banner_scheduler::ScheduleMessage;
+use crate::{
+    banner_scheduler::ScheduleMessage,
+    constants::{MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
+};
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -20,10 +23,11 @@ pub enum Error {
     #[error(transparent)]
     InvalidUrl(#[from] url::ParseError),
 
+    #[error(transparent)]
+    Command(#[from] Command),
+
     #[error("Scheduluer Error: {msg:?}")]
-    Scheduler {
-        msg: ScheduleMessage,
-    },
+    Scheduler { msg: ScheduleMessage },
 
     #[error("Unsupported provider: {0}")]
     UnsupportedProvider(String),
@@ -33,6 +37,18 @@ pub enum Error {
 
     #[error(transparent)]
     Other(#[from] anyhow::Error),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum Command {
+    #[error("Command must be run in a server")]
+    GuildOnly,
+    #[error("Interval must be at least {} minutes", MINIMUM_INTERVAL)]
+    BelowMinTimeout,
+    #[error("Interval must be at most {} minutes", MAXIMUM_INTERVAL)]
+    AboveMaxTimeout,
+    #[error("Guild has no banner")]
+    GuildHasNoBanner,
 }
 
 pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
