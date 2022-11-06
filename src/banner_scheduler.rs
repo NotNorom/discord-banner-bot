@@ -262,7 +262,8 @@ async fn handle_banner_error(
     let guild_name = guild_id.name(&ctx).unwrap_or_default();
     let invites = guild_id
         .invites(&ctx)
-        .await?
+        .await
+        .unwrap_or_default()
         .iter()
         .map(|inv| {
             format!(
