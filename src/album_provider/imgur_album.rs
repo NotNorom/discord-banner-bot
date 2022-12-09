@@ -1,8 +1,7 @@
 use std::str::FromStr;
 
-use anyhow::anyhow;
-use poise::serenity_prelude::json::Value;
-use reqwest::{Client, Method, Url};
+use imgurs::ImgurClient;
+use reqwest::{Client, Url};
 
 use crate::{Error, Error::ImgurHashExtraction};
 
@@ -12,29 +11,20 @@ impl Provider {
     pub(super) async fn images_imgur(
         &self,
         client_id: &str,
-        reqw_client: &Client,
+        _reqw_client: &Client,
         album: &Url,
     ) -> Result<Vec<Url>, Error> {
-        let album_id = extract_album_hash(album)?;
-        let response = reqw_client
-            .request(
-                Method::GET,
-                format!("https://api.imgur.com/3/album/{}/images", album_id),
-            )
-            .header("Authorization", format!("Client-ID {}", client_id))
-            .send()
-            .await?;
+        let imgur_client = ImgurClient::new(client_id);
 
-        let json = response.json::<Value>().await?;
-        let images: Vec<_> = json
-            .get("data")
-            .ok_or(anyhow!("Json has no data field"))?
-            .as_array()
-            .ok_or(anyhow!("Data field is not an array"))?
+        let album_id = extract_album_hash(album)?;
+
+        let album_data = imgur_client.album_info(album_id).await?;
+        let images = album_data
+            .data
+            .images
             .iter()
-            .filter_map(|obj| obj.get("link"))
-            .filter_map(|value| value.as_str())
-            .filter_map(|link| Url::from_str(link).ok())
+            .map(|image_info| image_info.link.clone())
+            .filter_map(|link| Url::from_str(&link).ok())
             .collect();
 
         Ok(images)
