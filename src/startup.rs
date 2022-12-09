@@ -88,7 +88,7 @@ impl UserData {
 /// - Creates a task that handles the banner queue
 /// - Sets up a reqwest client
 /// - Sets up the database pool
-pub async fn setup_user_data(
+pub async fn setup(
     ctx: &serenity_prelude::Context,
     _ready: &serenity_prelude::Ready,
     _framework: &Framework<Data, Error>,

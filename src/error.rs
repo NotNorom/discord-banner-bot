@@ -1,5 +1,6 @@
 use std::process::exit;
 use thiserror::Error;
+use tracing::warn;
 
 use crate::{
     banner_scheduler::ScheduleMessage,
@@ -12,7 +13,7 @@ pub enum Error {
     Reqwest(#[from] reqwest::Error),
 
     #[error(transparent)]
-    Serenity(#[from] poise::serenity::Error),
+    Serenity(#[from] poise::serenity_prelude::Error),
 
     #[error(transparent)]
     Redis(#[from] fred::error::RedisError),
@@ -53,17 +54,17 @@ pub enum Command {
 
 pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
     error: poise::FrameworkError<'_, U, E>,
-) -> Result<(), poise::serenity::Error> {
+) -> Result<(), poise::serenity_prelude::Error> {
     match error {
-        poise::FrameworkError::Setup { error } => {
+        poise::FrameworkError::Setup {
+            error,
+            framework: _,
+            data_about_bot: _,
+            ctx: _,
+        } => {
             println!("Error in user data setup: {}", error);
             exit(1);
         }
-        poise::FrameworkError::Listener { error, event, .. } => println!(
-            "User event listener encountered an error on {} event: {}",
-            event.name(),
-            error
-        ),
         poise::FrameworkError::Command { ctx, error } => {
             let error = error.to_string();
             ctx.say(error).await?;
@@ -71,10 +72,11 @@ pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
         poise::FrameworkError::ArgumentParse { ctx, input, error } => {
             // If we caught an argument parse error, give a helpful error message with the
             // command explanation if available
-            let usage = match ctx.command().multiline_help {
-                Some(multiline_help) => multiline_help(),
-                None => "Please check the help menu for usage information".into(),
-            };
+            let usage = ctx
+                .command()
+                .description
+                .to_owned()
+                .unwrap_or("Please check the help menu for usage information".to_string());
             let response = if let Some(input) = input {
                 format!("**Cannot parse `{}` as argument: {}**\n{}", input, error, usage)
             } else {
@@ -152,10 +154,30 @@ pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
             let response = "You cannot run this command outside NSFW channels.";
             ctx.send(|b| b.content(response).ephemeral(true)).await?;
         }
-        poise::FrameworkError::DynamicPrefix { error } => {
-            println!("Dynamic prefix failed: {}", error);
+        poise::FrameworkError::DynamicPrefix { error, ctx: _, msg } => {
+            warn!("Dynamic prefix failed: Error={error:?}, Msg={msg:?}");
         }
-        poise::FrameworkError::__NonExhaustive => panic!(),
+        poise::FrameworkError::EventHandler {
+            error,
+            ctx: _,
+            event,
+            framework: _,
+        } => warn!("Eventhandler failed: {error:?} with event {event:?}"),
+        poise::FrameworkError::UnknownCommand {
+            ctx: _,
+            msg,
+            prefix,
+            msg_content: _,
+            framework: _,
+            invocation_data: _,
+            trigger: _,
+        } => warn!("Unkown command encountered. Prefix={prefix:?}, Msg={msg:?}"),
+        poise::FrameworkError::UnknownInteraction {
+            ctx: _,
+            framework: _,
+            interaction,
+        } => warn!("Unkown interaction encountered. Msg={interaction:?}"),
+        _ => {}
     }
 
     Ok(())

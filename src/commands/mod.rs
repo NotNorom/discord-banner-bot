@@ -42,7 +42,7 @@ pub async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
     }
 
     ctx.say("Deleting all commands...").await?;
-    ctx.discord()
+    ctx.serenity_context()
         .http
         .create_guild_application_commands(guild.id.0, &Value::Array(vec![]))
         .await?;

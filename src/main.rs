@@ -16,7 +16,7 @@ use startup::UserData;
 use tracing::error;
 
 pub use crate::error::Error;
-use crate::startup::setup_user_data;
+use crate::startup::setup;
 
 type Data = UserData;
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -37,12 +37,10 @@ async fn main() -> Result<(), Error> {
     // install global collector configured based on RUST_LOG env var.
     tracing_subscriber::fmt::init();
     // set up & start client
-    let result = poise::Framework::build()
+    let result = poise::Framework::builder()
         .token(&token)
         .intents(GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT)
-        .user_data_setup(move |ctx, ready, framework| {
-            Box::pin(setup_user_data(ctx, ready, framework))
-        })
+        .setup(move |ctx, ready, framework| Box::pin(setup(ctx, ready, framework)))
         .options(FrameworkOptions {
             on_error: |err| {
                 Box::pin(async move {

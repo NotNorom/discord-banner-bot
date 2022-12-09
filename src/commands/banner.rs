@@ -96,7 +96,7 @@ pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
     use crate::error::Command::*;
     let guild_id = ctx.guild_id().ok_or(GuildOnly)?;
 
-    let guild = guild_id.to_partial_guild(&ctx.discord().http).await?;
+    let guild = guild_id.to_partial_guild(&ctx).await?;
     let banner = guild.banner_url().ok_or(GuildHasNoBanner)?;
 
     // answer the user
