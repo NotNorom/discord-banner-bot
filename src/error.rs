@@ -25,6 +25,9 @@ pub enum Error {
     InvalidUrl(#[from] url::ParseError),
 
     #[error(transparent)]
+    Imgur(#[from] imgurs::Error),
+
+    #[error(transparent)]
     Command(#[from] Command),
 
     #[error("Scheduluer Error: {msg:?}")]
@@ -62,12 +65,13 @@ pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
             data_about_bot: _,
             ctx: _,
         } => {
-            println!("Error in user data setup: {}", error);
+            warn!("Error in user data setup: {}", error);
             exit(1);
         }
         poise::FrameworkError::Command { ctx, error } => {
             let error = error.to_string();
-            ctx.say(error).await?;
+            ctx.say(&error).await?;
+            warn!("FrameworkCommand: {error}");
         }
         poise::FrameworkError::ArgumentParse { ctx, input, error } => {
             // If we caught an argument parse error, give a helpful error message with the
@@ -76,7 +80,7 @@ pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
                 .command()
                 .description
                 .to_owned()
-                .unwrap_or("Please check the help menu for usage information".to_string());
+                .unwrap_or_else(|| "Please check the help menu for usage information".to_string());
             let response = if let Some(input) = input {
                 format!("**Cannot parse `{}` as argument: {}**\n{}", input, error, usage)
             } else {
@@ -85,13 +89,13 @@ pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
             ctx.say(response).await?;
         }
         poise::FrameworkError::CommandStructureMismatch { ctx, description } => {
-            println!(
+            warn!(
                 "Error: failed to deserialize interaction arguments for `/{}`: {}",
                 ctx.command.name, description,
             );
         }
         poise::FrameworkError::CommandCheckFailed { ctx, error } => {
-            println!(
+            warn!(
                 "A command check failed in command {} for user {}: {:?}",
                 ctx.command().name,
                 ctx.author().name,
@@ -177,7 +181,9 @@ pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
             framework: _,
             interaction,
         } => warn!("Unkown interaction encountered. Msg={interaction:?}"),
-        _ => {}
+        unknown_err => {
+            tracing::error!("Unkown error occurred: {unknown_err}")
+        }
     }
 
     Ok(())
