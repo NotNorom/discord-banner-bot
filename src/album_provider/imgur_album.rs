@@ -11,10 +11,10 @@ impl Provider {
     pub(super) async fn images_imgur(
         &self,
         client_id: &str,
-        _reqw_client: &Client,
+        reqw_client: &Client,
         album: &Url,
     ) -> Result<Vec<Url>, Error> {
-        let imgur_client = ImgurClient::new(client_id);
+        let imgur_client = ImgurClient::with_http_client(client_id, reqw_client.clone());
 
         let album_id = extract_album_hash(album)?;
 
