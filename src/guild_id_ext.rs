@@ -24,7 +24,7 @@ pub(crate) trait RandomBanner {
     ) -> Result<(), Error> {
         let url = urls
             .choose(&mut rand::thread_rng())
-            .ok_or(anyhow!("Could not pick a url"))?;
+            .ok_or_else(|| anyhow!("Could not pick a url"))?;
 
         self.set_banner_from_url(http, reqw_client, url).await
     }
@@ -52,7 +52,7 @@ impl RandomBanner for GuildId {
             .as_str()
             .split('.')
             .last()
-            .ok_or(anyhow!("No file extension on image url"))?;
+            .ok_or_else(|| anyhow!("No file extension on image url"))?;
 
         let image_bytes = reqw_client.get(url.as_ref()).send().await?.bytes().await?;
         let b64 = base64::encode(&image_bytes);

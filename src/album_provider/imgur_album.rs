@@ -34,11 +34,11 @@ impl Provider {
 fn extract_album_hash(album: &Url) -> Result<&str, Error> {
     let hash_url_segment = album
         .path_segments()
-        .ok_or(ImgurHashExtraction("No path segments".into()))
+        .ok_or_else(|| ImgurHashExtraction("No path segments".into()))
         .and_then(|mut segments| {
             segments
                 .nth(1)
-                .ok_or(ImgurHashExtraction("Missing path segment, needs to be 2".into()))
+                .ok_or_else(|| ImgurHashExtraction("Missing path segment, needs to be 2".into()))
         })?;
 
     if hash_url_segment.split_whitespace().count() > 1 {
