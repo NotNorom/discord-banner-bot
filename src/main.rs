@@ -13,7 +13,7 @@ use poise::{
     FrameworkOptions, PrefixFrameworkOptions,
 };
 use startup::UserData;
-use tracing::error;
+use tracing::{error, info};
 
 pub use crate::error::Error;
 use crate::startup::setup;
@@ -27,8 +27,11 @@ async fn main() -> Result<(), Error> {
     let _ = dotenv::dotenv().ok();
     let token = dotenv::var("DISCORD_TOKEN").expect("No token in env");
     let prefix = dotenv::var("PREFIX").unwrap_or_else(|_| "b!".to_string());
+
+    // check env for user ids which are considered owners.
+    // owners have all permissions all the time, regardless of guild
     let owners = dotenv::var("OWNERS")
-        .unwrap_or_else(|_| "160518747713437696".to_string())
+        .unwrap_or_default()
         .split_ascii_whitespace()
         .filter_map(|a| a.parse().ok())
         .map(UserId)
@@ -36,12 +39,28 @@ async fn main() -> Result<(), Error> {
 
     // install global collector configured based on RUST_LOG env var.
     tracing_subscriber::fmt::init();
+
+    info!("Setting up framework. prefix={prefix}, owners={owners:?}");
+
     // set up & start client
     let result = poise::Framework::builder()
         .token(&token)
         .intents(GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT)
         .setup(move |ctx, ready, framework| Box::pin(setup(ctx, ready, framework)))
         .options(FrameworkOptions {
+            commands: vec![
+                commands::banner::album(),
+                commands::banner::current(),
+                commands::banner::start_for_guild(),
+                commands::banner::start(),
+                commands::banner::stop(),
+                commands::help::help(),
+                commands::notifications::notification_channel(),
+                commands::register_globally(),
+                commands::register(),
+                commands::servers(),
+                commands::unregister(),
+            ],
             on_error: |err| {
                 Box::pin(async move {
                     if let Err(e) = crate::error::on_error(err).await {
@@ -49,23 +68,13 @@ async fn main() -> Result<(), Error> {
                     };
                 })
             },
-            owners,
             prefix_options: PrefixFrameworkOptions {
                 prefix: Some(prefix),
 
                 ..Default::default()
             },
-            commands: vec![
-                commands::help::help(),
-                commands::register(),
-                commands::register_globally(),
-                commands::unregister(),
-                commands::banner::start(),
-                commands::banner::stop(),
-                commands::banner::album(),
-                commands::banner::current(),
-                commands::banner::start_for_guild(),
-            ],
+            owners,
+
 
             ..Default::default()
         })

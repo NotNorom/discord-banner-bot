@@ -7,6 +7,7 @@ use fred::{
     prelude::*,
     types::{RedisKey, RedisMap},
 };
+use poise::serenity_prelude::GuildId;
 
 #[derive(Clone, Debug)]
 pub struct DbEntry {
@@ -14,6 +15,10 @@ pub struct DbEntry {
     album: String,
     interval: u64,
     last_run: u64,
+    // /// The channel the bot will post messages to.
+    // /// Will default to Guild system_channel_id if available.
+    // /// Otherwise will use the channel from which the /start was last run
+    // notification_channel: u64,
 }
 
 impl DbEntry {
@@ -46,9 +51,19 @@ impl DbEntry {
         self.last_run
     }
 
-    pub fn next_run(&self) -> u64 {
-        0
+    /// Inserts entry into database
+    pub async fn insert(&self, redis: &RedisClient) -> Result<(), RedisError> {
+        redis.hmset(key(format!("{}", self.guild_id)), self).await?;
+        redis.sadd(key("known_guilds"), self.guild_id.to_string()).await?;
+        Ok(())
     }
+}
+
+/// Remove entry from the  database
+pub async fn remove(redis: &RedisClient, guild_id: GuildId) -> Result<(), RedisError> {
+    redis.del(key(format!("{}", guild_id.0))).await?;
+    redis.srem(key("known_guilds"), guild_id.0.to_string()).await?;
+    Ok(())
 }
 
 impl From<DbEntry> for RedisMap {
@@ -59,11 +74,12 @@ impl From<DbEntry> for RedisMap {
 
 impl From<&DbEntry> for RedisMap {
     fn from(entry: &DbEntry) -> Self {
-        let mut map = HashMap::with_capacity(4);
+        let mut map = HashMap::with_capacity(5);
         map.insert("guild_id", entry.guild_id.to_string());
         map.insert("album", entry.album.to_owned());
         map.insert("interval", entry.interval.to_string());
         map.insert("last_run", entry.last_run.to_string());
+        map.insert("notification_channel", entry.guild_id.to_string());
 
         // this cannot fail
         RedisMap::try_from(map).unwrap()
@@ -90,12 +106,12 @@ impl FromRedis for DbEntry {
             .get(&RedisKey::from_static_str("interval"))
             .ok_or_else(|| RedisError::new(NotFound, "interval"))?
             .as_u64()
-            .ok_or_else(|| RedisError::new(Unknown, "album is not u64"))?;
+            .ok_or_else(|| RedisError::new(Unknown, "interval is not u64"))?;
         let last_run = value
             .get(&RedisKey::from_static_str("last_run"))
             .ok_or_else(|| RedisError::new(NotFound, "last_run"))?
             .as_u64()
-            .ok_or_else(|| RedisError::new(Unknown, "album is not u64"))?;
+            .ok_or_else(|| RedisError::new(Unknown, "last_run is not u64"))?;
 
         Ok(Self {
             guild_id,

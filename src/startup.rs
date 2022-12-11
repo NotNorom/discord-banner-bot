@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
+use anyhow::Context;
 use fred::{
     clients::RedisClient,
     interfaces::{HashesInterface, SetsInterface},
@@ -9,19 +10,20 @@ use poise::{
     Framework,
 };
 use reqwest::Client;
-use tokio::sync::mpsc::{self, Sender};
+use tokio::sync::mpsc::Sender;
 
-use tracing::{error, info};
+use tracing::info;
 use url::Url;
 
 use crate::{
     album_provider::Provider,
-    banner_scheduler::{scheduler, ScheduleMessage},
+    banner_scheduler::{BannerQueue, ScheduleMessage},
     constants::USER_AGENT,
-    database::{self, key, DbEntry},
+    database::{key, DbEntry},
     utils::current_unix_timestamp,
     Data, Error,
 };
+use crate::{database, utils::say_to_owner};
 
 #[derive(Clone)]
 #[allow(dead_code)]
@@ -98,15 +100,16 @@ pub async fn setup(
     let ctx = Arc::new(ctx.clone());
     let capacity = 128;
 
-    let (tx, rx) = mpsc::channel::<ScheduleMessage>(capacity);
-
     let reqw_client = Client::builder()
         .timeout(Duration::from_secs(30))
         .user_agent(USER_AGENT)
         .build()?;
 
     let redis_client = database::setup().await?;
-    let imgur_client_id = dotenv::var("IMGUR_CLIENT_ID").expect("No imgur client id");
+    let imgur_client_id = dotenv::var("IMGUR_CLIENT_ID")?;
+
+    let (tx, banner_queue) =
+        BannerQueue::new(ctx.clone(), redis_client.clone(), reqw_client.clone(), capacity);
 
     let user_data = UserData {
         scheduler: tx,
@@ -121,49 +124,46 @@ pub async fn setup(
         info!("Look at all these IDs: {:?}", known_guild_ids);
 
         for id in known_guild_ids {
-            // @todo: enque existing entries
-            match user_data
+            info!("Fetching {id}");
+            let entry = user_data
                 .redis_client()
                 .hgetall::<DbEntry, _>(key(format!("{}", id)))
-                .await
-            {
-                Ok(entry) => {
-                    let album = Url::parse(entry.album()).expect("has already been parsed before");
-                    let provider = Provider::try_from(&album).expect("it's been in the db already");
+                .await?;
 
-                    let interval = entry.interval();
-                    let last_run = entry.last_run();
-                    let current_time = current_unix_timestamp();
-                    let offset = interval - (current_time - last_run) % interval;
+            let album = Url::parse(entry.album()).context("has already been parsed before")?;
+            let provider = Provider::try_from(&album).context("it's been in the db already")?;
 
-                    info!("{:?}", entry);
-                    info!(
-                        "guild_id: {}, interval: {}, last_run: {}, current_time: {}, offset: {}",
-                        entry.guild_id(),
-                        interval,
-                        last_run,
-                        current_time,
-                        offset
-                    );
+            let interval = entry.interval();
+            let last_run = entry.last_run();
+            let current_time = current_unix_timestamp();
+            let offset = interval - (current_time - last_run) % interval;
 
-                    let _ = user_data
-                        .enque(
-                            GuildId(entry.guild_id()),
-                            album,
-                            provider,
-                            entry.interval(),
-                            Some(offset),
-                        )
-                        .await;
-                }
-                Err(e) => error!("{:?}", e),
-            }
+            info!(
+                "Enqueing: guild_id: {}, interval: {}, last_run: {}, current_time: {}, offset: {}",
+                entry.guild_id(),
+                interval,
+                last_run,
+                current_time,
+                offset
+            );
+
+            let _ = user_data
+                .enque(
+                    GuildId(entry.guild_id()),
+                    album,
+                    provider,
+                    entry.interval(),
+                    Some(offset),
+                )
+                .await;
         }
     }
 
     info!("Spawning scheduler task");
     // Spawn the scheduler in a separate task so it can concurrently
-    tokio::spawn(scheduler(ctx, rx, user_data.clone(), capacity));
+    tokio::spawn(banner_queue.scheduler());
+
+    say_to_owner(ctx, "Bot ready.").await?;
 
     Ok(user_data)
 }

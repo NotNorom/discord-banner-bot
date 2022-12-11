@@ -1,4 +1,4 @@
-use poise::serenity_prelude::GuildId;
+use poise::serenity_prelude::{self, CacheHttp};
 use reqwest::Url;
 
 use crate::{
@@ -19,6 +19,11 @@ pub async fn start(
 
     // guild id
     let guild_id = ctx.guild_id().ok_or(GuildOnly)?;
+
+    let guild = guild_id.to_partial_guild(ctx.http()).await?;
+    if !guild.features.contains(&"BANNER".to_string()) {
+        return Err(GuildHasNoBanner.into());
+    }
 
     // interval
     let interval = interval.unwrap_or(DEFAULT_INTERVAL);
@@ -114,7 +119,7 @@ pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
 #[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
 pub async fn start_for_guild(
     ctx: Context<'_>,
-    #[description = "Guild ID"] guild_id: u64,
+    #[description = "Guild ID"] guild_id: serenity_prelude::Guild,
     #[description = "Imgur album"] album: String,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
@@ -122,7 +127,7 @@ pub async fn start_for_guild(
     use crate::error::Command::*;
 
     // guild id
-    let guild_id = GuildId(guild_id);
+    let guild_id = guild_id.id;
 
     // interval
     let interval = interval.unwrap_or(DEFAULT_INTERVAL);

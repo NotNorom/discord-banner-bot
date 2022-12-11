@@ -37,7 +37,7 @@ impl Provider {
 impl TryFrom<&Url> for Provider {
     type Error = Error;
     fn try_from(url: &Url) -> Result<Self, Self::Error> {
-        let domain = url.domain().ok_or(anyhow!("Must be domain, not IP address"))?;
+        let domain = url.domain().ok_or_else(|| anyhow!("Must be domain, not IP address"))?;
         match domain {
             "imgur.com" => {
                 let client_id = dotenv::var("IMGUR_CLIENT_ID")?;

@@ -8,6 +8,7 @@ use poise::{
 };
 use rand::prelude::SliceRandom;
 use reqwest::Client;
+use tracing::info;
 use url::Url;
 
 use crate::Error;
@@ -48,6 +49,13 @@ impl RandomBanner for GuildId {
         reqw_client: &Client,
         url: &Url,
     ) -> Result<(), Error> {
+        let guild = self.to_partial_guild(http.as_ref()).await?;
+        let features = guild.features;
+
+        if !features.contains(&"BANNER".to_string()) {
+            return Err(Error::Command(crate::error::Command::GuildHasNoBanner));
+        }
+
         let extension = url
             .as_str()
             .split('.')
@@ -57,9 +65,13 @@ impl RandomBanner for GuildId {
         let image_bytes = reqw_client.get(url.as_ref()).send().await?.bytes().await?;
         let b64 = base64::encode(&image_bytes);
         self.edit(http.as_ref(), |g| {
+            //g.icon(Some(&format!("data:image/{};base64,{}", extension, b64)))
+
             g.banner(Some(&format!("data:image/{};base64,{}", extension, b64)))
         })
         .await?;
+
+        info!("success");
 
         Ok(())
     }
