@@ -299,6 +299,12 @@ impl BannerQueue {
                 }
                 command_err => error!("unhandled command error: {command_err:?}"),
             },
+            Error::Imgur(error) => match error {
+                imgurs::Error::SendApiRequest(send_api_err) => {
+                    warn!("Error with imgur request: {send_api_err:#?}");
+                }
+                imgurs_err => error!("unhandled imgurs error: {imgurs_err}"),
+            },
             err => {
                 error!("unhandled bot error: {err:?}");
             }
