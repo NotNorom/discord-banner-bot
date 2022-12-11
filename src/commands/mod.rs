@@ -50,7 +50,7 @@ pub async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-/// Unregister application commands in this guild
+/// List all servers tis bot is in. Only public servers are shown by name.
 #[poise::command(slash_command, prefix_command, hide_in_help, owners_only)]
 pub async fn servers(ctx: Context<'_>) -> Result<(), Error> {
     poise::builtins::servers(ctx).await.map_err(|err| err.into())
