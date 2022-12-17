@@ -126,10 +126,9 @@ pub async fn setup(
     // ask for existing guild ids
     {
         let known_guild_ids: Vec<u64> = user_data.redis_client().smembers(key("known_guilds")).await?;
-        info!("Look at all these IDs: {:?}", known_guild_ids);
+        info!("Known guild id's: {:?}", known_guild_ids);
 
         for id in known_guild_ids {
-            info!("Fetching {id}");
             let entry = user_data
                 .redis_client()
                 .hgetall::<DbEntry, _>(key(format!("{}", id)))
@@ -144,7 +143,7 @@ pub async fn setup(
             let offset = interval - (current_time - last_run) % interval;
 
             info!(
-                "Enqueing: guild_id: {}, interval: {}, last_run: {}, current_time: {}, offset: {}",
+                " - {} enqueing with interval={}, last_run={}, current_time={}, offset{}",
                 entry.guild_id(),
                 interval,
                 last_run,
@@ -168,7 +167,10 @@ pub async fn setup(
     // Spawn the scheduler in a separate task so it can concurrently
     tokio::spawn(banner_queue.scheduler());
 
-    dm_users(&ctx, framework.options().owners.clone(), &"Bot ready!").await?;
+    // Notify that we're ready
+    let bot_ready = "Bot ready!";
+    dm_users(&ctx, framework.options().owners.clone(), &bot_ready).await?;
+    info!(bot_ready);
 
     Ok(user_data)
 }

@@ -1,8 +1,9 @@
 use std::time::SystemTime;
 
+use anyhow::Context;
 use poise::{
     futures_util::{stream::futures_unordered, StreamExt},
-    serenity_prelude::{self, CacheHttp, Message, UserId},
+    serenity_prelude::{CacheHttp, Message, UserId},
 };
 use tracing::{info, warn};
 
@@ -51,7 +52,11 @@ async fn dm_user(
     cache_http: &impl CacheHttp,
     user: UserId,
     content: &impl std::fmt::Display,
-) -> Result<Message, serenity_prelude::Error> {
+) -> Result<Message, Error> {
     let user = user.to_user(cache_http.http()).await?;
-    user.dm(cache_http.http(), |msg| msg.content(content)).await
+    let msg = user
+        .dm(cache_http.http(), |msg| msg.content(content))
+        .await
+        .context(format!("User: {user}"))?;
+    Ok(msg)
 }
