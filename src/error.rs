@@ -30,13 +30,13 @@ pub enum Error {
     #[error(transparent)]
     Command(#[from] Command),
 
-    #[error("Scheduluer Error: {msg:?}")]
+    #[error("Scheduler Error: {msg:?}. Please contact the developer. See /help")]
     Scheduler { msg: ScheduleMessage },
 
     #[error("Unsupported provider: {0}")]
     UnsupportedProvider(String),
 
-    #[error("Extraction of imgur hash failed: {0}")]
+    #[error("Extraction of imgur hash failed: {0}. Is the url correct?")]
     ImgurHashExtraction(String),
 
     #[error(transparent)]

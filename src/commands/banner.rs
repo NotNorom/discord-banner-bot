@@ -7,11 +7,11 @@ use crate::{
     Context, Error,
 };
 
-/// Picks a random image from the album every n minutes and sets it as the banner.
+/// Picks a random image from the album every interval minutes and sets it as the banner.
 #[poise::command(prefix_command, slash_command, required_permissions = "MANAGE_GUILD")]
 pub async fn start(
     ctx: Context<'_>,
-    #[description = "Imgur album"] album: String,
+    #[description = "Album link"] album: String,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
 ) -> Result<(), Error> {
@@ -95,7 +95,7 @@ pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-/// Link to the current image
+/// Link to the banner that is currently displayed
 #[poise::command(prefix_command, slash_command)]
 pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
     use crate::error::Command::*;
@@ -120,7 +120,7 @@ pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
 pub async fn start_for_guild(
     ctx: Context<'_>,
     #[description = "Guild ID"] guild_id: serenity_prelude::Guild,
-    #[description = "Imgur album"] album: String,
+    #[description = "Album"] album: String,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
 ) -> Result<(), Error> {
