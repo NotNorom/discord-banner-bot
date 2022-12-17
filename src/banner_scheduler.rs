@@ -29,7 +29,7 @@ pub struct ScheduleMessageEnqueue {
     album: Url,
     interval: u64,
     provider: Provider,
-    offset: u64,
+    offset: Option<u64>,
 }
 
 #[derive(Debug)]
@@ -53,7 +53,7 @@ impl ScheduleMessage {
             album,
             provider,
             interval,
-            offset: offset.unwrap_or_default(),
+            offset,
         })
     }
 
@@ -223,11 +223,8 @@ impl BannerQueue {
             offset,
         } = enqueue_msg;
         info!(
-            "Starting schedule for: {}, with {}, every {:>6} seconds. Next run at: {}",
-            guild_id,
-            album,
-            interval,
-            current_unix_timestamp() + offset
+            "Enque: {guild_id}, with {album}, every {interval:>6} seconds. Next run at: {}",
+            current_unix_timestamp() + offset.unwrap_or_default()
         );
 
         // if we have a timer, cancel it
@@ -235,20 +232,23 @@ impl BannerQueue {
             self.queue.remove(key);
         }
 
-        // change the banner manually once, before enqueing
+        // change the banner manually once, before enqueing IF the offset is None
+        // the offset is None, when called through a command and Some when it's called on startup
 
-        // get the images from the provider
-        let images = provider.images(&self.http_client, &album).await?;
+        if offset.is_none() {
+            // get the images from the provider
+            let images = provider.images(&self.http_client, &album).await?;
 
-        // try to change the banner, return when there is an error.
-        // there is no further cleanup needed
-        guild_id
-            .set_random_banner(&self.ctx.http, &self.http_client, &images)
-            .await?;
+            // try to change the banner, return when there is an error.
+            // there is no further cleanup needed
+            guild_id
+                .set_random_banner(&self.ctx.http, &self.http_client, &images)
+                .await?;
+        }
 
         // now enqueue the new item
         let interval = Duration::from_secs(interval);
-        let offset = Duration::from_secs(offset);
+        let offset = Duration::from_secs(offset.unwrap_or_default());
         let key = self.queue.insert(
             QueueItem::new(guild_id, album.clone(), provider, interval),
             offset,
