@@ -1,4 +1,5 @@
 use std::process::exit;
+use poise::serenity_prelude::User;
 use thiserror::Error;
 use tracing::warn;
 
@@ -41,6 +42,9 @@ pub enum Error {
 
     #[error(transparent)]
     StdFmt(#[from] std::fmt::Error),
+
+    #[error("Could not send dm to {:?}. Reason: {}", .0, .1)]
+    SendDm(User, String),
 
     #[error(transparent)]
     Other(#[from] anyhow::Error),

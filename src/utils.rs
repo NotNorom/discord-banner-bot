@@ -3,7 +3,7 @@ use std::time::SystemTime;
 use anyhow::Context;
 use poise::{
     futures_util::{stream::futures_unordered, StreamExt},
-    serenity_prelude::{CacheHttp, Message, UserId},
+    serenity_prelude::{CacheHttp, Message, UserId, UserPublicFlags},
 };
 use tracing::{info, warn};
 
@@ -54,6 +54,16 @@ async fn dm_user(
     content: &impl std::fmt::Display,
 ) -> Result<Message, Error> {
     let user = user.to_user(cache_http.http()).await?;
+    if user.bot {
+        return Err(Error::SendDm(user, "User is a bot".to_string()));
+    }
+
+    if let Some(flags) = user.public_flags {
+        if flags.contains(UserPublicFlags::SYSTEM) || flags.contains(UserPublicFlags::TEAM_USER) {
+            return Err(Error::SendDm(user, "User is a pseudo user".to_string()));
+        }
+    }
+
     let msg = user
         .dm(cache_http.http(), |msg| msg.content(content))
         .await
