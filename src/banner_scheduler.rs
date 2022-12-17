@@ -1,7 +1,11 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+    time::Duration,
+};
 
 use fred::prelude::RedisClient;
-use poise::serenity_prelude::{GuildId, MessageBuilder};
+use poise::serenity_prelude::{GuildId, MessageBuilder, UserId};
 use reqwest::Url;
 use tokio::{
     select,
@@ -15,7 +19,7 @@ use crate::{
     album_provider::Provider,
     database::{remove, DbEntry},
     guild_id_ext::RandomBanner,
-    utils::{current_unix_timestamp, say_to_owner},
+    utils::{current_unix_timestamp, dm_users},
     Error,
 };
 
@@ -102,6 +106,7 @@ pub struct BannerQueue {
     queue: DelayQueue<QueueItem>,
     guild_id_to_key: HashMap<GuildId, Key>,
     ctx: Arc<poise::serenity_prelude::Context>,
+    owners: HashSet<UserId>,
     redis_client: RedisClient,
     http_client: reqwest::Client,
     rx: Receiver<ScheduleMessage>,
@@ -110,6 +115,7 @@ pub struct BannerQueue {
 impl BannerQueue {
     pub fn new(
         ctx: Arc<poise::serenity_prelude::Context>,
+        owners: HashSet<UserId>,
         redis_client: RedisClient,
         http_client: reqwest::Client,
         capacity: usize,
@@ -126,6 +132,7 @@ impl BannerQueue {
                 queue,
                 guild_id_to_key,
                 ctx,
+                owners,
                 redis_client,
                 http_client,
                 rx,
@@ -318,7 +325,7 @@ impl BannerQueue {
             .push_codeblock(error.to_string(), Some("rust"))
             .build();
 
-        say_to_owner(&self.ctx, message).await?;
+        dm_users(&self.ctx, self.owners.clone(), &message).await?;
         Ok(())
     }
 }

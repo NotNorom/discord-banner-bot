@@ -23,7 +23,7 @@ use crate::{
     utils::current_unix_timestamp,
     Data, Error,
 };
-use crate::{database, utils::say_to_owner};
+use crate::{database, utils::dm_users};
 
 #[derive(Clone)]
 #[allow(dead_code)]
@@ -93,7 +93,7 @@ impl UserData {
 pub async fn setup(
     ctx: &serenity_prelude::Context,
     _ready: &serenity_prelude::Ready,
-    _framework: &Framework<Data, Error>,
+    framework: &Framework<Data, Error>,
 ) -> Result<Data, Error> {
     info!("Setting up user data");
 
@@ -108,8 +108,13 @@ pub async fn setup(
     let redis_client = database::setup().await?;
     let imgur_client_id = dotenv::var("IMGUR_CLIENT_ID")?;
 
-    let (tx, banner_queue) =
-        BannerQueue::new(ctx.clone(), redis_client.clone(), reqw_client.clone(), capacity);
+    let (tx, banner_queue) = BannerQueue::new(
+        ctx.clone(),
+        framework.options().owners.clone(),
+        redis_client.clone(),
+        reqw_client.clone(),
+        capacity,
+    );
 
     let user_data = UserData {
         scheduler: tx,
@@ -163,7 +168,7 @@ pub async fn setup(
     // Spawn the scheduler in a separate task so it can concurrently
     tokio::spawn(banner_queue.scheduler());
 
-    say_to_owner(ctx, "Bot ready.").await?;
+    dm_users(&ctx, framework.options().owners.clone(), &"Bot ready!").await?;
 
     Ok(user_data)
 }

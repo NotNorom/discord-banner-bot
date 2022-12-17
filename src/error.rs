@@ -40,6 +40,9 @@ pub enum Error {
     ImgurHashExtraction(String),
 
     #[error(transparent)]
+    StdFmt(#[from] std::fmt::Error),
+
+    #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
 
@@ -65,7 +68,7 @@ pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
             data_about_bot: _,
             ctx: _,
         } => {
-            warn!("Error in user data setup: {}", error);
+            tracing::error!("Error during framework setup: {}", error);
             exit(1);
         }
         poise::FrameworkError::Command { ctx, error } => {
