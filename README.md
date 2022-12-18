@@ -16,6 +16,7 @@ This is a work in progress, please message me if you have any questions (my time
 - Email: noromoron \[at\] gmail \[dot\] com
 
 
+
 ## Usage
 Text in \[\] brackets are mandatory arguments.<br>
 Text in \<\> brackets are optional arguments.<br>
@@ -34,30 +35,60 @@ Interval range:
 - minimum: 15
 - maximum: 2880 (48h)
 
+_Command can only be run by users with `Manage Server` permission._
+
 
 ### /stop
 `/stop`
 Stop automatic banner changing.
+
+_Command can only be run by users with `Manage Server` permission.*_
 
 
 ### /album
 `/album`
 Shows the album link you are using. In case you forgot :D
 
+_Command can only be run by users with `Manage Server` permission._
+
+
+### /current
+`/current`
+Give you a link to the currently displayed banner.
+
+_Command can only be run by anyone._
+
 
 ### /notification_channel (Does not work yet)
 `/notification_channel [CHANNEL]`
 When I want to send news or the bot needs to send error messages in your server, this channel will be used.
 
+_Command can only be run by users with `Manage Server` permission._
+
 
 ### /servers
 `/servers`
 Displays in how many servers this bot is currently in. It really is just a vanity command.
+If run by the bot owners will display private servers as well.
+
+_Command can only be run by anyone._
 
 
 ### /help
 `/help <COMMAND>`
-Display a help message. If COMMAND is provided, display help about that command. 
+Display a help message. If COMMAND is provided, display help about that command.
+
+_Command can only be run by anyone._
+
+
+### /start_for_guild
+`/start_for_guild [GUILD_ID] [ALBUM] <INTERVAL>`
+Same as `/start` but a server can be specified.
+This allows to start the bot for servers without the user being in the server.
+This is just for bot owners and intended for debugging purposes.
+
+_Command can only be run by bot owners._
+
 
 
 ## Bot information & permissions
@@ -71,8 +102,13 @@ This bot needs these permissions to work:
 - `Send Messages in Threads` for using prefix commands (and error responses)
 - `Add Reactions` for nice visuals... eventually :D
 
-Right now only server members with the `Manage Server` permission can use the `/start`, `/stop` and `/album` commands.
-This might change in the future.
+
+The following commands can only be run by users with the `Manage Server` permissions:
+- `/start`
+- `/stop`
+- `/album`
+- `/notification_channel`
+
 
 
 ## Credits
@@ -81,5 +117,7 @@ This bot is built using
 - Poise: https://github.com/kangalioo/poise
 - Serenity: https://github.com/serenity-rs/serenity/
 - Imgurs: https://github.com/MedzikUser/imgurs
+- Tokio: https://github.com/tokio-rs/tokio/
+- Fred: https://github.com/aembke/fred.rs
 
 Amazing libraries, highly recommend \<3
