@@ -4,6 +4,7 @@ version = "0.2.2"
 edition = "2021"
 authors = ["Andre Julius <noromoron@gmail.com>"]
 repository = "https://github.com/NotNorom/discord-banner-bot"
+resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
@@ -11,8 +12,8 @@ default = []
 dev = []
 
 [dependencies]
-thiserror = "1.0.37"
-anyhow = "1.0.66"
+thiserror = "1.0.38"
+anyhow = "1.0.68"
 imgurs = "0.11.1"
 tokio-stream = "0.1.11"
 dotenv = "0.15.0"
@@ -29,7 +30,7 @@ fred = "5.2.0"
 poise = "0.5.2"
 
 [dependencies.tokio]
-version = "1.23.0"
+version = "1.24.1"
 features = ["full"]
 
 [dependencies.tokio-util]
@@ -39,4 +40,3 @@ features = ["time"]
 [dependencies.reqwest]
 version = "0.11.13"
 features = ["json"]
-
