@@ -12,7 +12,7 @@ use tokio::{
 };
 use tokio_stream::StreamExt;
 use tokio_util::time::{delay_queue::Key, DelayQueue};
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::{
     album_provider::Provider,
@@ -159,6 +159,8 @@ impl BannerQueue {
             select!(
                 // If a guild is ready to have their banner changed
                 Some(item) = self.queue.next() => {
+                    debug!("Queue poped: {item:?}");
+
                     let inner = item.into_inner();
                     let mut guild_id = inner.guild_id();
                     let interval = inner.interval();
@@ -243,6 +245,7 @@ impl BannerQueue {
         // the offset is None, when called through a command and Some when it's called on startup
 
         if offset.is_none() {
+            debug!("Offset is none, setting banner once.");
             // get the images from the provider
             let images = provider.images(&self.http_client, &album).await?;
 
@@ -258,7 +261,7 @@ impl BannerQueue {
         let offset = Duration::from_secs(offset.unwrap_or_default());
         let key = self.queue.insert(
             QueueItem::new(guild_id, album.clone(), provider, interval),
-            offset,
+            interval + offset,
         );
         self.guild_id_to_key.insert(guild_id, key);
 
