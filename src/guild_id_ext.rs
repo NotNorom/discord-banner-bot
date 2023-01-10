@@ -2,6 +2,7 @@
 //! with functions for setting the banner from an URL.
 
 use anyhow::anyhow;
+use base64::Engine;
 use poise::{
     async_trait,
     serenity_prelude::{GuildId, Http},
@@ -67,7 +68,7 @@ impl RandomBanner for GuildId {
             .ok_or_else(|| anyhow!("No file extension on image url"))?;
 
         let image_bytes = reqw_client.get(url.as_ref()).send().await?.bytes().await?;
-        let b64 = base64::encode(&image_bytes);
+        let b64 = base64::engine::general_purpose::STANDARD.encode(&image_bytes);
         self.edit(http.as_ref(), |g| {
             #[cfg(feature = "dev")]
             {
