@@ -1,4 +1,4 @@
-use poise::serenity_prelude::{self, CacheHttp};
+use poise::serenity_prelude;
 use reqwest::Url;
 
 use crate::{
@@ -20,9 +20,15 @@ pub async fn start(
     // guild id
     let guild_id = ctx.guild_id().ok_or(GuildOnly)?;
 
-    let guild = guild_id.to_partial_guild(ctx.http()).await?;
-    if !guild.features.contains(&"BANNER".to_string()) {
-        return Err(GuildHasNoBanner.into());
+    // disable BANNER check when dev feature is enabled
+    #[cfg(not(feature = "dev"))]
+    {
+        use serenity_prelude::CacheHttp;
+
+        let guild = guild_id.to_partial_guild(ctx.http()).await?;
+        if !guild.features.contains(&"BANNER".to_string()) {
+            return Err(GuildHasNoBanner.into());
+        }
     }
 
     // interval

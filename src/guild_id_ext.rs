@@ -49,11 +49,15 @@ impl RandomBanner for GuildId {
         reqw_client: &Client,
         url: &Url,
     ) -> Result<(), Error> {
-        let guild = self.to_partial_guild(http.as_ref()).await?;
-        let features = guild.features;
+        // Disable banner feature check when in dev environment
+        #[cfg(not(feature = "dev"))]
+        {
+            let guild = self.to_partial_guild(http.as_ref()).await?;
+            let features = guild.features;
 
-        if !features.contains(&"BANNER".to_string()) {
-            return Err(Error::Command(crate::error::Command::GuildHasNoBanner));
+            if !features.contains(&"BANNER".to_string()) {
+                return Err(Error::Command(crate::error::Command::GuildHasNoBanner));
+            }
         }
 
         let extension = url
@@ -65,9 +69,15 @@ impl RandomBanner for GuildId {
         let image_bytes = reqw_client.get(url.as_ref()).send().await?.bytes().await?;
         let b64 = base64::encode(&image_bytes);
         self.edit(http.as_ref(), |g| {
-            //g.icon(Some(&format!("data:image/{};base64,{}", extension, b64)))
+            #[cfg(feature = "dev")]
+            {
+                g.icon(Some(&format!("data:image/{};base64,{}", extension, b64)))
+            }
 
-            g.banner(Some(&format!("data:image/{};base64,{}", extension, b64)))
+            #[cfg(not(feature = "dev"))]
+            {
+                g.banner(Some(&format!("data:image/{};base64,{}", extension, b64)))
+            }
         })
         .await?;
 
