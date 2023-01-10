@@ -133,7 +133,7 @@ pub async fn setup(
             let offset = interval - (current_time - last_run) % interval;
 
             info!(
-                " - {} enqueing with interval={}, last_run={}, current_time={}, offset{}",
+                " - {} enqueing with interval={}, last_run={}, current_time={}, offset={}",
                 entry.guild_id(),
                 interval,
                 last_run,
