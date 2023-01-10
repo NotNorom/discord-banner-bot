@@ -4,7 +4,6 @@ use std::{
     time::Duration,
 };
 
-use fred::prelude::RedisClient;
 use poise::serenity_prelude::{GuildId, MessageBuilder, UserId};
 use reqwest::Url;
 use tokio::{
@@ -17,7 +16,7 @@ use tracing::{error, info, warn};
 
 use crate::{
     album_provider::Provider,
-    database::{remove, DbEntry},
+    database::{Database, GuildSchedule},
     guild_id_ext::RandomBanner,
     utils::{current_unix_timestamp, dm_users},
     Error,
@@ -107,7 +106,7 @@ pub struct BannerQueue {
     guild_id_to_key: HashMap<GuildId, Key>,
     ctx: Arc<poise::serenity_prelude::Context>,
     owners: HashSet<UserId>,
-    redis_client: RedisClient,
+    database: Database,
     http_client: reqwest::Client,
     rx: Receiver<ScheduleMessage>,
 }
@@ -116,7 +115,7 @@ impl BannerQueue {
     pub fn new(
         ctx: Arc<poise::serenity_prelude::Context>,
         owners: HashSet<UserId>,
-        redis_client: RedisClient,
+        database: Database,
         http_client: reqwest::Client,
         capacity: usize,
     ) -> (Sender<ScheduleMessage>, BannerQueue) {
@@ -133,7 +132,7 @@ impl BannerQueue {
                 guild_id_to_key,
                 ctx,
                 owners,
-                redis_client,
+                database,
                 http_client,
                 rx,
             },
@@ -176,7 +175,7 @@ impl BannerQueue {
                     // creating the redis entry just before the banner is set,
                     // because the timestamp must be when we _start_ setting the banner,
                     // not when the command finally returns from discord (which might take a few seconds)
-                    let redis_entry = DbEntry::new(guild_id.0, album.to_string(), interval.as_secs(), current_unix_timestamp());
+                    let schedule = GuildSchedule::new(guild_id.0, album.to_string(), interval.as_secs(), current_unix_timestamp());
 
                     // change the banner
                     if let Err(e) = guild_id.set_random_banner(&self.ctx.http, &self.http_client, &images).await {
@@ -186,10 +185,10 @@ impl BannerQueue {
                     }
 
                     // insert into redis
-                    if let Err(err) = redis_entry.insert(&self.redis_client).await {
-                        error!("Could not insert redis entry: {redis_entry:?}, {err}");
+                    if let Err(err) = self.database.insert(&schedule, guild_id.0).await {
+                        error!("Could not insert db entry: {schedule:?}, {err}");
                     } else {
-                        info!("Change succeeded. Updated entry {redis_entry:?}");
+                        info!("Change succeeded. Updated entry {schedule:?}");
                     }
                 },
                 // If a guild is to be added or removed from the queue
@@ -269,7 +268,7 @@ impl BannerQueue {
         // remove the guild from the database
         // only scheduled guilds should be in the database
 
-        if let Err(err) = remove(&self.redis_client, guild_id).await {
+        if let Err(err) = self.database.delete::<GuildSchedule>(guild_id.0).await {
             error!("When deleting guild from database: {guild_id:?}, {err:?}")
         } else {
             info!("Removed guild {:?}", &guild_id.0);

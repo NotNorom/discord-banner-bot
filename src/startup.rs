@@ -1,10 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
-use fred::{
-    clients::RedisClient,
-    interfaces::{HashesInterface, SetsInterface},
-};
+
 use poise::{
     serenity_prelude::{self, GuildId},
     Framework,
@@ -18,12 +15,11 @@ use url::Url;
 use crate::{
     album_provider::Provider,
     banner_scheduler::{BannerQueue, ScheduleMessage},
-    constants::USER_AGENT,
-    database::{key, DbEntry},
-    utils::current_unix_timestamp,
+    constants::{self, USER_AGENT},
+    database::{Database, GuildSchedule},
+    utils::{current_unix_timestamp, dm_users},
     Data, Error,
 };
-use crate::{database, utils::dm_users};
 
 #[derive(Clone)]
 #[allow(dead_code)]
@@ -34,7 +30,7 @@ pub struct UserData {
     /// Client for http request
     reqw_client: Client,
     /// database pool
-    redis_client: RedisClient,
+    database: Database,
     /// imgur_client_id
     imgur_client_id: String,
 }
@@ -72,16 +68,13 @@ impl UserData {
     }
 
     /// Get a reference to the user data's redis client.
-    pub fn redis_client(&self) -> &RedisClient {
-        &self.redis_client
+    pub fn database(&self) -> &Database {
+        &self.database
     }
 
     /// Gets the current album link
     pub async fn get_album(&self, guild_id: GuildId) -> Result<String, Error> {
-        let db_entry = self
-            .redis_client
-            .hgetall::<DbEntry, _>(key(format!("{}", guild_id.0)))
-            .await?;
+        let db_entry = self.database.get::<GuildSchedule>(guild_id.0).await?;
         Ok(db_entry.album().to_string())
     }
 }
@@ -105,13 +98,13 @@ pub async fn setup(
         .user_agent(USER_AGENT)
         .build()?;
 
-    let redis_client = database::setup().await?;
+    let database = Database::setup(constants::REDIS_PREFIX).await?;
     let imgur_client_id = dotenv::var("IMGUR_CLIENT_ID")?;
 
     let (tx, banner_queue) = BannerQueue::new(
         ctx.clone(),
         framework.options().owners.clone(),
-        redis_client.clone(),
+        database.clone(),
         reqw_client.clone(),
         capacity,
     );
@@ -119,20 +112,17 @@ pub async fn setup(
     let user_data = UserData {
         scheduler: tx,
         reqw_client,
-        redis_client,
+        database,
         imgur_client_id,
     };
 
     // ask for existing guild ids
     {
-        let known_guild_ids: Vec<u64> = user_data.redis_client().smembers(key("known_guilds")).await?;
+        let known_guild_ids: Vec<u64> = user_data.database().known_guilds().await?;
         info!("Known guild id's: {:?}", known_guild_ids);
 
         for id in known_guild_ids {
-            let entry = user_data
-                .redis_client()
-                .hgetall::<DbEntry, _>(key(format!("{}", id)))
-                .await?;
+            let entry = user_data.database().get::<GuildSchedule>(id).await?;
 
             let album = Url::parse(entry.album()).context("has already been parsed before")?;
             let provider = Provider::try_from(&album).context("it's been in the db already")?;

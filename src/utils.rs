@@ -48,7 +48,7 @@ pub async fn dm_users(
 }
 
 /// Send a dm to a user
-async fn dm_user(
+pub async fn dm_user(
     cache_http: &impl CacheHttp,
     user: UserId,
     content: &impl std::fmt::Display,
