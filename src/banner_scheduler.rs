@@ -289,7 +289,7 @@ impl BannerQueue {
     }
 
     /// Handle scheduler related errors
-    /// 
+    ///
     /// This is a needed as well as the normal error handling in [crate::error::on_error] because
     /// the scheduler is running in its own task
     #[tracing::instrument(skip(self))]
@@ -300,13 +300,18 @@ impl BannerQueue {
             Error::Serenity(error) => match error {
                 serenity_prelude::Error::Http(error) => match error.as_ref() {
                     serenity_prelude::HttpError::UnsuccessfulRequest(error_response) => {
-                        if error_response.status_code.as_u16() == 403 {
-                            // the bot does not have permissions to change the banner.
-                            // remove guild from queue
-                            self.dequeue(guild_id).await?;
-                            warn!("Missing permissions to change banner for {guild_id}. Unscheduling.");
-                        } else {
-                            warn!("unsuccessful http request: {error_response:?}");
+                        match error_response.status_code.as_u16() {
+                            403 => {
+                                // the bot does not have permissions to change the banner.
+                                // remove guild from queue
+                                self.dequeue(guild_id).await?;
+                                warn!("Missing permissions to change banner for {guild_id}. Unscheduling.");
+                            }
+                            404 => {
+                                self.dequeue(guild_id).await?;
+                                warn!("Guild does not exist: {guild_id}. Unscheduling.");
+                            }
+                            _ => warn!("unsuccessful http request: {error_response:?}"),
                         }
                     }
                     http_err => error!("unhandled http error: {http_err:?}"),
