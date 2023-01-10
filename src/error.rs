@@ -1,4 +1,3 @@
-use std::process::exit;
 use poise::serenity_prelude::User;
 use thiserror::Error;
 use tracing::warn;
@@ -64,16 +63,17 @@ pub enum Command {
 
 pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
     error: poise::FrameworkError<'_, U, E>,
-) -> Result<(), poise::serenity_prelude::Error> {
+) -> Result<(), Error> {
     match error {
         poise::FrameworkError::Setup {
             error,
-            framework: _,
+            framework,
             data_about_bot: _,
             ctx: _,
         } => {
             tracing::error!("Error during framework setup: {}", error);
-            exit(1);
+            let mut shard_manager = framework.shard_manager().lock().await;
+            shard_manager.shutdown_all().await;
         }
         poise::FrameworkError::Command { ctx, error } => {
             let error = error.to_string();
