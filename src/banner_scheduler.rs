@@ -101,13 +101,21 @@ impl QueueItem {
     }
 }
 
+/// Responsible for changing the banners.
 pub struct BannerQueue {
+    /// The queue
     queue: DelayQueue<QueueItem>,
+    /// Needed for the queue to work
     guild_id_to_key: HashMap<GuildId, Key>,
+    /// Discord
     ctx: Arc<poise::serenity_prelude::Context>,
+    /// Needed so owners get notified in case of errors
     owners: HashSet<UserId>,
+    /// State of queue is saved so when the bot restarts
     database: Database,
+    /// For fetching images from the web
     http_client: reqwest::Client,
+    /// For communication with commands
     rx: Receiver<ScheduleMessage>,
 }
 
@@ -277,6 +285,10 @@ impl BannerQueue {
         Ok(())
     }
 
+    /// Handle scheduler related errors
+    /// 
+    /// This is a needed as well as the normal error handling in [crate::error::on_error] because
+    /// the scheduler is running in its own task
     #[tracing::instrument(skip(self))]
     async fn handle_error(&mut self, guild_id: GuildId, error: &Error) -> Result<(), Error> {
         use poise::serenity_prelude;

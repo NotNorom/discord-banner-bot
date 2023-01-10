@@ -31,6 +31,8 @@ impl Provider {
     }
 }
 
+
+/// Extract the hash part of an imgur url
 fn extract_album_hash(album: &Url) -> Result<&str, Error> {
     let hash_url_segment = album
         .path_segments()

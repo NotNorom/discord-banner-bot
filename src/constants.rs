@@ -1,5 +1,5 @@
 //! Constants
-//! 
+//!
 //! See invidividual items' description
 
 /// The user agent for the reqwest instance that's talking to e.g. imgur for the albums
