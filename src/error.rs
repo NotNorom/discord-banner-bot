@@ -33,7 +33,7 @@ pub enum Error {
     #[error("Scheduler Error: {msg:?}. Please contact the developer. See /help")]
     Scheduler { msg: ScheduleMessage },
 
-    #[error("Unsupported provider: {0}")]
+    #[error("Unsupported provider: {0}. For a list of supported providers see /help")]
     UnsupportedProvider(String),
 
     #[error("Extraction of imgur hash failed: {0}. Is the url correct?")]
@@ -57,7 +57,7 @@ pub enum Command {
     BelowMinTimeout,
     #[error("Interval must be at most {} minutes", MAXIMUM_INTERVAL)]
     AboveMaxTimeout,
-    #[error("Guild has no banner")]
+    #[error("Server doesn't have a banner. Is the required boost level reached?")]
     GuildHasNoBanner,
 }
 

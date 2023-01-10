@@ -9,6 +9,8 @@ pub async fn help(
     let config = poise::builtins::HelpConfiguration {
         extra_text_at_bottom: "\
 Type /help command for more info on a command.
+Supported providers: Imgur.
+
 For more support, join: https://discord.gg/MMJFtCtYPP",
         ..Default::default()
     };

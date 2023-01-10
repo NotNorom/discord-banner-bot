@@ -42,7 +42,7 @@ fn extract_album_hash(album: &Url) -> Result<&str, Error> {
         })?;
 
     if hash_url_segment.split_whitespace().count() > 1 {
-        return Err(ImgurHashExtraction("hash may not contain white spaces".into()));
+        return Err(ImgurHashExtraction("Hash contains whitespaces".into()));
     }
 
     Ok(hash_url_segment)
