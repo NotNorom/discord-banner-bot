@@ -5,7 +5,6 @@ use std::{
 };
 
 use poise::serenity_prelude::{GuildId, MessageBuilder, UserId};
-use reqwest::Url;
 use tokio::{
     select,
     sync::mpsc::{self, Receiver, Sender},
@@ -15,9 +14,10 @@ use tokio_util::time::{delay_queue::Key, DelayQueue};
 use tracing::{debug, error, info, warn};
 
 use crate::{
-    album_provider::Provider,
+    album_provider::{Album, Providers},
     database::{Database, GuildSchedule},
     guild_id_ext::RandomBanner,
+    settings::Settings,
     utils::{current_unix_timestamp, dm_users},
     Error,
 };
@@ -25,9 +25,8 @@ use crate::{
 #[derive(Debug)]
 pub struct ScheduleMessageEnqueue {
     guild_id: GuildId,
-    album: Url,
+    album: Album,
     interval: u64,
-    provider: Provider,
     offset: Option<u64>,
 }
 
@@ -40,17 +39,10 @@ pub enum ScheduleMessage {
 }
 
 impl ScheduleMessage {
-    pub fn new_enqueue(
-        guild_id: GuildId,
-        album: Url,
-        provider: Provider,
-        interval: u64,
-        offset: Option<u64>,
-    ) -> Self {
+    pub fn new_enqueue(guild_id: GuildId, album: Album, interval: u64, offset: Option<u64>) -> Self {
         Self::Enqueue(ScheduleMessageEnqueue {
             guild_id,
             album,
-            provider,
             interval,
             offset,
         })
@@ -64,18 +56,16 @@ impl ScheduleMessage {
 #[derive(Debug, Clone)]
 pub struct QueueItem {
     guild_id: GuildId,
-    album: Url,
-    provider: Provider,
+    album: Album,
     interval: Duration,
 }
 
 impl QueueItem {
     /// Creates a new QueueItem
-    pub fn new(guild_id: GuildId, album: Url, provider: Provider, interval: Duration) -> Self {
+    pub fn new(guild_id: GuildId, album: Album, interval: Duration) -> Self {
         Self {
             guild_id,
             album,
-            provider,
             interval,
         }
     }
@@ -86,18 +76,13 @@ impl QueueItem {
     }
 
     /// Get a reference to the queue item's album.
-    pub fn album(&self) -> &Url {
+    pub fn album(&self) -> &Album {
         &self.album
     }
 
     /// Get a reference to the queue item's interval.
     pub fn interval(&self) -> Duration {
         self.interval
-    }
-
-    /// Get a reference to the queue item's provider.
-    pub fn provider(&self) -> &Provider {
-        &self.provider
     }
 }
 
@@ -117,6 +102,8 @@ pub struct BannerQueue {
     http_client: reqwest::Client,
     /// For communication with commands
     rx: Receiver<ScheduleMessage>,
+    /// providing the images
+    providers: Providers,
 }
 
 impl BannerQueue {
@@ -126,12 +113,15 @@ impl BannerQueue {
         database: Database,
         http_client: reqwest::Client,
         capacity: usize,
+        settings: &Settings,
     ) -> (Sender<ScheduleMessage>, BannerQueue) {
         let queue = DelayQueue::<QueueItem>::with_capacity(capacity);
         // maps the guild id to the key used in the queue
         let guild_id_to_key = HashMap::with_capacity(capacity);
 
         let (tx, rx) = mpsc::channel::<ScheduleMessage>(capacity);
+
+        let providers = Providers::new(&settings.provider, &http_client);
 
         (
             tx,
@@ -143,6 +133,7 @@ impl BannerQueue {
                 database,
                 http_client,
                 rx,
+                providers,
             },
         )
     }
@@ -165,14 +156,13 @@ impl BannerQueue {
                     let mut guild_id = inner.guild_id();
                     let interval = inner.interval();
                     let album = inner.album().clone();
-                    let provider = inner.provider().clone();
 
                     // re-enqueue the item
                     let key = self.queue.insert(inner, interval);
                     self.guild_id_to_key.insert(guild_id, key);
 
                     // get the images from the provider
-                    let images = match provider.images(&self.http_client, &album).await {
+                    let images = match self.providers.images(&album).await {
                         Ok(images) => images,
                         Err(e) => {
                             error!("Could not get images from provider: {e:?}. Not scheduling {guild_id} again");
@@ -185,7 +175,7 @@ impl BannerQueue {
                     // creating the redis entry just before the banner is set,
                     // because the timestamp must be when we _start_ setting the banner,
                     // not when the command finally returns from discord (which might take a few seconds)
-                    let schedule = GuildSchedule::new(guild_id.0, album.to_string(), interval.as_secs(), current_unix_timestamp());
+                    let schedule = GuildSchedule::new(guild_id.0, album.url().to_string(), interval.as_secs(), current_unix_timestamp());
 
                     // change the banner
                     if let Err(e) = guild_id.set_random_banner(&self.ctx.http, &self.http_client, &images).await {
@@ -228,7 +218,6 @@ impl BannerQueue {
             mut guild_id,
             album,
             interval,
-            provider,
             offset,
         } = enqueue_msg;
         info!(
@@ -247,7 +236,7 @@ impl BannerQueue {
         if offset.is_none() {
             debug!("Offset is none, setting banner once.");
             // get the images from the provider
-            let images = provider.images(&self.http_client, &album).await?;
+            let images = self.providers.images(&album).await?;
 
             // try to change the banner, return when there is an error.
             // there is no further cleanup needed
@@ -260,7 +249,7 @@ impl BannerQueue {
         let interval = Duration::from_secs(interval);
         let offset = Duration::from_secs(offset.unwrap_or_default());
         let key = self.queue.insert(
-            QueueItem::new(guild_id, album.clone(), provider, interval),
+            QueueItem::new(guild_id, album.clone(), interval),
             interval + offset,
         );
         self.guild_id_to_key.insert(guild_id, key);

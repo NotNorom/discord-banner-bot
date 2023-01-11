@@ -19,9 +19,6 @@ pub enum Error {
     Redis(#[from] fred::error::RedisError),
 
     #[error(transparent)]
-    Dotenv(#[from] dotenv::Error),
-
-    #[error(transparent)]
     InvalidUrl(#[from] url::ParseError),
 
     #[error(transparent)]

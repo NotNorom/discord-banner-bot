@@ -2,7 +2,7 @@ use poise::serenity_prelude;
 use reqwest::Url;
 
 use crate::{
-    album_provider::Provider,
+    album_provider::Album,
     constants::{DEFAULT_INTERVAL, MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
     Context, Error,
 };
@@ -42,16 +42,15 @@ pub async fn start(
     }
 
     // album url
-    let album = album.parse::<Url>()?;
-
-    let provider = Provider::try_from(&album)?;
+    let album_url = album.parse::<Url>()?;
+    let album = Album::try_from(&album_url)?;
 
     // answer the user
     poise::send_reply(ctx, |f| {
         let content = format!(
             "Scheduling banner change for every {} minutes using this album: <{}>",
             &interval,
-            &album.as_str()
+            album_url.as_str()
         );
         f.content(content).ephemeral(true)
     })
@@ -61,9 +60,7 @@ pub async fn start(
 
     // schedule it
     // interval is in minutes, so we multiply by 60 seconds
-    user_data
-        .enque(guild_id, album, provider, interval * 60, None)
-        .await?;
+    user_data.enque(guild_id, album, interval * 60, None).await?;
 
     Ok(())
 }
@@ -146,16 +143,15 @@ pub async fn start_for_guild(
     }
 
     // album url
-    let album = album.parse::<Url>()?;
-
-    let provider = Provider::try_from(&album)?;
+    let album_url = album.parse::<Url>()?;
+    let album = Album::try_from(&album_url)?;
 
     // answer the user
     poise::send_reply(ctx, |f| {
         let content = format!(
             "Scheduling banner change for every {} minutes using this album: <{}>",
             &interval,
-            &album.as_str()
+            &album_url.as_str()
         );
         f.content(content).ephemeral(true)
     })
@@ -165,9 +161,7 @@ pub async fn start_for_guild(
 
     // schedule it
     // interval is in minutes, so we multiply by 60 seconds
-    user_data
-        .enque(guild_id, album, provider, interval * 60, None)
-        .await?;
+    user_data.enque(guild_id, album, interval * 60, None).await?;
 
     Ok(())
 }

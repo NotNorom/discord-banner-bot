@@ -13,10 +13,11 @@ use tracing::info;
 use url::Url;
 
 use crate::{
-    album_provider::Provider,
+    album_provider::Album,
     banner_scheduler::{BannerQueue, ScheduleMessage},
     constants::{self, USER_AGENT},
     database::{Database, GuildSchedule},
+    settings::{settings, Settings},
     utils::{current_unix_timestamp, dm_users},
     Data, Error,
 };
@@ -31,8 +32,8 @@ pub struct UserData {
     reqw_client: Client,
     /// database pool
     database: Database,
-    /// imgur_client_id
-    imgur_client_id: String,
+    /// settings
+    settings: &'static Settings,
 }
 
 impl UserData {
@@ -40,12 +41,11 @@ impl UserData {
     pub async fn enque(
         &self,
         guild_id: GuildId,
-        album: Url,
-        provider: Provider,
+        album: Album,
         interval: u64,
         offset: Option<u64>,
     ) -> Result<(), Error> {
-        let message = ScheduleMessage::new_enqueue(guild_id, album, provider, interval, offset);
+        let message = ScheduleMessage::new_enqueue(guild_id, album, interval, offset);
         self.scheduler
             .send(message)
             .await
@@ -89,6 +89,7 @@ pub async fn setup(
     framework: &Framework<Data, Error>,
 ) -> Result<Data, Error> {
     info!("Setting up user data");
+    let settings = settings();
 
     let ctx = Arc::new(ctx.clone());
     let capacity = 128;
@@ -99,7 +100,6 @@ pub async fn setup(
         .build()?;
 
     let database = Database::setup(constants::REDIS_PREFIX).await?;
-    let imgur_client_id = dotenv::var("IMGUR_CLIENT_ID")?;
 
     let (tx, banner_queue) = BannerQueue::new(
         ctx.clone(),
@@ -107,13 +107,14 @@ pub async fn setup(
         database.clone(),
         reqw_client.clone(),
         capacity,
+        settings,
     );
 
     let user_data = UserData {
         scheduler: tx,
         reqw_client,
         database,
-        imgur_client_id,
+        settings,
     };
 
     // ask for existing guild ids
@@ -124,8 +125,8 @@ pub async fn setup(
         for id in known_guild_ids {
             let entry = user_data.database().get::<GuildSchedule>(id).await?;
 
-            let album = Url::parse(entry.album()).context("has already been parsed before")?;
-            let provider = Provider::try_from(&album).context("it's been in the db already")?;
+            let album_url = Url::parse(entry.album()).context("has already been parsed before")?;
+            let album = Album::try_from(&album_url).context("it's been in the db already")?;
 
             let interval = entry.interval();
             let last_run = entry.last_run();
@@ -142,13 +143,7 @@ pub async fn setup(
             );
 
             let _ = user_data
-                .enque(
-                    GuildId(entry.guild_id()),
-                    album,
-                    provider,
-                    entry.interval(),
-                    Some(offset),
-                )
+                .enque(GuildId(entry.guild_id()), album, entry.interval(), Some(offset))
                 .await;
         }
     }

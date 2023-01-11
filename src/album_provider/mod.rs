@@ -4,46 +4,101 @@
 //! A provider is a service like imgur, google drive, dropbox, or even just a folder on the local disc that
 //! can _provide_ an album.
 
-use std::convert::TryFrom;
+use std::{convert::TryFrom, fmt::Display};
 
 use anyhow::anyhow;
-use reqwest::{Client, Url};
+use imgurs::ImgurClient;
+use reqwest::Url;
 
 mod imgur_album;
 
-use crate::Error;
+use crate::{settings, Error};
 
 /// This enum differentiates between different providers
 #[non_exhaustive]
 #[derive(Debug, Clone)]
-pub enum Provider {
-    /// An Imgur album like `https://imgur.com/a/YM1yHhx`
-    Imgur {
-        /// See <https://apidocs.imgur.com/>
-        client_id: String,
-    },
+pub struct Providers {
+    clients: ProviderClients,
 }
 
-impl Provider {
-    /// Return a list of images from the provider given the [album](Url)
-    pub async fn images(&self, reqw_client: &Client, album: &Url) -> Result<Vec<Url>, Error> {
-        match self {
-            Provider::Imgur { client_id } => self.images_imgur(client_id, reqw_client, album).await,
+impl Providers {
+    pub fn new(settings: &settings::Provider, http: &reqwest::Client) -> Self {
+        Self {
+            clients: ProviderClients::new(settings, http),
         }
     }
 }
 
-/// Try to create a Provider from an url
-impl TryFrom<&Url> for Provider {
+#[derive(Debug, Clone)]
+pub struct ProviderClients {
+    imgur: ImgurClient,
+}
+
+impl ProviderClients {
+    pub fn new(settings: &settings::Provider, http: &reqwest::Client) -> Self {
+        let imgur = ImgurClient::with_http_client(&settings.imgur.client_id, http.to_owned());
+
+        Self { imgur }
+    }
+}
+
+#[non_exhaustive]
+#[derive(Debug, Clone)]
+enum ProviderKind {
+    Imgur,
+}
+
+impl TryFrom<&Url> for ProviderKind {
     type Error = Error;
+
     fn try_from(url: &Url) -> Result<Self, Self::Error> {
-        let domain = url.domain().ok_or_else(|| anyhow!("Must be domain, not IP address"))?;
+        let domain = url
+            .domain()
+            .ok_or_else(|| anyhow!("Must be domain, not IP address"))?;
         match domain {
-            "imgur.com" => {
-                let client_id = dotenv::var("IMGUR_CLIENT_ID")?;
-                Ok(Self::Imgur { client_id })
-            }
+            "imgur.com" => Ok(Self::Imgur),
             _ => Err(Error::UnsupportedProvider(domain.to_string())),
         }
+    }
+}
+
+impl Providers {
+    /// Return a list of images from the provider given the [album](Url)
+    pub async fn images(&self, album: &Album) -> Result<Vec<Url>, Error> {
+        use ProviderKind::*;
+        match album.provider_kind {
+            Imgur => self.images_imgur(&self.clients.imgur, &album.url).await,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Album {
+    url: Url,
+    provider_kind: ProviderKind,
+}
+
+impl Album {
+    pub fn url(&self) -> &Url {
+        &self.url
+    }
+}
+
+impl TryFrom<&Url> for Album {
+    type Error = Error;
+
+    fn try_from(url: &Url) -> Result<Self, Self::Error> {
+        let kind = url.try_into()?;
+
+        Ok(Self {
+            url: url.to_owned(),
+            provider_kind: kind,
+        })
+    }
+}
+
+impl Display for Album {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.url)
     }
 }

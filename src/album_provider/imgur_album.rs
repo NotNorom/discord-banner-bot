@@ -1,24 +1,17 @@
 use std::str::FromStr;
 
 use imgurs::ImgurClient;
-use reqwest::{Client, Url};
+use reqwest::Url;
 
 use crate::{Error, Error::ImgurHashExtraction};
 
-use super::Provider;
+use super::Providers;
 
-impl Provider {
-    pub(super) async fn images_imgur(
-        &self,
-        client_id: &str,
-        reqw_client: &Client,
-        album: &Url,
-    ) -> Result<Vec<Url>, Error> {
-        let imgur_client = ImgurClient::with_http_client(client_id, reqw_client.clone());
-
+impl Providers {
+    pub(super) async fn images_imgur(&self, client: &ImgurClient, album: &Url) -> Result<Vec<Url>, Error> {
         let album_id = extract_album_hash(album)?;
 
-        let album_data = imgur_client.album_info(album_id).await?;
+        let album_data = client.album_info(album_id).await?;
         let images = album_data
             .data
             .images
@@ -30,7 +23,6 @@ impl Provider {
         Ok(images)
     }
 }
-
 
 /// Extract the hash part of an imgur url
 fn extract_album_hash(album: &Url) -> Result<&str, Error> {
