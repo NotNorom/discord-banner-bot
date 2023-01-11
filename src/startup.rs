@@ -37,7 +37,7 @@ pub struct UserData {
 }
 
 impl UserData {
-    /// Enqueue a new new album at every interval
+    /// Enqueue an album for the guild at interval
     pub async fn enque(
         &self,
         guild_id: GuildId,

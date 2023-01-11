@@ -14,7 +14,7 @@ mod imgur_album;
 
 use crate::{settings, Error};
 
-/// This enum differentiates between different providers
+/// Wrapper for all the different providers
 #[non_exhaustive]
 #[derive(Debug, Clone)]
 pub struct Providers {
@@ -22,6 +22,7 @@ pub struct Providers {
 }
 
 impl Providers {
+    /// Create new Providers collection
     pub fn new(settings: &settings::Provider, http: &reqwest::Client) -> Self {
         Self {
             clients: ProviderClients::new(settings, http),
@@ -29,6 +30,7 @@ impl Providers {
     }
 }
 
+/// Contains all available providers
 #[derive(Debug, Clone)]
 pub struct ProviderClients {
     imgur: ImgurClient,
@@ -42,6 +44,7 @@ impl ProviderClients {
     }
 }
 
+/// Used to select which provider to use
 #[non_exhaustive]
 #[derive(Debug, Clone)]
 enum ProviderKind {

@@ -1,3 +1,5 @@
+//! Collecting of functions that don't fit anywhere else
+
 use std::time::SystemTime;
 
 use anyhow::Context;

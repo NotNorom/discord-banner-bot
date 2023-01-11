@@ -4,6 +4,7 @@ use fred::types::RedisMap;
 
 #[derive(Debug, Clone)]
 pub struct GuildSettings {
+    /// The guild id
     guild_id: u64,
     /// The channel the bot will post messages to.
     /// Will default to Guild system_channel_id if available.

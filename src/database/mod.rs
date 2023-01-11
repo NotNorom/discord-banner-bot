@@ -33,6 +33,7 @@ pub trait Entry {
 /// The database used
 #[derive(Clone)]
 pub struct Database {
+    /// The redis client
     client: RedisClient,
     /// Every redis key is prefixed with this string.
     /// This helps identifying this program in case multiple prgrams are using the same

@@ -31,6 +31,7 @@ pub struct Imgur {
     pub secret: String,
 }
 
+/// Load and deserialize settings into static struct
 pub fn init() -> Result<(), Error> {
     let settings = Config::builder()
         .add_source(config::File::with_name("settings"))
@@ -44,6 +45,7 @@ pub fn init() -> Result<(), Error> {
     Ok(())
 }
 
+/// Get settings. Panics if called before [init].
 pub fn settings() -> &'static Settings {
     SETTINGS.get().expect("Settings are not initialized")
 }

@@ -61,7 +61,7 @@ pub struct QueueItem {
 }
 
 impl QueueItem {
-    /// Creates a new QueueItem
+    /// Creates a new `QueueItem`
     pub fn new(guild_id: GuildId, album: Album, interval: Duration) -> Self {
         Self {
             guild_id,
@@ -88,21 +88,21 @@ impl QueueItem {
 
 /// Responsible for changing the banners.
 pub struct BannerQueue {
-    /// The queue
+    /// Queue, that will yield items after they time out
     queue: DelayQueue<QueueItem>,
-    /// Needed for the queue to work
+    /// Internal struct needed for the DelayQueue
     guild_id_to_key: HashMap<GuildId, Key>,
     /// Discord
     ctx: Arc<poise::serenity_prelude::Context>,
     /// Needed so owners get notified in case of errors
     owners: HashSet<UserId>,
-    /// State of queue is saved so when the bot restarts
+    /// To save the queue state so the bot can resume when it restarts
     database: Database,
     /// For fetching images from the web
     http_client: reqwest::Client,
     /// For communication with commands
     rx: Receiver<ScheduleMessage>,
-    /// providing the images
+    /// For providing the images
     providers: Providers,
 }
 
@@ -141,7 +141,7 @@ impl BannerQueue {
     /// Start the scheduler task
     ///
     /// This function handles enqueue and dequeue commands.
-    /// This needs to be run in a separate tokio task using e.g. [tokio::task::spawn]
+    /// This needs to be run in a separate tokio task using e.g. [`tokio::task::spawn`]
     pub async fn scheduler(mut self) {
         loop {
             // either handle an item from the queue:
