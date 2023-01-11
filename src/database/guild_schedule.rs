@@ -1,16 +1,14 @@
 use std::collections::HashMap;
 
 use fred::{
-    prelude::{HashesInterface, KeysInterface, RedisError, SetsInterface},
+    prelude::{HashesInterface, KeysInterface, RedisError, RedisErrorKind, SetsInterface},
     types::{FromRedis, RedisKey, RedisMap, RedisValue},
 };
 use poise::async_trait;
 
 use super::{get_from_redis_map, Database, Entry};
 
-
 /// How a schedule is stored in the database
-/// 
 #[derive(Clone, Debug)]
 pub struct GuildSchedule {
     /// The Guilds ID
@@ -112,6 +110,14 @@ impl Entry for GuildSchedule {
     where
         T: FromRedis + Unpin + Send + 'static,
     {
+        let id: RedisKey = id.into();
+
+        if !db.client.sismember(db.key("known_guilds"), id.clone()).await? {
+            return Err(RedisError::new(
+                RedisErrorKind::NotFound,
+                "No active schedule.",
+            ));
+        }
         db.client.hgetall(db.key(id)).await
     }
 

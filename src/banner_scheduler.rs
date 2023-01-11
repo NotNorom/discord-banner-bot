@@ -238,11 +238,29 @@ impl BannerQueue {
             // get the images from the provider
             let images = self.providers.images(&album).await?;
 
-            // try to change the banner, return when there is an error.
-            // there is no further cleanup needed
-            guild_id
+            let schedule = GuildSchedule::new(
+                guild_id.0,
+                album.url().to_string(),
+                interval,
+                current_unix_timestamp(),
+            );
+
+            // change the banner
+            if let Err(e) = guild_id
                 .set_random_banner(&self.ctx.http, &self.http_client, &images)
-                .await?;
+                .await
+            {
+                if let Err(handler_e) = self.handle_error(guild_id, &e).await {
+                    error!("When handling {:?}, another error occurced {:?}", e, handler_e);
+                }
+            }
+
+            // insert into redis
+            if let Err(err) = self.database.insert(&schedule, guild_id.0).await {
+                error!("Could not insert db entry: {schedule:?}, {err}");
+            } else {
+                info!("Change succeeded. Updated entry {schedule:?}");
+            }
         }
 
         // now enqueue the new item
