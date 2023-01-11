@@ -15,7 +15,7 @@ use tracing::{debug, error, info, warn};
 
 use crate::{
     album_provider::{Album, Providers},
-    database::{Database, GuildSchedule},
+    database::{guild_schedule::GuildSchedule, Database},
     guild_id_ext::RandomBanner,
     settings::Settings,
     utils::{current_unix_timestamp, dm_users},
@@ -269,7 +269,7 @@ impl BannerQueue {
         // only scheduled guilds should be in the database
 
         if let Err(err) = self.database.delete::<GuildSchedule>(guild_id.0).await {
-            error!("When deleting guild from database: {guild_id:?}, {err:?}")
+            error!("When deleting guild from database: {guild_id:?}, {err:?}");
         } else {
             info!("Removed guild {:?}", &guild_id.0);
         }
@@ -325,7 +325,7 @@ impl BannerQueue {
             }
         }
 
-        let guild_name = format!("{}: {}", guild_id, guild_id.name(&self.ctx).unwrap_or_default());
+        let guild_name = format!("{guild_id}: {}", guild_id.name(&self.ctx).unwrap_or_default());
 
         let message = MessageBuilder::new()
             .push_bold("Error in guild: ")

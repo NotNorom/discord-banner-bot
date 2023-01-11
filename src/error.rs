@@ -62,12 +62,7 @@ pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
     error: poise::FrameworkError<'_, U, E>,
 ) -> Result<(), Error> {
     match error {
-        poise::FrameworkError::Setup {
-            error,
-            framework,
-            data_about_bot: _,
-            ctx: _,
-        } => {
+        poise::FrameworkError::Setup { error, framework, .. } => {
             tracing::error!("Error during framework setup: {}", error);
             let mut shard_manager = framework.shard_manager().lock().await;
             shard_manager.shutdown_all().await;
@@ -83,12 +78,12 @@ pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
             let usage = ctx
                 .command()
                 .description
-                .to_owned()
-                .unwrap_or_else(|| "Please check the help menu for usage information".to_string());
+                .clone()
+                .unwrap_or_else(|| "Please check the help menu for usage information".to_owned());
             let response = if let Some(input) = input {
-                format!("**Cannot parse `{}` as argument: {}**\n{}", input, error, usage)
+                format!("**Cannot parse `{input}` as argument: {error}**\n{usage}")
             } else {
-                format!("**{}**\n{}", error, usage)
+                format!("**{error}**\n{usage}")
             };
             ctx.say(response).await?;
         }
@@ -162,31 +157,20 @@ pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
             let response = "You cannot run this command outside NSFW channels.";
             ctx.send(|b| b.content(response).ephemeral(true)).await?;
         }
-        poise::FrameworkError::DynamicPrefix { error, ctx: _, msg } => {
+        poise::FrameworkError::DynamicPrefix { error, msg, .. } => {
             warn!("Dynamic prefix failed: Error={error:?}, Msg={msg:?}");
         }
-        poise::FrameworkError::EventHandler {
-            error,
-            ctx: _,
-            event,
-            framework: _,
-        } => warn!("Eventhandler failed: {error:?} with event {event:?}"),
-        poise::FrameworkError::UnknownCommand {
-            ctx: _,
-            msg,
-            prefix,
-            msg_content: _,
-            framework: _,
-            invocation_data: _,
-            trigger: _,
-        } => warn!("Unkown command encountered. Prefix={prefix:?}, Msg={msg:?}"),
-        poise::FrameworkError::UnknownInteraction {
-            ctx: _,
-            framework: _,
-            interaction,
-        } => warn!("Unkown interaction encountered. Msg={interaction:?}"),
+        poise::FrameworkError::EventHandler { error, event, .. } => {
+            warn!("Eventhandler failed: {error:?} with event {event:?}")
+        }
+        poise::FrameworkError::UnknownCommand { msg, prefix, .. } => {
+            warn!("Unkown command encountered. Prefix={prefix:?}, Msg={msg:?}")
+        }
+        poise::FrameworkError::UnknownInteraction { interaction, .. } => {
+            warn!("Unkown interaction encountered. Msg={interaction:?}")
+        }
         unknown_err => {
-            tracing::error!("Unkown error occurred: {unknown_err}")
+            tracing::error!("Unkown error occurred: {unknown_err}");
         }
     }
 

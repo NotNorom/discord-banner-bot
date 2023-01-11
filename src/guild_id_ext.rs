@@ -56,7 +56,7 @@ impl RandomBanner for GuildId {
             let guild = self.to_partial_guild(http.as_ref()).await?;
             let features = guild.features;
 
-            if !features.contains(&"BANNER".to_string()) {
+            if !features.contains(&"BANNER".to_owned()) {
                 return Err(Error::Command(crate::error::Command::GuildHasNoBanner));
             }
         }
@@ -77,7 +77,7 @@ impl RandomBanner for GuildId {
 
             #[cfg(not(feature = "dev"))]
             {
-                g.banner(Some(&format!("data:image/{};base64,{}", extension, b64)))
+                g.banner(Some(&format!("data:image/{extension};base64,{b64}")))
             }
         })
         .await?;

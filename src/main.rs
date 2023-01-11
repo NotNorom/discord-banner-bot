@@ -13,7 +13,7 @@ use poise::{serenity_prelude::GatewayIntents, FrameworkOptions, PrefixFrameworkO
 use startup::UserData;
 use tracing::{error, info};
 
-pub use crate::error::Error;
+use crate::error::Error;
 use crate::startup::setup;
 
 type Data = UserData;

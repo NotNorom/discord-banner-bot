@@ -92,7 +92,7 @@ impl TryFrom<&Url> for Album {
         let kind = url.try_into()?;
 
         Ok(Self {
-            url: url.to_owned(),
+            url: url.clone(),
             provider_kind: kind,
         })
     }

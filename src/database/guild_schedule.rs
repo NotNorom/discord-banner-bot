@@ -64,7 +64,7 @@ impl From<&GuildSchedule> for RedisMap {
     fn from(entry: &GuildSchedule) -> Self {
         let mut map = HashMap::with_capacity(5);
         map.insert("guild_id", entry.guild_id.to_string());
-        map.insert("album", entry.album.to_owned());
+        map.insert("album", entry.album.clone());
         map.insert("interval", entry.interval.to_string());
         map.insert("last_run", entry.last_run.to_string());
 

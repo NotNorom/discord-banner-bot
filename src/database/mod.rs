@@ -9,7 +9,6 @@ use fred::{
     types::{RedisKey, RedisMap},
 };
 
-pub use guild_schedule::GuildSchedule;
 use poise::async_trait;
 
 /// Describes how a struct is interacting with the database
@@ -63,7 +62,7 @@ impl Database {
     {
         let key = key.into();
         let key = key.into_string().unwrap();
-        format!("{}:{}", self.prefix, key)
+        format!("{}:{key}", self.prefix)
     }
 
     /// List of guild ids that have an active schedule going
@@ -101,6 +100,6 @@ fn get_from_redis_map<T: FromRedis>(map: &RedisMap, key: &str) -> Result<T, Redi
     use RedisErrorKind::NotFound;
     map.get(&RedisKey::from(key))
         .ok_or_else(|| RedisError::new(NotFound, format!("Key {key} not found in RedisMap")))?
-        .to_owned()
+        .clone()
         .convert()
 }

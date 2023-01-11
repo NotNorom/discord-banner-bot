@@ -23,12 +23,9 @@ pub async fn register_globally(ctx: Context<'_>) -> Result<(), Error> {
 /// Unregister application commands in this guild
 #[poise::command(prefix_command, hide_in_help, owners_only)]
 pub async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
-    let guild = match ctx.guild() {
-        Some(x) => x,
-        None => {
-            ctx.say("Must be called in guild").await?;
-            return Ok(());
-        }
+    let Some(guild) = ctx.guild() else {
+        ctx.say("Must be called in guild").await?;
+        return Ok(());
     };
 
     let is_allowed = {
@@ -53,5 +50,5 @@ pub async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
 /// List all servers tis bot is in. Only public servers are shown by name.
 #[poise::command(slash_command, prefix_command, hide_in_help, owners_only)]
 pub async fn servers(ctx: Context<'_>) -> Result<(), Error> {
-    poise::builtins::servers(ctx).await.map_err(|err| err.into())
+    poise::builtins::servers(ctx).await.map_err(Into::into)
 }

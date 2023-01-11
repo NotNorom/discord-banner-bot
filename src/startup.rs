@@ -16,7 +16,7 @@ use crate::{
     album_provider::Album,
     banner_scheduler::{BannerQueue, ScheduleMessage},
     constants::{self, USER_AGENT},
-    database::{Database, GuildSchedule},
+    database::{guild_schedule::GuildSchedule, Database},
     settings::{settings, Settings},
     utils::{current_unix_timestamp, dm_users},
     Data, Error,
@@ -75,7 +75,7 @@ impl UserData {
     /// Gets the current album link
     pub async fn get_album(&self, guild_id: GuildId) -> Result<String, Error> {
         let db_entry = self.database.get::<GuildSchedule>(guild_id.0).await?;
-        Ok(db_entry.album().to_string())
+        Ok(db_entry.album().to_owned())
     }
 }
 
@@ -102,7 +102,7 @@ pub async fn setup(
     let database = Database::setup(constants::REDIS_PREFIX).await?;
 
     let (tx, banner_queue) = BannerQueue::new(
-        ctx.clone(),
+        Arc::clone(&ctx),
         framework.options().owners.clone(),
         database.clone(),
         reqw_client.clone(),
@@ -142,9 +142,9 @@ pub async fn setup(
                 offset
             );
 
-            let _ = user_data
+            user_data
                 .enque(GuildId(entry.guild_id()), album, entry.interval(), Some(offset))
-                .await;
+                .await?;
         }
     }
 

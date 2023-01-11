@@ -32,7 +32,7 @@ pub async fn dm_users(
 
     write!(log_msg, "Sending dm to users: (")?;
 
-    for user in users.into_iter() {
+    for user in users {
         write!(log_msg, "{}, ", user.0)?;
         tasks.push(dm_user(&cache_http, user, content));
     }
@@ -57,12 +57,12 @@ pub async fn dm_user(
 ) -> Result<Message, Error> {
     let user = user.to_user(cache_http.http()).await?;
     if user.bot {
-        return Err(Error::SendDm(user, "User is a bot".to_string()));
+        return Err(Error::SendDm(user, "User is a bot".to_owned()));
     }
 
     if let Some(flags) = user.public_flags {
         if flags.contains(UserPublicFlags::SYSTEM) || flags.contains(UserPublicFlags::TEAM_USER) {
-            return Err(Error::SendDm(user, "User is a pseudo user".to_string()));
+            return Err(Error::SendDm(user, "User is a pseudo user".to_owned()));
         }
     }
 

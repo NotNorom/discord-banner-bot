@@ -93,7 +93,7 @@ pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
     let user_data = ctx.data();
     let album = user_data.get_album(guild_id).await?;
 
-    poise::send_reply(ctx, |f| f.content(album.to_string()).ephemeral(true)).await?;
+    poise::send_reply(ctx, |f| f.content(album.clone()).ephemeral(true)).await?;
 
     Ok(())
 }
