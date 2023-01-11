@@ -28,17 +28,25 @@ impl Providers {
             clients: ProviderClients::new(settings, http),
         }
     }
+
+    /// Return a list of images from the provider given the [album](Url)
+    pub async fn images(&self, album: &Album) -> Result<Vec<Url>, Error> {
+        use ProviderKind::*;
+        match album.provider_kind {
+            Imgur => self.imgur(&album.url).await,
+        }
+    }
 }
 
 /// Contains all available providers
 #[derive(Debug, Clone)]
-pub struct ProviderClients {
+struct ProviderClients {
     imgur: ImgurClient,
 }
 
 impl ProviderClients {
-    pub fn new(settings: &settings::Provider, http: &reqwest::Client) -> Self {
-        let imgur = ImgurClient::with_http_client(&settings.imgur.client_id, http.to_owned());
+    fn new(settings: &settings::Provider, http: &reqwest::Client) -> Self {
+        let imgur = ImgurClient::with_http_client(&settings.imgur.client_id, http.clone());
 
         Self { imgur }
     }
@@ -60,17 +68,7 @@ impl TryFrom<&Url> for ProviderKind {
             .ok_or_else(|| anyhow!("Must be domain, not IP address"))?;
         match domain {
             "imgur.com" => Ok(Self::Imgur),
-            _ => Err(Error::UnsupportedProvider(domain.to_string())),
-        }
-    }
-}
-
-impl Providers {
-    /// Return a list of images from the provider given the [album](Url)
-    pub async fn images(&self, album: &Album) -> Result<Vec<Url>, Error> {
-        use ProviderKind::*;
-        match album.provider_kind {
-            Imgur => self.images_imgur(&self.clients.imgur, &album.url).await,
+            _ => Err(Error::UnsupportedProvider(domain.to_owned())),
         }
     }
 }

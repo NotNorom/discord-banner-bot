@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-use imgurs::ImgurClient;
 use reqwest::Url;
 
 use crate::{Error, Error::ImgurHashExtraction};
@@ -8,10 +7,10 @@ use crate::{Error, Error::ImgurHashExtraction};
 use super::Providers;
 
 impl Providers {
-    pub(super) async fn images_imgur(&self, client: &ImgurClient, album: &Url) -> Result<Vec<Url>, Error> {
+    pub(super) async fn imgur(&self, album: &Url) -> Result<Vec<Url>, Error> {
         let album_id = extract_album_hash(album)?;
 
-        let album_data = client.album_info(album_id).await?;
+        let album_data = self.clients.imgur.album_info(album_id).await?;
         let images = album_data
             .data
             .images
