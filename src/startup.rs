@@ -15,7 +15,7 @@ use url::Url;
 use crate::{
     album_provider::Album,
     banner_scheduler::{BannerQueue, ScheduleMessage},
-    constants::{self, USER_AGENT},
+    constants::USER_AGENT,
     database::{guild_schedule::GuildSchedule, Database},
     settings::{settings, Settings},
     utils::{current_unix_timestamp, dm_users},
@@ -99,7 +99,7 @@ pub async fn setup(
         .user_agent(USER_AGENT)
         .build()?;
 
-    let database = Database::setup(constants::REDIS_PREFIX).await?;
+    let database = Database::setup(&settings.database).await?;
 
     let (tx, banner_queue) = BannerQueue::new(
         Arc::clone(&ctx),

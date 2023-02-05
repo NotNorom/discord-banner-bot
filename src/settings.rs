@@ -10,6 +10,7 @@ static SETTINGS: OnceCell<Settings> = OnceCell::new();
 #[derive(Debug, Deserialize)]
 pub struct Settings {
     pub bot: Bot,
+    pub database: Database,
     pub provider: Provider,
 }
 
@@ -18,6 +19,12 @@ pub struct Bot {
     pub log_level: String,
     pub prefix: String,
     pub token: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Database {
+    pub host: String,
+    pub prefix: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

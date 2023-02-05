@@ -3,13 +3,15 @@
 pub mod guild_schedule;
 pub mod guild_settings;
 
-use anyhow::Context;
 use fred::{
     prelude::*,
     types::{RedisKey, RedisMap},
 };
 
 use poise::async_trait;
+use tracing::info;
+
+use crate::settings;
 
 /// Describes how a struct is interacting with the database
 ///
@@ -37,22 +39,25 @@ pub struct Database {
     /// Every redis key is prefixed with this string.
     /// This helps identifying this program in case multiple prgrams are using the same
     /// redis instance.
-    prefix: &'static str,
+    prefix: String,
 }
 
 impl Database {
     /// Sets up database connections
-    pub async fn setup(prefix: &'static str) -> Result<Self, crate::Error> {
-        let config = RedisConfig::default();
-        let policy = ReconnectPolicy::new_exponential(0, 100, 30_000, 2);
+    pub async fn setup(settings: &settings::Database) -> Result<Self, crate::Error> {
+        let config = RedisConfig::from_url(&settings.host)?;
+        let policy = ReconnectPolicy::new_exponential(1, 20, 100, 2);
         let client = RedisClient::new(config);
+        info!("Connecting to database at {}", settings.host);
+        
         let _ = client.connect(Some(policy));
-        client
-            .wait_for_connect()
-            .await
-            .context("Redis connection setup")?;
+        client.wait_for_connect().await?;
+        info!("Database connected");
 
-        Ok(Self { client, prefix })
+        Ok(Self {
+            client,
+            prefix: settings.prefix.clone(),
+        })
     }
 
     /// Manipulats the database keys to have the correct prefix
