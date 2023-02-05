@@ -157,16 +157,19 @@ impl BannerQueue {
                     let interval = inner.interval();
                     let album = inner.album().clone();
 
-                    // re-enqueue the item
+                    // re-enqueue the item into the queue
+                    // don't make a database entry because at this point
+                    // the banner has not been changed yet
                     let key = self.queue.insert(inner, interval);
                     self.guild_id_to_key.insert(guild_id, key);
 
                     // get the images from the provider
+                    info!("Fetching images for {guild_id}");
                     let images = match self.providers.images(&album).await {
                         Ok(images) => images,
                         Err(e) => {
-                            error!("Could not get images from provider: {e:?}. Not scheduling {guild_id} again");
-                            continue;
+                            error!("Could not get images from provider: {e:?}. Skipping {guild_id} for this run");
+                            continue
                         },
                     };
 
@@ -177,7 +180,6 @@ impl BannerQueue {
                     // not when the command finally returns from discord (which might take a few seconds)
                     let schedule = GuildSchedule::new(guild_id.0, album.url().to_string(), interval.as_secs(), current_unix_timestamp());
 
-                    // change the banner
                     if let Err(e) = guild_id.set_random_banner(&self.ctx.http, &self.http_client, &images).await {
                         if let Err(handler_e) = self.handle_error(guild_id, &e).await {
                             error!("When handling {:?}, another error occurced {:?}", e, handler_e);
