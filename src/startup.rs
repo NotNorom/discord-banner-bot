@@ -25,7 +25,7 @@ use crate::{
 #[derive(Clone)]
 #[allow(dead_code)]
 /// The User data struct used in poise
-pub struct UserData {
+pub struct State {
     /// Used to communicate with the scheduler without needing a &mut self
     scheduler: Sender<ScheduleMessage>,
     /// Client for http request
@@ -36,7 +36,7 @@ pub struct UserData {
     settings: &'static Settings,
 }
 
-impl UserData {
+impl State {
     /// Enqueue an album for the guild at interval
     pub async fn enque(
         &self,
@@ -110,42 +110,41 @@ pub async fn setup(
         settings,
     );
 
-    let user_data = UserData {
+    let state = State {
         scheduler: tx,
         reqw_client,
         database,
         settings,
     };
 
-    // ask for existing guild ids
-    {
-        let known_guild_ids: Vec<u64> = user_data.database().known_guilds().await?;
-        info!("Known guild id's: {:?}", known_guild_ids);
+    // schedule already existing guilds
 
-        for id in known_guild_ids {
-            let entry = user_data.database().get::<GuildSchedule>(id).await?;
+    let known_guild_ids: Vec<u64> = state.database().known_guilds().await?;
+    info!("Known guild id's: {:?}", known_guild_ids);
 
-            let album_url = Url::parse(entry.album()).context("has already been parsed before")?;
-            let album = Album::try_from(&album_url).context("it's been in the db already")?;
+    for id in known_guild_ids {
+        let entry = state.database().get::<GuildSchedule>(id).await?;
 
-            let interval = entry.interval();
-            let last_run = entry.last_run();
-            let current_time = current_unix_timestamp();
-            let offset = interval - (current_time - last_run) % interval;
+        let album_url = Url::parse(entry.album()).context("has already been parsed before")?;
+        let album = Album::try_from(&album_url).context("it's been in the db already")?;
 
-            info!(
-                " - {} enqueing with interval={}, last_run={}, current_time={}, offset={}",
-                entry.guild_id(),
-                interval,
-                last_run,
-                current_time,
-                offset
-            );
+        let interval = entry.interval();
+        let last_run = entry.last_run();
+        let current_time = current_unix_timestamp();
+        let offset = interval - (current_time - last_run) % interval;
 
-            user_data
-                .enque(GuildId(entry.guild_id()), album, entry.interval(), Some(offset))
-                .await?;
-        }
+        info!(
+            " - {} enqueing with interval={}, last_run={}, current_time={}, offset={}",
+            entry.guild_id(),
+            interval,
+            last_run,
+            current_time,
+            offset
+        );
+
+        state
+            .enque(GuildId(entry.guild_id()), album, entry.interval(), Some(offset))
+            .await?;
     }
 
     info!("Spawning scheduler task");
@@ -157,5 +156,5 @@ pub async fn setup(
     dm_users(&ctx, framework.options().owners.clone(), &bot_ready).await?;
     info!(bot_ready);
 
-    Ok(user_data)
+    Ok(state)
 }
