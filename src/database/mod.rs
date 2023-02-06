@@ -60,6 +60,11 @@ impl Database {
         })
     }
 
+    /// Returns a reference to the RedisClient
+    pub fn client(&self) -> &RedisClient {
+        &self.client
+    }
+
     /// Manipulats the database keys to have the correct prefix
     fn key<K>(&self, key: K) -> String
     where
