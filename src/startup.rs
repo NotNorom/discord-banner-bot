@@ -17,7 +17,7 @@ use crate::{
     banner_scheduler::{BannerQueue, ScheduleMessage},
     constants::USER_AGENT,
     database::{guild_schedule::GuildSchedule, Database},
-    settings::{settings, Settings},
+    settings::Settings,
     utils::{current_unix_timestamp, dm_users},
     Data, Error,
 };
@@ -89,7 +89,7 @@ pub async fn setup(
     framework: &Framework<Data, Error>,
 ) -> Result<Data, Error> {
     info!("Setting up user data");
-    let settings = settings();
+    let settings = Settings::get();
 
     let ctx = Arc::new(ctx.clone());
     let capacity = 128;
