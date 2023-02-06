@@ -1,33 +1,16 @@
-mod album_provider;
-mod banner_scheduler;
-mod commands;
-mod constants;
-mod database;
-mod error;
-mod guild_id_ext;
-mod settings;
-mod startup;
-mod utils;
-
+use discord_banner_bot::{
+    commands,
+    error::{self, Error},
+    startup::setup,
+    Settings,
+};
 use poise::{serenity_prelude::GatewayIntents, FrameworkOptions, PrefixFrameworkOptions};
-use startup::UserData;
 use tracing::{error, info};
-
-use crate::error::Error;
-use crate::startup::setup;
-
-type Data = UserData;
-type Context<'a> = poise::Context<'a, Data, Error>;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    // get environment variables
-    // let _ = dotenv::dotenv().ok();
-    // let token = dotenv::var("DISCORD_TOKEN").expect("No token in env");
-    // let prefix = dotenv::var("PREFIX").unwrap_or_else(|_| "b!".to_string());
-
-    settings::init()?;
-    let settings = settings::settings();
+    Settings::init()?;
+    let settings = Settings::get();
 
     // install global collector configured based on RUST_LOG env var.
     tracing_subscriber::fmt::Subscriber::builder()
@@ -58,7 +41,7 @@ async fn main() -> Result<(), Error> {
             ],
             on_error: |err| {
                 Box::pin(async move {
-                    if let Err(e) = crate::error::on_error(err).await {
+                    if let Err(e) = error::on_error(err).await {
                         error!("{e:?}");
                     };
                 })
