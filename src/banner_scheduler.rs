@@ -53,8 +53,10 @@ impl ScheduleMessage {
     }
 }
 
+/// A QueueItem is to be used in the DelayQueue that's part of the
+/// `BannerQueue`
 #[derive(Debug, Clone)]
-pub struct QueueItem {
+struct QueueItem {
     guild_id: GuildId,
     album: Album,
     interval: Duration,
