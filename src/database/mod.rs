@@ -49,7 +49,7 @@ impl Database {
         let policy = ReconnectPolicy::new_exponential(1, 20, 100, 2);
         let client = RedisClient::new(config);
         info!("Connecting to database at {}", settings.host);
-        
+
         let _ = client.connect(Some(policy));
         client.wait_for_connect().await?;
         info!("Database connected");
@@ -63,6 +63,30 @@ impl Database {
     /// Returns a reference to the RedisClient
     pub fn client(&self) -> &RedisClient {
         &self.client
+    }
+
+    /// Get the database version
+    pub async fn db_version(&self) -> Result<String, RedisError> {
+        self.client.get(self.key("db_version")).await
+    }
+
+    /// Set the database version
+    pub async fn set_db_version(&self, version: &str) -> Result<(), RedisError> {
+        self.client
+            .set(self.key("db_version"), version, None, None, false)
+            .await
+    }
+
+    /// Get the bot version
+    pub async fn bot_version(&self) -> Result<String, RedisError> {
+        self.client.get(self.key("bot_version")).await
+    }
+
+    /// Set the bot version
+    pub async fn set_bot_version(&self, version: &str) -> Result<String, RedisError> {
+        self.client
+            .set(self.key("bot_version"), version, None, None, false)
+            .await
     }
 
     /// Manipulats the database keys to have the correct prefix
