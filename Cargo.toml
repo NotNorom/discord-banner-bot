@@ -29,7 +29,7 @@ tracing-subscriber = { version = "0.3.16", features = [
     "env-filter",
     "parking_lot",
 ] }
-fred = "5.2.0"
+fred = "6.0.0"
 poise = "0.5.2"
 config = { version = "0.13.3", default-features = false, features = ["toml"] }
 serde = "1.0.152"

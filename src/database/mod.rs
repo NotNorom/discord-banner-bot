@@ -47,10 +47,10 @@ impl Database {
     pub async fn setup(settings: &settings::Database) -> Result<Self, crate::Error> {
         let config = RedisConfig::from_url(&settings.host)?;
         let policy = ReconnectPolicy::new_exponential(1, 20, 100, 2);
-        let client = RedisClient::new(config);
+        let client = RedisClient::new(config, None, Some(policy));
         info!("Connecting to database at {}", settings.host);
 
-        let _ = client.connect(Some(policy));
+        let _ = client.connect();
         client.wait_for_connect().await?;
         info!("Database connected");
 
