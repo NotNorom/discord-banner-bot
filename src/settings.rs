@@ -54,7 +54,7 @@ pub struct Database {
 /// Settings for every provider
 #[derive(Debug, Deserialize, Clone)]
 pub struct Provider {
-    pub imgur: Imgur,
+    pub imgur: Option<Imgur>,
 }
 
 /// Imgur settings

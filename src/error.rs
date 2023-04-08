@@ -1,10 +1,11 @@
+use std::fmt::{Debug, Display};
+
 use poise::serenity_prelude::User;
 use thiserror::Error;
-use tracing::warn;
 
 use crate::{
     banner_scheduler::ScheduleMessage,
-    constants::{MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
+    constants::{MAXIMUM_INTERVAL, MINIMUM_INTERVAL}, album_provider::ProviderKind,
 };
 
 #[derive(Debug, Error)]
@@ -33,14 +34,17 @@ pub enum Error {
     #[error("Unsupported provider: {0}. For a list of supported providers see /help")]
     UnsupportedProvider(String),
 
-    #[error("Extraction of imgur hash failed: {0}. Is the url correct?")]
-    ImgurHashExtraction(String),
+    #[error("Inactive provider: {0:?}. Provider is supported but inactive. Please contact the bot owner /help")]
+    InactiveProvider(ProviderKind),
+
+    #[error("Extraction of imgur id failed: {0}. Is the url correct?")]
+    ImgurIdExtraction(String),
 
     #[error(transparent)]
     StdFmt(#[from] std::fmt::Error),
 
-    #[error("Could not send dm to {:?}. Reason: {}", .0, .1)]
-    SendDm(User, String),
+    #[error(transparent)]
+    SendDm(#[from] SendDm),
 
     #[error(transparent)]
     Other(#[from] anyhow::Error),
@@ -58,120 +62,70 @@ pub enum Command {
     GuildHasNoBanner,
 }
 
+#[derive(Debug, thiserror::Error)]
+pub struct SendDm {
+    user: Box<User>,
+    kind: SendDmKind,
+}
+
+impl SendDm {
+    pub fn pseudo_user(user: Box<User>) -> Error {
+        Error::SendDm(Self {
+            user,
+            kind: SendDmKind::PseudoUser,
+        })
+    }
+
+    pub fn bot_user(user: Box<User>) -> Error {
+        Error::SendDm(Self {
+            user,
+            kind: SendDmKind::BotUser,
+        })
+    }
+
+    pub fn other(user: Box<User>, msg: &str) -> Error {
+        Error::SendDm(Self {
+            user,
+            kind: SendDmKind::Other(msg.to_owned()),
+        })
+    }
+}
+
+#[derive(Debug)]
+pub enum SendDmKind {
+    PseudoUser,
+    BotUser,
+    Other(String),
+}
+
+impl Display for SendDm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use SendDmKind::*;
+
+        let user_name = &self.user.name;
+        let discriminator = self.user.discriminator;
+        let user_id = self.user.id;
+
+        write!(f, "Could not send dm to {user_name}#{discriminator}, {user_id}: ")?;
+
+        match self.kind {
+            PseudoUser => write!(f, "Pseudo user"),
+            BotUser => write!(f, "User is a bot"),
+            Other(ref reason) => write!(f, "{reason}"),
+        }
+    }
+}
+
 pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
     error: poise::FrameworkError<'_, U, E>,
 ) -> Result<(), Error> {
     match error {
         poise::FrameworkError::Setup { error, framework, .. } => {
-            tracing::error!("Error during framework setup: {}", error);
+            tracing::error!("Error during framework setup: {:#?}", error);
             let mut shard_manager = framework.shard_manager().lock().await;
             shard_manager.shutdown_all().await;
         }
-        poise::FrameworkError::Command { ctx, error } => {
-            let error = error.to_string();
-            ctx.say(&error).await?;
-            warn!("FrameworkCommand: {error}");
-        }
-        poise::FrameworkError::ArgumentParse { ctx, input, error } => {
-            // If we caught an argument parse error, give a helpful error message with the
-            // command explanation if available
-            let usage = ctx
-                .command()
-                .description
-                .clone()
-                .unwrap_or_else(|| "Please check the help menu for usage information".to_owned());
-            let response = if let Some(input) = input {
-                format!("**Cannot parse `{input}` as argument: {error}**\n{usage}")
-            } else {
-                format!("**{error}**\n{usage}")
-            };
-            ctx.say(response).await?;
-        }
-        poise::FrameworkError::CommandStructureMismatch { ctx, description } => {
-            warn!(
-                "Error: failed to deserialize interaction arguments for `/{}`: {}",
-                ctx.command.name, description,
-            );
-        }
-        poise::FrameworkError::CommandCheckFailed { ctx, error } => {
-            warn!(
-                "A command check failed in command {} for user {}: {:?}",
-                ctx.command().name,
-                ctx.author().name,
-                error,
-            );
-        }
-        poise::FrameworkError::CooldownHit {
-            remaining_cooldown,
-            ctx,
-        } => {
-            let msg = format!(
-                "You're too fast. Please wait {} seconds before retrying",
-                remaining_cooldown.as_secs()
-            );
-            ctx.send(|b| b.content(msg).ephemeral(true)).await?;
-        }
-        poise::FrameworkError::MissingBotPermissions {
-            missing_permissions,
-            ctx,
-        } => {
-            let msg = format!(
-                "Command cannot be executed because the bot is lacking permissions: {}",
-                missing_permissions,
-            );
-            ctx.send(|b| b.content(msg).ephemeral(true)).await?;
-        }
-        poise::FrameworkError::MissingUserPermissions {
-            missing_permissions,
-            ctx,
-        } => {
-            let response = if let Some(missing_permissions) = missing_permissions {
-                format!(
-                    "You're lacking permissions for `{}{}`: {}",
-                    ctx.prefix(),
-                    ctx.command().name,
-                    missing_permissions,
-                )
-            } else {
-                format!(
-                    "You may be lacking permissions for `{}{}`. Not executing for safety",
-                    ctx.prefix(),
-                    ctx.command().name,
-                )
-            };
-            ctx.send(|b| b.content(response).ephemeral(true)).await?;
-        }
-        poise::FrameworkError::NotAnOwner { ctx } => {
-            let response = "Only bot owners can call this command";
-            ctx.send(|b| b.content(response).ephemeral(true)).await?;
-        }
-        poise::FrameworkError::GuildOnly { ctx } => {
-            let response = "You cannot run this command in DMs.";
-            ctx.send(|b| b.content(response).ephemeral(true)).await?;
-        }
-        poise::FrameworkError::DmOnly { ctx } => {
-            let response = "You cannot run this command outside DMs.";
-            ctx.send(|b| b.content(response).ephemeral(true)).await?;
-        }
-        poise::FrameworkError::NsfwOnly { ctx } => {
-            let response = "You cannot run this command outside NSFW channels.";
-            ctx.send(|b| b.content(response).ephemeral(true)).await?;
-        }
-        poise::FrameworkError::DynamicPrefix { error, msg, .. } => {
-            warn!("Dynamic prefix failed: Error={error:?}, Msg={msg:?}");
-        }
-        poise::FrameworkError::EventHandler { error, event, .. } => {
-            warn!("Eventhandler failed: {error:?} with event {event:?}")
-        }
-        poise::FrameworkError::UnknownCommand { msg, prefix, .. } => {
-            warn!("Unkown command encountered. Prefix={prefix:?}, Msg={msg:?}")
-        }
-        poise::FrameworkError::UnknownInteraction { interaction, .. } => {
-            warn!("Unkown interaction encountered. Msg={interaction:?}")
-        }
-        unknown_err => {
-            tracing::error!("Unkown error occurred: {unknown_err}");
-        }
+        _ => poise::builtins::on_error(error).await?,
     }
 
     Ok(())

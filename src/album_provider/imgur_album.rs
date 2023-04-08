@@ -1,16 +1,27 @@
 use std::str::FromStr;
 
+use imgurs::ImgurClient;
+use poise::async_trait;
 use reqwest::Url;
 
-use crate::{Error, Error::ImgurHashExtraction};
+use crate::{Error, Error::ImgurIdExtraction};
 
-use super::Providers;
+use super::Provider;
 
-impl Providers {
-    pub(super) async fn imgur(&self, album: &Url) -> Result<Vec<Url>, Error> {
-        let album_id = extract_album_hash(album)?;
+pub(super) struct Imgur(ImgurClient);
 
-        let album_data = self.clients.imgur.album_info(album_id).await?;
+impl Imgur {
+    pub fn new(client: ImgurClient) -> Self {
+        Self(client)
+    }
+}
+
+#[async_trait]
+impl Provider for Imgur {
+    async fn provide(&self, album: &Url) -> Result<Vec<Url>, Error> {
+        let album_id = extract_album_id(album)?;
+
+        let album_data = self.0.album_info(album_id).await?;
         let images = album_data
             .data
             .images
@@ -23,20 +34,27 @@ impl Providers {
     }
 }
 
-/// Extract the hash part of an imgur url
-fn extract_album_hash(album: &Url) -> Result<&str, Error> {
-    let hash_url_segment = album
-        .path_segments()
-        .ok_or_else(|| ImgurHashExtraction("No path segments".into()))
-        .and_then(|mut segments| {
-            segments
-                .nth(1)
-                .ok_or_else(|| ImgurHashExtraction("Missing path segment, needs to be 2".into()))
-        })?;
+/// Extract the album id of an imgur url
+fn extract_album_id(album: &Url) -> Result<&str, Error> {
+    let Some(path_segments) = album.path_segments() else {
+        return Err(ImgurIdExtraction("No id found. Are you missing the part behind the '/' ?".into()));
+    };
 
-    if hash_url_segment.split_whitespace().count() > 1 {
-        return Err(ImgurHashExtraction("Hash contains whitespaces".into()));
+    let path_segments: Vec<_> = path_segments.collect();
+
+    if path_segments.contains(&"gallery") {
+        return Err(ImgurIdExtraction(
+            "Gallery links are not supported. Please use album links".into(),
+        ));
     }
 
-    Ok(hash_url_segment)
+    let Some(id) = path_segments.last() else {
+        return Err(ImgurIdExtraction("No id found. Are you missing the part behind the '/' ?".into()));
+    };
+
+    if id.split_whitespace().count() > 1 {
+        return Err(ImgurIdExtraction("Id contains whitespaces".into()));
+    }
+
+    Ok(id)
 }

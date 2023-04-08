@@ -9,7 +9,7 @@ use poise::{
 };
 use tracing::{info, warn};
 
-use crate::Error;
+use crate::{error::SendDm, Error};
 
 /// Returns the amount of seconds since UNIX 0.
 pub fn current_unix_timestamp() -> u64 {
@@ -69,12 +69,12 @@ pub async fn dm_user(
 ) -> Result<Message, Error> {
     let user = user.to_user(cache_http.http()).await?;
     if user.bot {
-        return Err(Error::SendDm(user, "User is a bot".to_owned()));
+        return Err(SendDm::bot_user(Box::new(user)));
     }
 
     if let Some(flags) = user.public_flags {
         if flags.contains(UserPublicFlags::SYSTEM) || flags.contains(UserPublicFlags::TEAM_USER) {
-            return Err(Error::SendDm(user, "User is a pseudo user".to_owned()));
+            return Err(SendDm::pseudo_user(Box::new(user)));
         }
     }
 

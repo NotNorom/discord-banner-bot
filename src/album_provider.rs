@@ -4,10 +4,11 @@
 //! A provider is a service like imgur, google drive, dropbox, or even just a folder on the local disc that
 //! can _provide_ an album.
 
-use std::{convert::TryFrom, fmt::Display, time::Duration};
+use std::{collections::HashMap, convert::TryFrom, fmt::Display, time::Duration};
 
 use anyhow::anyhow;
 use imgurs::ImgurClient;
+use poise::async_trait;
 use reqwest::Url;
 use tokio::time::sleep;
 
@@ -15,65 +16,62 @@ mod imgur_album;
 
 use crate::{settings, Error};
 
+use self::imgur_album::Imgur;
+
+#[async_trait]
+trait Provider: Send + Sync {
+    async fn provide(&self, album: &Url) -> Result<Vec<Url>, Error>;
+}
+
 /// Wrapper for all the different providers
-#[non_exhaustive]
-#[derive(Debug, Clone)]
 pub struct Providers {
-    clients: ProviderClients,
+    clients: HashMap<ProviderKind, Box<dyn Provider>>,
 }
 
 impl Providers {
     /// Create new Providers collection
     pub fn new(settings: &settings::Provider, http: &reqwest::Client) -> Self {
-        Self {
-            clients: ProviderClients::new(settings, http),
-        }
+        let mut clients = HashMap::new();
+
+        if let Some(imgur_settings) = &settings.imgur {
+            let imgur_client = ImgurClient::with_http_client(&imgur_settings.client_id, http.clone());
+            let imgur_provider = Imgur::new(imgur_client);
+
+            clients.insert(ProviderKind::Imgur, Box::new(imgur_provider) as Box<dyn Provider>);
+        };
+
+        Self { clients }
     }
 
     /// Return a list of images from the provider given the [album](Url)
     ///
     /// This function has retry logic
     pub async fn images(&self, album: &Album) -> Result<Vec<Url>, Error> {
-        use ProviderKind::*;
-
-        let image_getter = Box::new(|| match album.provider_kind {
-            Imgur => self.imgur(&album.url),
-        });
+        let image_getter = self
+            .clients
+            .get(&album.kind)
+            .ok_or(Error::InactiveProvider(album.kind))?;
 
         // fuck bounds checking on plain old arrays, I am using an iterator!
         let mut attempt_timeouts = [100, 250, 750, 1500, 2500].into_iter();
 
         loop {
-            match image_getter().await {
+            match image_getter.provide(&album.url).await {
                 Ok(images) => return Ok(images),
                 Err(err) => match attempt_timeouts.next() {
                     Some(timeout) => sleep(Duration::from_millis(timeout)).await,
-                    None => return Err(err), // return error when we have run out of retries
+                    None => return Err(err), // return last error when we have run out of retries
                 },
             };
         }
     }
 }
 
-/// Contains all available providers
-#[derive(Debug, Clone)]
-struct ProviderClients {
-    imgur: ImgurClient,
-}
-
-impl ProviderClients {
-    fn new(settings: &settings::Provider, http: &reqwest::Client) -> Self {
-        let imgur = ImgurClient::with_http_client(&settings.imgur.client_id, http.clone());
-
-        Self { imgur }
-    }
-}
-
-/// Used to select which provider to use
-#[non_exhaustive]
-#[derive(Debug, Clone)]
-enum ProviderKind {
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum ProviderKind {
     Imgur,
+    GoogleDriveFolder,
+    LocalFilesystem,
 }
 
 impl TryFrom<&Url> for ProviderKind {
@@ -82,21 +80,26 @@ impl TryFrom<&Url> for ProviderKind {
     fn try_from(url: &Url) -> Result<Self, Self::Error> {
         let domain = url
             .domain()
-            .ok_or_else(|| anyhow!("Must be domain, not IP address"))?;
-        match domain {
-            "imgur.com" => Ok(Self::Imgur),
-            _ => Err(Error::UnsupportedProvider(domain.to_owned())),
-        }
+            .ok_or_else(|| anyhow!("Must be a domain, not an IP address"))?;
+
+        Ok(match domain {
+            "imgur.com" => Self::Imgur,
+            _ => Err(Error::UnsupportedProvider(domain.to_owned()))?,
+        })
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Album {
     url: Url,
-    provider_kind: ProviderKind,
+    kind: ProviderKind,
 }
 
 impl Album {
+    pub fn new(url: Url, kind: ProviderKind) -> Self {
+        Self { url, kind }
+    }
+
     pub fn url(&self) -> &Url {
         &self.url
     }
@@ -110,7 +113,7 @@ impl TryFrom<&Url> for Album {
 
         Ok(Self {
             url: url.clone(),
-            provider_kind: kind,
+            kind,
         })
     }
 }
