@@ -110,6 +110,47 @@ The following commands can only be run by users with the `Manage Server` permiss
 - `/notification_channel`
 
 
+## Hosting the bot yourself
+
+- Install Rust. Probably using https://rustup.rs/
+- Install and start Redis. Probably using https://redis.io/
+- Create a discord bot. Probably using https://discord.com/developers/applications
+- Clone the project & compile
+- Add discord token into settings.toml
+- Add provider infos into settings.toml
+- Run
+
+Default settings.toml:
+```toml
+[bot]
+prefix = "b?"
+token = "insert_discord_token_here"
+log_level = "discord_banner_bot=debug,reqwest=info,poise=info,serenity=info,warn"
+
+[scheduler]
+minimum_interval = 15
+default_interval = 30
+maximum_interval = 2880
+
+[database]
+host = "redis://127.0.0.1"
+prefix = "dbb"
+
+[provider.imgur]
+secret = "insert_imgur_secret_here"
+client_id = "isnert_imgur_client_id_here"
+```
+
+
+## Redis layout
+
+- `PREFIX:active_schedules` keeps a list of currently active guild schedules.
+- `PREFIX:active_schedule:GUILD_ID` is a schedule for a specific guild. It contains the following fields:
+  - `guild_id`: The guild_id
+  - `album`: The album url
+  - `interval`: Minutes between banner changes
+  - `last_run`: Unix timestamp, when the banner was last changed successfully
+
 
 ## Credits
 
