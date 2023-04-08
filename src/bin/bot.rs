@@ -2,6 +2,7 @@ use discord_banner_bot::{
     commands,
     error::{self, Error},
     startup::setup,
+    utils::start_logging,
     Settings,
 };
 use poise::{serenity_prelude::GatewayIntents, FrameworkOptions, PrefixFrameworkOptions};
@@ -12,11 +13,7 @@ async fn main() -> Result<(), Error> {
     Settings::init()?;
     let settings = Settings::get();
 
-    // install global collector configured based on RUST_LOG env var.
-    tracing_subscriber::fmt::Subscriber::builder()
-        .with_env_filter(settings.bot.log_level.clone())
-        .try_init()
-        .expect("Set up logger");
+    start_logging(&settings.bot.log_level);
 
     info!("Setting up framework. prefix={}", settings.bot.prefix);
 

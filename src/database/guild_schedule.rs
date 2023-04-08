@@ -100,8 +100,8 @@ impl Entry for GuildSchedule {
     async fn insert(&self, db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError> {
         let id: RedisKey = id.into();
 
-        db.client.hmset(db.key(&id), self).await?;
-        db.client.sadd(db.key("known_guilds"), id).await?;
+        db.client.hmset(Self::key(db, &id), self).await?;
+        db.client.sadd(db.key("active_schedules"), id).await?;
 
         Ok(())
     }
@@ -112,19 +112,16 @@ impl Entry for GuildSchedule {
     {
         let id: RedisKey = id.into();
 
-        if !db.client.sismember(db.key("known_guilds"), id.clone()).await? {
-            return Err(RedisError::new(
-                RedisErrorKind::NotFound,
-                "No active schedule.",
-            ));
+        if !db.client.sismember(db.key("active_schedules"), id.clone()).await? {
+            return Err(RedisError::new(RedisErrorKind::NotFound, "No active schedule."));
         }
-        db.client.hgetall(db.key(id)).await
+        db.client.hgetall(Self::key(&db, id)).await
     }
 
     async fn delete(db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError> {
         let id: RedisKey = id.into();
-        db.client.del(db.key(&id)).await?;
-        db.client.srem(db.key("known_guilds"), id).await?;
+        db.client.del(Self::key(db, &id)).await?;
+        db.client.srem(db.key("active_schedules"), id).await?;
 
         Ok(())
     }

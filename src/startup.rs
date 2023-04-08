@@ -13,7 +13,7 @@ use tracing::info;
 use url::Url;
 
 use crate::{
-    album_provider::Album,
+    album_provider::{Album, ProviderKind},
     banner_scheduler::{BannerQueue, ScheduleMessage},
     constants::USER_AGENT,
     database::{guild_schedule::GuildSchedule, Database},
@@ -119,14 +119,17 @@ pub async fn setup(
 
     // schedule already existing guilds
 
-    let known_guild_ids: Vec<u64> = state.database().known_guilds().await?;
+    let known_guild_ids: Vec<u64> = state.database().active_schedules().await?;
     info!("Known guild id's: {:?}", known_guild_ids);
 
     for id in known_guild_ids {
         let entry = state.database().get::<GuildSchedule>(id).await?;
 
-        let album_url = Url::parse(entry.album()).context("has already been parsed before")?;
-        let album = Album::try_from(&album_url).context("it's been in the db already")?;
+        let album_url = Url::parse(entry.album()).context("album url has already been parsed before")?;
+        let kind: ProviderKind = (&album_url)
+            .try_into()
+            .context("provider kind has already been parsed before")?;
+        let album = Album::new(album_url, kind);
 
         let interval = entry.interval();
         let last_run = entry.last_run();

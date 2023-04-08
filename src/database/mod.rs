@@ -29,6 +29,16 @@ pub trait Entry {
     async fn delete(db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError>;
     /// The namespace for the type
     fn namespace() -> &'static str;
+
+    /// Same as [Database::key](Database::key) but namespace aware
+    fn key<K>(db: &Database, key: K) -> String
+    where
+        K: Into<RedisKey>,
+    {
+        let key = key.into();
+        let key = key.into_string().unwrap();
+        format!("{}:{}:{}", db.prefix, Self::namespace(), key)
+    }
 }
 
 /// The database used
@@ -90,18 +100,18 @@ impl Database {
     }
 
     /// Manipulats the database keys to have the correct prefix
-    fn key<K>(&self, key: K) -> String
+    pub(self) fn key<K>(&self, key: K) -> String
     where
         K: Into<RedisKey>,
     {
         let key = key.into();
         let key = key.into_string().unwrap();
-        format!("{}:{key}", self.prefix)
+        format!("{}:{}", self.prefix, key)
     }
 
     /// List of guild ids that have an active schedule going
-    pub async fn known_guilds(&self) -> Result<Vec<u64>, RedisError> {
-        self.client.smembers(self.key("known_guilds")).await
+    pub async fn active_schedules(&self) -> Result<Vec<u64>, RedisError> {
+        self.client.smembers(self.key("active_schedules")).await
     }
 
     /// Insert entry into database

@@ -19,6 +19,18 @@ pub fn current_unix_timestamp() -> u64 {
         .as_secs()
 }
 
+/// Starts logging based on log_level passed in.
+/// 
+/// log_level should be defined the same like RUST_ENV
+pub fn start_logging(log_level: &str) {
+    // install global collector configured based on RUST_LOG env var.
+    tracing_subscriber::fmt::Subscriber::builder()
+        .with_env_filter(log_level)
+        .try_init()
+        .expect("Set up logger");
+}
+
+
 /// Send a dm to all `users` with `content`.
 pub async fn dm_users(
     cache_http: &impl CacheHttp,
