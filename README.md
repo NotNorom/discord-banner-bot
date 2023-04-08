@@ -116,7 +116,7 @@ The following commands can only be run by users with the `Manage Server` permiss
 This bot is built using
 - Poise: https://github.com/kangalioo/poise
 - Serenity: https://github.com/serenity-rs/serenity/
-- Imgurs: https://github.com/MedzikUser/imgurs
+- Imgurs: https://github.com/M3DZIK/imgurs
 - Tokio: https://github.com/tokio-rs/tokio/
 - Fred: https://github.com/aembke/fred.rs
 
