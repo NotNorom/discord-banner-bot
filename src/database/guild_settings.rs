@@ -27,4 +27,3 @@ impl From<&GuildSettings> for RedisMap {
         RedisMap::try_from(map).unwrap()
     }
 }
-

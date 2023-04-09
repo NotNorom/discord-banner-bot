@@ -4,8 +4,9 @@ use poise::serenity_prelude::User;
 use thiserror::Error;
 
 use crate::{
+    album_provider::ProviderKind,
     banner_scheduler::ScheduleMessage,
-    constants::{MAXIMUM_INTERVAL, MINIMUM_INTERVAL}, album_provider::ProviderKind,
+    constants::{MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
 };
 
 #[derive(Debug, Error)]
@@ -34,7 +35,9 @@ pub enum Error {
     #[error("Unsupported provider: {0}. For a list of supported providers see /help")]
     UnsupportedProvider(String),
 
-    #[error("Inactive provider: {0:?}. Provider is supported but inactive. Please contact the bot owner /help")]
+    #[error(
+        "Inactive provider: {0:?}. Provider is supported but inactive. Please contact the bot owner /help"
+    )]
     InactiveProvider(ProviderKind),
 
     #[error("Extraction of imgur id failed: {0}. Is the url correct?")]

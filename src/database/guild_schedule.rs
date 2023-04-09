@@ -112,7 +112,11 @@ impl Entry for GuildSchedule {
     {
         let id: RedisKey = id.into();
 
-        if !db.client.sismember(db.key("active_schedules"), id.clone()).await? {
+        if !db
+            .client
+            .sismember(db.key("active_schedules"), id.clone())
+            .await?
+        {
             return Err(RedisError::new(RedisErrorKind::NotFound, "No active schedule."));
         }
         db.client.hgetall(Self::key(&db, id)).await
