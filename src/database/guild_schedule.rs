@@ -100,7 +100,7 @@ impl Entry for GuildSchedule {
     async fn insert(&self, db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError> {
         let id: RedisKey = id.into();
 
-        db.client.hmset(Self::key(db, &id), self).await?;
+        db.client.hset(Self::key(db, &id), self).await?;
         db.client.sadd(db.key("active_schedules"), id).await?;
 
         Ok(())
