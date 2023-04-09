@@ -42,12 +42,6 @@ fn extract_album_id(album: &Url) -> Result<&str, Error> {
 
     let path_segments: Vec<_> = path_segments.collect();
 
-    if path_segments.contains(&"gallery") {
-        return Err(ImgurIdExtraction(
-            "Gallery links are not supported. Please use album links".into(),
-        ));
-    }
-
     let Some(id) = path_segments.last() else {
         return Err(ImgurIdExtraction("No id found. Are you missing the part behind the '/' ?".into()));
     };
