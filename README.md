@@ -121,25 +121,7 @@ The following commands can only be run by users with the `Manage Server` permiss
 - Run
 
 Default settings.toml:
-```toml
-[bot]
-prefix = "b?"
-token = "insert_discord_token_here"
-log_level = "discord_banner_bot=debug,reqwest=info,poise=info,serenity=info,warn"
-
-[scheduler]
-minimum_interval = 15
-default_interval = 30
-maximum_interval = 2880
-
-[database]
-host = "redis://127.0.0.1"
-prefix = "dbb"
-
-[provider.imgur]
-secret = "insert_imgur_secret_here"
-client_id = "isnert_imgur_client_id_here"
-```
+https://github.com/NotNorom/discord-banner-bot/blob/master/settings.template.toml
 
 
 ## Redis layout
