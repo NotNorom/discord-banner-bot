@@ -1,0 +1,151 @@
+name: deploy
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+
+  create-windows-binaries:
+
+    strategy:
+      matrix:
+        conf: [x86_64]
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install stable
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        target: ${{ matrix.conf }}-pc-windows-msvc
+        override: true
+
+    - name: Build
+      run: |
+        cargo build --release --target ${{ matrix.conf }}-pc-windows-msvc
+
+    - name: Get the version
+      shell: bash
+      id: tagName
+      run: |
+        VERSION=$(cargo pkgid | cut -d# -f2 | cut -d: -f2)
+        echo "::set-output name=tag::$VERSION"
+
+    - name: Build package
+      id: package
+      shell: bash
+      run: |
+        ARCHIVE_TARGET="${{ matrix.conf }}-pc-windows-msvc"
+        ARCHIVE_NAME="discord-banner-bot-${{ steps.tagName.outputs.tag }}-$ARCHIVE_TARGET"
+        ARCHIVE_FILE="${ARCHIVE_NAME}.zip"
+        7z a ${ARCHIVE_FILE} \
+             ./target/${{ matrix.conf }}-pc-windows-msvc/release/bot.exe \
+             ./README.md
+        echo "::set-output name=file::${ARCHIVE_FILE}"
+        echo "::set-output name=name::${ARCHIVE_NAME}.zip"
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ steps.package.outputs.name }}
+        path: ${{ steps.package.outputs.file }}
+
+  create-unix-binaries:
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          - os: macos-latest
+            target: x86_64-apple-darwin
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        target: ${{ matrix.target }}
+        override: true
+
+    - name: Install musl
+      if: contains(matrix.target, 'linux-musl')
+      run: |
+        sudo apt-get install musl-tools
+
+    - name: Build
+      run: |
+        cargo build --release --target ${{ matrix.target }}
+
+    - name: Strip binary
+      run: |
+        strip target/${{ matrix.target }}/release/bot
+
+    - name: Get the version
+      id: tagName
+      run: |
+        VERSION=$(cargo pkgid | cut -d# -f2 | cut -d: -f2)
+        echo "::set-output name=tag::$VERSION"
+
+    - name: Build package
+      id: package
+      run: |
+        ARCHIVE_TARGET=${{ matrix.target }}
+        ARCHIVE_NAME="discord-banner-bot-${{ steps.tagName.outputs.tag }}-$ARCHIVE_TARGET"
+        ARCHIVE_FILE="${ARCHIVE_NAME}.tar.gz"
+        mkdir "/tmp/${ARCHIVE_NAME}"
+        cp README.md \
+           target/${{ matrix.target }}/release/bot \
+           /tmp/${ARCHIVE_NAME}
+        tar -czf ${PWD}/${ARCHIVE_FILE} -C /tmp/ ${ARCHIVE_NAME}
+        echo ::set-output "name=file::${ARCHIVE_FILE}"
+        echo ::set-output "name=name::${ARCHIVE_NAME}.tar.gz"
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ steps.package.outputs.name }}
+        path: ${{ steps.package.outputs.file }}
+
+
+  deploy:
+
+    needs: [create-windows-binaries, create-unix-binaries]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get version and release description
+        id: tagName
+        run: |
+          VERSION=$(cargo pkgid | cut -d# -f2 | cut -d: -f2)
+          echo "::set-output name=tag::$VERSION"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: ./binaries
+
+      - name: Create a release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: v${{ steps.tagName.outputs.tag }}
+          files: |
+            ./binaries/**/*.zip
+            ./binaries/**/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
