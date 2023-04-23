@@ -45,6 +45,12 @@ pub async fn start(
     let album_url = album.parse::<Url>()?;
     let album = Album::try_from(&album_url)?;
 
+    let user_data = ctx.data();
+
+    // schedule it
+    // interval is in minutes, so we multiply by 60 seconds
+    user_data.enque(guild_id, album, interval * 60, None).await?;
+
     // answer the user
     poise::send_reply(ctx, |f| {
         let content = format!(
@@ -56,12 +62,6 @@ pub async fn start(
     })
     .await?;
 
-    let user_data = ctx.data();
-
-    // schedule it
-    // interval is in minutes, so we multiply by 60 seconds
-    user_data.enque(guild_id, album, interval * 60, None).await?;
-
     Ok(())
 }
 
@@ -71,15 +71,15 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
     use crate::error::Command::*;
     let guild_id = ctx.guild_id().ok_or(GuildOnly)?;
 
+    // unschedule it!
+    let user_data = ctx.data();
+    user_data.deque(guild_id).await?;
+
     // answer the user
     poise::send_reply(ctx, |f| {
         f.content("Stopped currently running timer").ephemeral(true)
     })
     .await?;
-
-    // unschedule it!
-    let user_data = ctx.data();
-    user_data.deque(guild_id).await?;
 
     Ok(())
 }
@@ -146,6 +146,12 @@ pub async fn start_for_guild(
     let album_url = album.parse::<Url>()?;
     let album = Album::try_from(&album_url)?;
 
+    let user_data = ctx.data();
+
+    // schedule it
+    // interval is in minutes, so we multiply by 60 seconds
+    user_data.enque(guild_id, album, interval * 60, None).await?;
+
     // answer the user
     poise::send_reply(ctx, |f| {
         let content = format!(
@@ -156,12 +162,6 @@ pub async fn start_for_guild(
         f.content(content).ephemeral(true)
     })
     .await?;
-
-    let user_data = ctx.data();
-
-    // schedule it
-    // interval is in minutes, so we multiply by 60 seconds
-    user_data.enque(guild_id, album, interval * 60, None).await?;
 
     Ok(())
 }
