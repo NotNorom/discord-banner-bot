@@ -9,7 +9,7 @@ use poise::{
 };
 use rand::prelude::SliceRandom;
 use reqwest::Client;
-use tracing::{info, debug, trace, instrument};
+use tracing::{debug, info, instrument};
 use url::Url;
 
 use crate::Error;
@@ -18,7 +18,7 @@ use crate::Error;
 pub(crate) trait RandomBanner {
     /// Given a slice of [Url](Url), pick a random entry
     /// and try and set it as the guild banner
-    #[instrument(skip(self, http, reqw_client))]
+    #[instrument(skip(self, http, reqw_client, urls))]
     async fn set_random_banner(
         &mut self,
         http: impl AsRef<Http> + Sync + Send + 'async_trait,
@@ -45,7 +45,7 @@ pub(crate) trait RandomBanner {
 
 #[async_trait]
 impl RandomBanner for GuildId {
-    #[instrument(skip(http, reqw_client))]
+    #[instrument(skip(http, reqw_client, url))]
     async fn set_banner_from_url(
         &mut self,
         http: impl AsRef<Http> + Sync + Send + 'async_trait,
