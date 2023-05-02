@@ -12,10 +12,11 @@ use tracing::{error, info};
 async fn main() -> Result<(), Error> {
     Settings::init()?;
     let settings = Settings::get();
+    println!("Using log level: {}", settings.bot.log_level);
 
     start_logging(&settings.bot.log_level);
 
-    info!("Setting up framework. prefix={}", settings.bot.prefix);
+    info!("Setup: prefix={}", settings.bot.prefix);
 
     // set up & start client
     let result = poise::Framework::builder()
