@@ -183,8 +183,17 @@ impl BannerQueue {
                     let schedule = GuildSchedule::new(guild_id.0, album.url().to_string(), interval.as_secs(), current_unix_timestamp());
 
                     if let Err(e) = guild_id.set_random_banner(&self.ctx.http, &self.http_client, &images).await {
-                        if let Err(handler_e) = self.handle_error(guild_id, &e).await {
-                            error!("When handling {:?}, another error occurced {:?}", e, handler_e);
+
+                        // if an error occured or th action is to abort,
+                        // we go to the next iteration of the loop.
+                        // this will prevent the database update at the bottom
+                        match self.handle_error(guild_id, &e).await {
+                            Ok(ScheduleAction::Abort) => { continue },
+                            Err(handler_e) => {
+                                error!("When handling {:?}, another error occurced {:?}", e, handler_e);
+                                continue;
+                            }
+                            _ => {}
                         }
                     }
 
@@ -306,8 +315,18 @@ impl BannerQueue {
     /// This is a needed as well as the normal error handling in [crate::error::on_error] because
     /// the scheduler is running in its own task
     #[tracing::instrument(skip(self))]
-    async fn handle_error(&mut self, guild_id: GuildId, error: &Error) -> Result<(), Error> {
+    async fn handle_error(&mut self, guild_id: GuildId, error: &Error) -> Result<ScheduleAction, Error> {
         use poise::serenity_prelude;
+
+        let guild_name = format!("{guild_id}: {}", guild_id.name(&self.ctx).unwrap_or_default());
+
+        let message = MessageBuilder::new()
+            .push_bold("Error in guild: ")
+            .push_mono_line_safe(&guild_name)
+            .push_codeblock(error.to_string(), Some("rust"))
+            .build();
+
+        dm_users(&self.ctx, self.owners.clone(), &message).await?;
 
         match error {
             Error::Serenity(error) => match error {
@@ -319,10 +338,12 @@ impl BannerQueue {
                                 // remove guild from queue
                                 self.dequeue(guild_id).await?;
                                 warn!("Missing permissions to change banner for {guild_id}. Unscheduling.");
+                                return Ok(ScheduleAction::Abort);
                             }
                             404 => {
                                 self.dequeue(guild_id).await?;
                                 warn!("Guild does not exist: {guild_id}. Unscheduling.");
+                                return Ok(ScheduleAction::Abort);
                             }
                             _ => error!("unsuccessful http request: {error_response:?}"),
                         }
@@ -352,15 +373,12 @@ impl BannerQueue {
             }
         }
 
-        let guild_name = format!("{guild_id}: {}", guild_id.name(&self.ctx).unwrap_or_default());
-
-        let message = MessageBuilder::new()
-            .push_bold("Error in guild: ")
-            .push_mono_line_safe(&guild_name)
-            .push_codeblock(error.to_string(), Some("rust"))
-            .build();
-
-        dm_users(&self.ctx, self.owners.clone(), &message).await?;
-        Ok(())
+        Ok(ScheduleAction::Continue)
     }
+}
+
+
+enum ScheduleAction {
+    Continue,
+    Abort,
 }
