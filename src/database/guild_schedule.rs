@@ -5,6 +5,7 @@ use fred::{
     types::{FromRedis, RedisKey, RedisMap, RedisValue},
 };
 use poise::async_trait;
+use tracing::{instrument, debug};
 
 use super::{get_from_redis_map, Database, Entry};
 
@@ -122,10 +123,13 @@ impl Entry for GuildSchedule {
         db.client.hgetall(Self::key(&db, id)).await
     }
 
+    #[instrument(skip(db, id))]
     async fn delete(db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError> {
         let id: RedisKey = id.into();
+        debug!("Deleting id: {id:?}");
         db.client.del(Self::key(db, &id)).await?;
-        db.client.srem(db.key("active_schedules"), id).await?;
+        db.client.srem(db.key("active_schedules"), id.clone()).await?;
+        debug!("Deleted id: {id:?} successfully");
 
         Ok(())
     }

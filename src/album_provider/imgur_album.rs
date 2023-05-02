@@ -3,6 +3,7 @@ use std::str::FromStr;
 use imgurs::ImgurClient;
 use poise::async_trait;
 use reqwest::Url;
+use tracing::{debug, instrument};
 
 use crate::{Error, Error::ImgurIdExtraction};
 
@@ -18,6 +19,7 @@ impl Imgur {
 
 #[async_trait]
 impl Provider for Imgur {
+    #[instrument(skip(self))]
     async fn provide(&self, album: &Url) -> Result<Vec<Url>, Error> {
         let album_id = extract_album_id(album)?;
 
@@ -30,11 +32,14 @@ impl Provider for Imgur {
             .filter_map(|link| Url::from_str(&link).ok())
             .collect();
 
+        debug!("Found these image: {images:?}");
+
         Ok(images)
     }
 }
 
 /// Extract the album id of an imgur url
+#[instrument]
 fn extract_album_id(album: &Url) -> Result<&str, Error> {
     let Some(path_segments) = album.path_segments() else {
         return Err(ImgurIdExtraction("No id found. Are you missing the part behind the '/' ?".into()));

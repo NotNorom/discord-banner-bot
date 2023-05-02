@@ -11,6 +11,7 @@ use imgurs::ImgurClient;
 use poise::async_trait;
 use reqwest::Url;
 use tokio::time::sleep;
+use tracing::{debug, instrument};
 
 mod imgur_album;
 
@@ -46,6 +47,7 @@ impl Providers {
     /// Return a list of images from the provider given the [album](Url)
     ///
     /// This function has retry logic
+    #[instrument(skip(self))]
     pub async fn images(&self, album: &Album) -> Result<Vec<Url>, Error> {
         let image_getter = self
             .clients
@@ -55,12 +57,23 @@ impl Providers {
         // fuck bounds checking on plain old arrays, I am using an iterator!
         let mut attempt_timeouts = [100, 250, 750, 1500, 2500].into_iter();
 
+        let mut attempt = 1;
+
         loop {
+            debug!("Attempt {attempt}");
+            attempt += 1;
+
             match image_getter.provide(&album.url).await {
                 Ok(images) => return Ok(images),
                 Err(err) => match attempt_timeouts.next() {
-                    Some(timeout) => sleep(Duration::from_millis(timeout)).await,
-                    None => return Err(err), // return last error when we have run out of retries
+                    Some(timeout) => {
+                        debug!("Fail. Trying different timeout: {timeout}ms");
+                        sleep(Duration::from_millis(timeout)).await
+                    },
+                    None => {
+                        debug!("Final fail. Out of retries");
+                        return Err(err); // return last error when we have run out of retries
+                    }
                 },
             };
         }
