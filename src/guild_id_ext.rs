@@ -72,22 +72,23 @@ impl RandomBanner for GuildId {
         debug!("Found extention: {extension}");
 
         let image_bytes = reqw_client.get(url.as_ref()).send().await?.bytes().await?;
+        debug!("Amount of downloaded image bytes: {}", image_bytes.len());
         let b64 = base64::engine::general_purpose::STANDARD.encode(&image_bytes);
 
-        debug!("Image bytes: {b64}");
-        let payload = Some(format!("data:image/{extension};base64,{b64}"));
+        debug!("Base64 image bytes: {b64}");
+        let payload = format!("data:image/{extension};base64,{b64}");
 
         self.edit(http.as_ref(), |g| {
             #[cfg(feature = "dev")]
             {
                 debug!("Setting icon");
-                g.icon(payload.as_deref())
+                g.icon(Some(&payload))
             }
 
             #[cfg(not(feature = "dev"))]
             {
                 debug!("Setting banner");
-                g.banner(payload.as_deref())
+                g.banner(Some(&payload))
             }
         })
         .await?;
