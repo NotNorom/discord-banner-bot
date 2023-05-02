@@ -9,7 +9,7 @@ use poise::{
 };
 use rand::prelude::SliceRandom;
 use reqwest::Client;
-use tracing::info;
+use tracing::{info, debug, trace, instrument};
 use url::Url;
 
 use crate::Error;
@@ -18,6 +18,7 @@ use crate::Error;
 pub(crate) trait RandomBanner {
     /// Given a slice of [Url](Url), pick a random entry
     /// and try and set it as the guild banner
+    #[instrument(skip(self, http, reqw_client))]
     async fn set_random_banner(
         &mut self,
         http: impl AsRef<Http> + Sync + Send + 'async_trait,
@@ -44,6 +45,7 @@ pub(crate) trait RandomBanner {
 
 #[async_trait]
 impl RandomBanner for GuildId {
+    #[instrument(skip(http, reqw_client))]
     async fn set_banner_from_url(
         &mut self,
         http: impl AsRef<Http> + Sync + Send + 'async_trait,
@@ -66,17 +68,24 @@ impl RandomBanner for GuildId {
             .split('.')
             .last()
             .ok_or_else(|| anyhow!("No file extension on image url"))?;
+    
+        debug!("Found extention: {extension}");
 
         let image_bytes = reqw_client.get(url.as_ref()).send().await?.bytes().await?;
         let b64 = base64::engine::general_purpose::STANDARD.encode(&image_bytes);
+
+        trace!("Image bytes: {b64}");
+
         self.edit(http.as_ref(), |g| {
             #[cfg(feature = "dev")]
             {
-                g.icon(Some(&format!("data:image/{};base64,{}", extension, b64)))
+                trace!("Setting icon");
+                g.icon(Some(&format!("data:image/{extension};base64,{b64}")))
             }
 
             #[cfg(not(feature = "dev"))]
             {
+                trace!("Setting banner");
                 g.banner(Some(&format!("data:image/{extension};base64,{b64}")))
             }
         })
