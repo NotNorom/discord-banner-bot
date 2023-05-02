@@ -59,7 +59,7 @@ impl RandomBanner for GuildId {
             let features = guild.features;
 
             if !features.contains(&"BANNER".to_owned()) {
-                return Err(Error::Command(crate::error::Command::GuildHasNoBanner));
+                return Err(Error::Command(crate::error::Command::GuildHasNoBannerSet));
             }
         }
 
@@ -74,18 +74,18 @@ impl RandomBanner for GuildId {
         let image_bytes = reqw_client.get(url.as_ref()).send().await?.bytes().await?;
         let b64 = base64::engine::general_purpose::STANDARD.encode(&image_bytes);
 
-        trace!("Image bytes: {b64}");
+        debug!("Image bytes: {b64}");
 
         self.edit(http.as_ref(), |g| {
             #[cfg(feature = "dev")]
             {
-                trace!("Setting icon");
+                debug!("Setting icon");
                 g.icon(Some(&format!("data:image/{extension};base64,{b64}")))
             }
 
             #[cfg(not(feature = "dev"))]
             {
-                trace!("Setting banner");
+                debug!("Setting banner");
                 g.banner(Some(&format!("data:image/{extension};base64,{b64}")))
             }
         })

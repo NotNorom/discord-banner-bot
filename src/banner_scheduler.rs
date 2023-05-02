@@ -11,7 +11,7 @@ use tokio::{
 };
 use tokio_stream::StreamExt;
 use tokio_util::time::{delay_queue::Key, DelayQueue};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, warn, instrument};
 
 use crate::{
     album_provider::{Album, Providers},
@@ -217,6 +217,7 @@ impl BannerQueue {
     /// The banner will be changed once before a schedule is a created.
     /// If the banner can not changed, no new schedule will be created,
     /// this means that no schedule will be running.
+    #[instrument(skip(self))]
     async fn enqueue(&mut self, enqueue_msg: ScheduleMessageEnqueue) -> Result<(), Error> {
         let ScheduleMessageEnqueue {
             mut guild_id,
@@ -280,6 +281,7 @@ impl BannerQueue {
     }
 
     /// Remove guild from schedule for banner changes
+    #[instrument(skip(self))]
     async fn dequeue(&mut self, guild_id: GuildId) -> Result<(), Error> {
         if let Some(key) = self.guild_id_to_key.remove(&guild_id) {
             // removes entry from the delayqueue.
@@ -322,7 +324,7 @@ impl BannerQueue {
                                 self.dequeue(guild_id).await?;
                                 warn!("Guild does not exist: {guild_id}. Unscheduling.");
                             }
-                            _ => warn!("unsuccessful http request: {error_response:?}"),
+                            _ => error!("unsuccessful http request: {error_response:?}"),
                         }
                     }
                     http_err => error!("unhandled http error: {http_err:?}"),
@@ -330,7 +332,10 @@ impl BannerQueue {
                 serenity_err => error!("unhandled serenity error: {serenity_err:?}"),
             },
             Error::Command(error) => match error {
-                crate::error::Command::GuildHasNoBanner => {
+                crate::error::Command::GuildHasNoBannerSet => {
+                    warn!("Guild has no banner set, ignoring");
+                }
+                crate::error::Command::GuildHasNoBannerFeature => {
                     self.dequeue(guild_id).await?;
                     warn!("Guild has no banner feature");
                 }

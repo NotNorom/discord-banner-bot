@@ -61,8 +61,10 @@ pub enum Command {
     BelowMinTimeout,
     #[error("Interval must be at most {} minutes", MAXIMUM_INTERVAL)]
     AboveMaxTimeout,
-    #[error("Server doesn't have a banner. Is the required boost level reached?")]
-    GuildHasNoBanner,
+    #[error("Server doesn't have a banner set")]
+    GuildHasNoBannerSet,
+    #[error("Server doesn't have the required boost level")]
+    GuildHasNoBannerFeature,
 }
 
 #[derive(Debug, thiserror::Error)]

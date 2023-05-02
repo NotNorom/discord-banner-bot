@@ -27,7 +27,7 @@ pub async fn start(
 
         let guild = guild_id.to_partial_guild(ctx.http()).await?;
         if !guild.features.contains(&"BANNER".to_string()) {
-            return Err(GuildHasNoBanner.into());
+            return Err(GuildHasNoBannerFeature.into());
         }
     }
 
@@ -104,8 +104,19 @@ pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
     use crate::error::Command::*;
     let guild_id = ctx.guild_id().ok_or(GuildOnly)?;
 
+    // disable BANNER check when dev feature is enabled
+    #[cfg(not(feature = "dev"))]
+    {
+        use serenity_prelude::CacheHttp;
+
+        let guild = guild_id.to_partial_guild(ctx.http()).await?;
+        if !guild.features.contains(&"BANNER".to_string()) {
+            return Err(GuildHasNoBannerFeature.into());
+        }
+    }
+
     let guild = guild_id.to_partial_guild(&ctx).await?;
-    let banner = guild.banner_url().ok_or(GuildHasNoBanner)?;
+    let banner = guild.banner_url().ok_or(GuildHasNoBannerSet)?;
 
     // answer the user
     poise::send_reply(ctx, |f| {
