@@ -47,7 +47,7 @@ impl Providers {
     /// Return a list of images from the provider given the [album](Url)
     ///
     /// This function has retry logic
-    #[instrument(skip(self))]
+    #[instrument(skip_all)]
     pub async fn images(&self, album: &Album) -> Result<Vec<Url>, Error> {
         let image_getter = self
             .clients

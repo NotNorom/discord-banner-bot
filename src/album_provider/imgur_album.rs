@@ -19,7 +19,7 @@ impl Imgur {
 
 #[async_trait]
 impl Provider for Imgur {
-    #[instrument(skip(self, album))]
+    #[instrument(skip_all)]
     async fn provide(&self, album: &Url) -> Result<Vec<Url>, Error> {
         let album_id = extract_album_id(album)?;
 
@@ -37,7 +37,7 @@ impl Provider for Imgur {
 }
 
 /// Extract the album id of an imgur url
-#[instrument]
+#[instrument(skip_all)]
 fn extract_album_id(album: &Url) -> Result<&str, Error> {
     let Some(path_segments) = album.path_segments() else {
         return Err(ImgurIdExtraction("No id found. Are you missing the part behind the '/' ?".into()));
