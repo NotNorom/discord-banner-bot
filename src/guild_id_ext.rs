@@ -72,7 +72,9 @@ impl RandomBanner for GuildId {
         debug!("Found extention: {extension}");
 
         let image_bytes = reqw_client.get(url.as_ref()).send().await?.bytes().await?;
-        debug!("Amount of downloaded image bytes: {}", image_bytes.len());
+        let amount_of_bytes = image_bytes.len();
+        debug!("Amount of image bytes downloaded: {}", amount_of_bytes);
+
         let b64 = base64::engine::general_purpose::STANDARD.encode(&image_bytes);
 
         debug!("Base64 image bytes: {b64}");
@@ -93,7 +95,7 @@ impl RandomBanner for GuildId {
         })
         .await?;
 
-        info!("{} changed banner to: {}", self.0, url);
+        info!("{} changed banner to: {}", self.0, url.as_str());
 
         Ok(())
     }

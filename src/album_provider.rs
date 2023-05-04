@@ -64,7 +64,10 @@ impl Providers {
             attempt += 1;
 
             match image_getter.provide(&album.url).await {
-                Ok(images) => return Ok(images),
+                Ok(images) => {
+                    debug!("Success. Provider got back {} images.", images.len());
+                    return Ok(images);
+                },
                 Err(err) => match attempt_timeouts.next() {
                     Some(timeout) => {
                         debug!("Fail. Trying different timeout: {timeout}ms");
@@ -133,6 +136,6 @@ impl TryFrom<&Url> for Album {
 
 impl Display for Album {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.url)
+        write!(f, "{}", self.url.as_str())
     }
 }

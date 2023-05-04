@@ -3,7 +3,7 @@ use std::str::FromStr;
 use imgurs::ImgurClient;
 use poise::async_trait;
 use reqwest::Url;
-use tracing::{debug, instrument};
+use tracing::instrument;
 
 use crate::{Error, Error::ImgurIdExtraction};
 
@@ -19,7 +19,7 @@ impl Imgur {
 
 #[async_trait]
 impl Provider for Imgur {
-    #[instrument(skip(self))]
+    #[instrument(skip(self, album))]
     async fn provide(&self, album: &Url) -> Result<Vec<Url>, Error> {
         let album_id = extract_album_id(album)?;
 
@@ -31,8 +31,6 @@ impl Provider for Imgur {
             .map(|image_info| image_info.link.clone())
             .filter_map(|link| Url::from_str(&link).ok())
             .collect();
-
-        debug!("Found these image: {images:?}");
 
         Ok(images)
     }
