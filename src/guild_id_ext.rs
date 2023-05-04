@@ -75,9 +75,14 @@ impl RandomBanner for GuildId {
         let amount_of_bytes = image_bytes.len();
         debug!("Amount of image bytes downloaded: {}", amount_of_bytes);
 
+        // @todo proper error handling for this case.
+        // for now an early return will be enough
+        if amount_of_bytes == 0 {
+            return Ok(());
+        }
+
         let b64 = base64::engine::general_purpose::STANDARD.encode(&image_bytes);
 
-        debug!("Base64 image bytes: {b64}");
         let payload = format!("data:image/{extension};base64,{b64}");
 
         self.edit(http.as_ref(), |g| {
