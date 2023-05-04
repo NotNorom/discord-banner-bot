@@ -11,7 +11,7 @@ use tokio::{
 };
 use tokio_stream::StreamExt;
 use tokio_util::time::{delay_queue::Key, DelayQueue};
-use tracing::{debug, error, info, warn, instrument};
+use tracing::{debug, error, info, instrument, warn};
 
 use crate::{
     album_provider::{Album, Providers},
@@ -352,15 +352,15 @@ impl BannerQueue {
                 },
                 serenity_err => error!("unhandled serenity error: {serenity_err:?}"),
             },
-            Error::Command(error) => match error {
-                crate::error::Command::GuildHasNoBannerSet => {
-                    warn!("Guild has no banner set, ignoring");
-                }
-                crate::error::Command::GuildHasNoBannerFeature => {
+            Error::SchedulerTask(error) => match error {
+                crate::error::SchedulerTask::GuildHasNoAnimatedBannerFeature => {
                     self.dequeue(guild_id).await?;
-                    warn!("Guild has no banner feature");
+                    warn!("Trying to schedule, but guild has no animated banner feature. Removing schedule.");
                 }
-                command_err => error!("unhandled command error: {command_err:?}"),
+                crate::error::SchedulerTask::GuildHasNoBannerFeature => {
+                    self.dequeue(guild_id).await?;
+                    warn!("Trying to schedule, but guild has no banner feature. Removing schedule.");
+                } // command_err => error!("unhandled scheduler task error: {command_err:?}"),
             },
             Error::Imgur(error) => match error {
                 imgurs::Error::SendApiRequest(send_api_err) => {
@@ -376,7 +376,6 @@ impl BannerQueue {
         Ok(ScheduleAction::Continue)
     }
 }
-
 
 enum ScheduleAction {
     Continue,

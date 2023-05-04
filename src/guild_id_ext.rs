@@ -59,7 +59,7 @@ impl RandomBanner for GuildId {
             let features = guild.features;
 
             if !features.contains(&"BANNER".to_owned()) {
-                return Err(Error::Command(crate::error::Command::GuildHasNoBannerSet));
+                return Err(Error::SchedulerTask(crate::error::SchedulerTask::GuildHasNoBannerFeature));
             }
         }
 
@@ -68,6 +68,8 @@ impl RandomBanner for GuildId {
             .split('.')
             .last()
             .ok_or_else(|| anyhow!("No file extension on image url"))?;
+
+        // @todo insert check for animated banners here
 
         debug!("Found extention: {extension}");
 

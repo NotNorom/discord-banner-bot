@@ -29,6 +29,9 @@ pub enum Error {
     #[error(transparent)]
     Command(#[from] Command),
 
+    #[error(transparent)]
+    SchedulerTask(#[from] SchedulerTask),
+
     #[error("Scheduler Error: {msg:?}. Please contact the developer. See /help")]
     Scheduler { msg: ScheduleMessage },
 
@@ -65,6 +68,14 @@ pub enum Command {
     GuildHasNoBannerSet,
     #[error("Server doesn't have the required boost level")]
     GuildHasNoBannerFeature,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum SchedulerTask {
+    #[error("Server doesn't have the required boost level for banners")]
+    GuildHasNoBannerFeature,
+    #[error("Server doesn't have the required boost level for animated banners")]
+    GuildHasNoAnimatedBannerFeature,
 }
 
 #[derive(Debug, thiserror::Error)]
