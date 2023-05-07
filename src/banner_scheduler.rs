@@ -23,7 +23,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct ScheduleMessageEnqueue {
+pub struct Schedule {
     guild_id: GuildId,
     album: Album,
     interval: u64,
@@ -33,14 +33,14 @@ pub struct ScheduleMessageEnqueue {
 #[derive(Debug)]
 pub enum ScheduleMessage {
     /// discord guild id, album url, interval in minutes
-    Enqueue(ScheduleMessageEnqueue),
+    Enqueue(Schedule),
     /// discord guild id
     Dequeue(GuildId),
 }
 
 impl ScheduleMessage {
     pub fn new_enqueue(guild_id: GuildId, album: Album, interval: u64, offset: Option<u64>) -> Self {
-        Self::Enqueue(ScheduleMessageEnqueue {
+        Self::Enqueue(Schedule {
             guild_id,
             album,
             interval,
@@ -56,13 +56,13 @@ impl ScheduleMessage {
 /// A QueueItem is to be used in the DelayQueue that's part of the
 /// `BannerQueue`
 #[derive(Debug, Clone)]
-struct QueueItem {
+struct QueueEntry {
     guild_id: GuildId,
     album: Album,
     interval: Duration,
 }
 
-impl QueueItem {
+impl QueueEntry {
     /// Creates a new `QueueItem`
     pub fn new(guild_id: GuildId, album: Album, interval: Duration) -> Self {
         Self {
@@ -89,9 +89,9 @@ impl QueueItem {
 }
 
 /// Responsible for changing the banners.
-pub struct BannerQueue {
+pub struct ScheduleQueue {
     /// Queue, that will yield items after they time out
-    queue: DelayQueue<QueueItem>,
+    queue: DelayQueue<QueueEntry>,
     /// Internal struct needed for the DelayQueue
     guild_id_to_key: HashMap<GuildId, Key>,
     /// Discord
@@ -108,7 +108,7 @@ pub struct BannerQueue {
     providers: Providers,
 }
 
-impl BannerQueue {
+impl ScheduleQueue {
     pub fn new(
         ctx: Arc<poise::serenity_prelude::Context>,
         owners: HashSet<UserId>,
@@ -116,8 +116,8 @@ impl BannerQueue {
         http_client: reqwest::Client,
         capacity: usize,
         settings: &Settings,
-    ) -> (Sender<ScheduleMessage>, BannerQueue) {
-        let queue = DelayQueue::<QueueItem>::with_capacity(capacity);
+    ) -> (Sender<ScheduleMessage>, ScheduleQueue) {
+        let queue = DelayQueue::<QueueEntry>::with_capacity(capacity);
         // maps the guild id to the key used in the queue
         let guild_id_to_key = HashMap::with_capacity(capacity);
 
@@ -227,13 +227,13 @@ impl BannerQueue {
     /// If the banner can not changed, no new schedule will be created,
     /// this means that no schedule will be running.
     #[instrument(skip(self))]
-    async fn enqueue(&mut self, enqueue_msg: ScheduleMessageEnqueue) -> Result<(), Error> {
-        let ScheduleMessageEnqueue {
+    async fn enqueue(&mut self, enqueue_args: Schedule) -> Result<(), Error> {
+        let Schedule {
             mut guild_id,
             album,
             interval,
             offset,
-        } = enqueue_msg;
+        } = enqueue_args;
         info!(
             "Enque: {guild_id}, with {album}, every {interval:>6} seconds. Next run at: {}",
             current_unix_timestamp() + offset.unwrap_or_default()
@@ -281,7 +281,7 @@ impl BannerQueue {
         let interval = Duration::from_secs(interval);
         let offset = Duration::from_secs(offset.unwrap_or_default());
         let key = self.queue.insert(
-            QueueItem::new(guild_id, album.clone(), interval),
+            QueueEntry::new(guild_id, album.clone(), interval),
             interval + offset,
         );
         self.guild_id_to_key.insert(guild_id, key);

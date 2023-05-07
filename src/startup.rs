@@ -14,7 +14,7 @@ use url::Url;
 
 use crate::{
     album_provider::{Album, ProviderKind},
-    banner_scheduler::{BannerQueue, ScheduleMessage},
+    banner_scheduler::{ScheduleQueue, ScheduleMessage},
     constants::USER_AGENT,
     database::{guild_schedule::GuildSchedule, Database},
     settings::Settings,
@@ -101,7 +101,7 @@ pub async fn setup(
 
     let database = Database::setup(&settings.database).await?;
 
-    let (tx, banner_queue) = BannerQueue::new(
+    let (tx, banner_queue) = ScheduleQueue::new(
         Arc::clone(&ctx),
         framework.options().owners.clone(),
         database.clone(),
