@@ -52,3 +52,19 @@ pub async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
 pub async fn servers(ctx: Context<'_>) -> Result<(), Error> {
     poise::builtins::servers(ctx).await.map_err(Into::into)
 }
+
+pub fn commands() -> Vec<poise::Command<crate::State, crate::Error>> {
+    vec![
+        banner::album(),
+        banner::current(),
+        banner::start_for_guild(),
+        banner::start(),
+        banner::stop(),
+        help::help(),
+        notifications::notification_channel(),
+        register_globally(),
+        register(),
+        servers(),
+        unregister(),
+    ]
+}

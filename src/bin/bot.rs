@@ -1,5 +1,5 @@
 use discord_banner_bot::{
-    commands,
+    commands::commands,
     error::{self, Error},
     startup::setup,
     utils::start_logging,
@@ -24,19 +24,7 @@ async fn main() -> Result<(), Error> {
         .intents(GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT)
         .setup(move |ctx, ready, framework| Box::pin(setup(ctx, ready, framework)))
         .options(FrameworkOptions {
-            commands: vec![
-                commands::banner::album(),
-                commands::banner::current(),
-                commands::banner::start_for_guild(),
-                commands::banner::start(),
-                commands::banner::stop(),
-                commands::help::help(),
-                commands::notifications::notification_channel(),
-                commands::register_globally(),
-                commands::register(),
-                commands::servers(),
-                commands::unregister(),
-            ],
+            commands: commands(),
             on_error: |err| {
                 Box::pin(async move {
                     if let Err(e) = error::on_error(err).await {
