@@ -26,9 +26,6 @@ pub enum Error {
     #[error(transparent)]
     Command(#[from] Command),
 
-    #[error(transparent)]
-    SchedulerTask(#[from] SchedulerTask),
-
     #[error("Scheduler Error: {msg:?}. Please contact the developer. See /help")]
     Scheduler { msg: String },
 
@@ -60,14 +57,6 @@ pub enum Command {
     GuildHasNoBannerSet,
     #[error("Server doesn't have the required boost level")]
     GuildHasNoBannerFeature,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum SchedulerTask {
-    #[error("Server doesn't have the required boost level for banners")]
-    GuildHasNoBannerFeature,
-    #[error("Server doesn't have the required boost level for animated banners")]
-    GuildHasNoAnimatedBannerFeature,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -124,6 +113,8 @@ impl Display for SendDm {
     }
 }
 
+/// Handles framework related errors.
+/// Does __not__ handle scheduler related errors
 pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
     error: poise::FrameworkError<'_, U, E>,
 ) -> Result<(), Error> {

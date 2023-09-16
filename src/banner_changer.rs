@@ -9,9 +9,9 @@ use tracing::{error, info, warn};
 use crate::{
     album_provider::{ImageProviders, ProviderError},
     database::{guild_schedule::GuildSchedule, Database},
-    guild_id_ext::RandomBanner,
+    guild_id_ext::{RandomBanner, SetBannerError},
     schedule::Schedule,
-    utils::{current_unix_timestamp, dm_users},
+    utils::{current_unix_timestamp, dm_user, dm_users},
     Error,
 };
 
@@ -143,6 +143,7 @@ impl ChangerError {
                             }
                             StatusCode::NOT_FOUND => {
                                 let _ = repeater_handle.remove(guild_id).await;
+                                db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
                                 warn!("Guild does not exist: {guild_id}. Unscheduling.");
                                 return Ok(ScheduleAction::Abort);
                             }
@@ -157,18 +158,6 @@ impl ChangerError {
                 },
                 serenity_err => error!("unhandled serenity error: {serenity_err:?}"),
             },
-            Error::SchedulerTask(error) => match error {
-                crate::error::SchedulerTask::GuildHasNoAnimatedBannerFeature => {
-                    let _ = repeater_handle.remove(guild_id).await;
-                    db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
-                    warn!("Trying to schedule, but guild has no animated banner feature. Removing schedule.");
-                }
-                crate::error::SchedulerTask::GuildHasNoBannerFeature => {
-                    let _ = repeater_handle.remove(guild_id).await;
-                    db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
-                    warn!("Trying to schedule, but guild has no banner feature. Removing schedule.");
-                } // command_err => error!("unhandled scheduler task error: {command_err:?}"),
-            },
             Error::Provider(error) => match error {
                 ProviderError::Unsupported(name) => error!("Unsupported provider kind: {name}"),
                 ProviderError::Inactive(kind) => error!("Inactive provider: {kind:?}"),
@@ -177,8 +166,31 @@ impl ChangerError {
                     imgurs::Error::SendApiRequest(send_api_err) => {
                         warn!("Error with imgur request: {send_api_err:#?}");
                     }
+                    imgurs::Error::ApiError(code, message) => {
+                        warn!("Imgur responded with status_code={code} and message={message}");
+                    }
                     imgurs_err => error!("unhandled imgurs error: {imgurs_err}"),
                 },
+            },
+            Error::SetBanner(error) => match error {
+                SetBannerError::Transport(err) => {
+                    warn!("guild_id={guild_id}: {err}")
+                }
+                SetBannerError::DiscordApi(err) => warn!("guild_id={guild_id}: {err}"),
+                SetBannerError::CouldNotPickAUrl => warn!("guild_id={guild_id}: 'Could not pick a url'"),
+                SetBannerError::CouldNotDeterminFileExtension => {
+                    warn!("guild_id={guild_id}: 'Could not determine file extenstion'")
+                }
+                SetBannerError::MissingBannerFeature => {
+                    let _ = repeater_handle.remove(guild_id).await;
+                    db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
+
+                    let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
+                    let guild_owner = partial_guild.owner_id;
+                    info!("Letting owner={guild_owner} of guild={guild_id} know about the missing banner feature");
+
+                    dm_user(&ctx, guild_owner, &"Server has lost the required boost level. Stopping schedule. You can restart the bot after gaining the required boost level.").await?;
+                }
             },
             err => {
                 error!("unhandled bot error: {err:?}");
