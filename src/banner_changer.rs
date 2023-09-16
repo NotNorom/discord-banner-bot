@@ -132,7 +132,15 @@ impl ChangerError {
 
         dm_users(&ctx, owners.clone(), &message).await?;
 
-        match self.source.as_ref().downcast_ref::<crate::Error>().unwrap() {
+        let err = match self.source.downcast_ref::<crate::Error>() {
+            Some(err) => err,
+            None => {
+                error!("Recieved error that is not `crate::Error`: {}", self.source);
+                return Err(Error::Other(anyhow::anyhow!(self.source.to_string())));
+            }
+        };
+
+        match err {
             Error::Serenity(error) => match error {
                 serenity_prelude::Error::Http(error) => match error.as_ref() {
                     serenity_prelude::HttpError::UnsuccessfulRequest(error_response) => {
