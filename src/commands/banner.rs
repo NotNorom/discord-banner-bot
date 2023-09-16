@@ -26,8 +26,6 @@ pub async fn start(
     // disable BANNER check when dev feature is enabled
     #[cfg(not(feature = "dev"))]
     {
-        use serenity_prelude::CacheHttp;
-
         let guild = guild_id.to_partial_guild(ctx.http()).await?;
         if !guild.features.contains(&"BANNER".to_string()) {
             return Err(GuildHasNoBannerFeature.into());
@@ -111,8 +109,6 @@ pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
     // disable BANNER check when dev feature is enabled
     #[cfg(not(feature = "dev"))]
     {
-        use serenity_prelude::CacheHttp;
-
         let guild = guild_id.to_partial_guild(ctx.http()).await?;
         if !guild.features.contains(&"BANNER".to_string()) {
             return Err(GuildHasNoBannerFeature.into());
