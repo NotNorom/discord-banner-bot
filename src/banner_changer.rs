@@ -1,7 +1,9 @@
 use std::{collections::HashSet, sync::Arc};
 
 use async_repeater::RepeaterHandle;
-use poise::serenity_prelude::{Context, GuildId, MessageBuilder, UserId};
+use poise::serenity_prelude::{
+    Context, Error as SerenityError, GuildId, HttpError as SerenityHttpError, MessageBuilder, UserId,
+};
 use reqwest::StatusCode;
 
 use tracing::{error, info, warn};
@@ -114,8 +116,6 @@ impl ChangerError {
         db: Database,
         owners: HashSet<UserId>,
     ) -> Result<ScheduleAction, Error> {
-        use poise::serenity_prelude;
-
         let guild_id = self.schedule.guild_id();
 
         let guild_name = format!("{guild_id}: {}", guild_id.name(&ctx).unwrap_or_default());
@@ -130,8 +130,8 @@ impl ChangerError {
 
         match &self.source {
             Error::Serenity(error) => match error {
-                serenity_prelude::Error::Http(error) => match error.as_ref() {
-                    serenity_prelude::HttpError::UnsuccessfulRequest(error_response) => {
+                SerenityError::Http(error) => match error.as_ref() {
+                    SerenityHttpError::UnsuccessfulRequest(error_response) => {
                         match error_response.status_code {
                             StatusCode::FORBIDDEN => {
                                 // the bot does not have permissions to change the banner.
@@ -176,7 +176,35 @@ impl ChangerError {
                 SetBannerError::Transport(err) => {
                     warn!("guild_id={guild_id}: {err}")
                 }
-                SetBannerError::DiscordApi(err) => warn!("guild_id={guild_id}: {err}"),
+                SetBannerError::DiscordApi(discord_err) => match discord_err {
+                    SerenityError::Http(http_err) => match http_err.as_ref() {
+                        SerenityHttpError::UnsuccessfulRequest(error_response) => match error_response
+                            .status_code
+                        {
+                            StatusCode::FORBIDDEN => {
+                                // the bot does not have permissions to change the banner.
+                                // remove guild from queue
+                                let _ = repeater_handle.remove(guild_id).await;
+                                db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
+                                warn!("Missing permissions to change banner for {guild_id}. Unscheduling.");
+                                return Ok(ScheduleAction::Abort);
+                            }
+                            StatusCode::NOT_FOUND => {
+                                let _ = repeater_handle.remove(guild_id).await;
+                                db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
+                                warn!("Guild does not exist: {guild_id}. Unscheduling.");
+                                return Ok(ScheduleAction::Abort);
+                            }
+                            StatusCode::GATEWAY_TIMEOUT => {
+                                warn!("Gateway timed out. Retrying once.");
+                                return Ok(ScheduleAction::Retry);
+                            }
+                            _ => error!("unsuccessful http request: {error_response:?}"),
+                        },
+                        http_err => error!("unhandled http error in set_banner: {http_err:?}"),
+                    },
+                    serenity_err => error!("unhandled serenity error in set_banner: {serenity_err:?}"),
+                },
                 SetBannerError::CouldNotPickAUrl => warn!("guild_id={guild_id}: 'Could not pick a url'"),
                 SetBannerError::CouldNotDeterminFileExtension => {
                     warn!("guild_id={guild_id}: 'Could not determine file extenstion'")
