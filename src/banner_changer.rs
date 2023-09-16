@@ -41,14 +41,14 @@ impl ChangerTask {
             .providers
             .images(album)
             .await
-            .map_err(|err| ChangerError::new(err, guild_id, self.schedule.clone()))?;
+            .map_err(|err| ChangerError::new(err.into(), guild_id, self.schedule.clone()))?;
 
         let img_count = images.len();
         info!("Fetched {} images. Setting banner", img_count);
         guild_id
             .set_random_banner(self.ctx.http.clone(), &self.http_client, &images)
             .await
-            .map_err(|err| ChangerError::new(err, guild_id, self.schedule.clone()))?;
+            .map_err(|err| ChangerError::new(err.into(), guild_id, self.schedule.clone()))?;
 
         info!("Inserting schedule into database");
         let schedule = GuildSchedule::new(
@@ -61,7 +61,7 @@ impl ChangerTask {
         self.database
             .insert(&schedule, schedule.guild_id())
             .await
-            .map_err(|err| ChangerError::new(err, guild_id, self.schedule.clone()))?;
+            .map_err(|err| ChangerError::new(err.into(), guild_id, self.schedule.clone()))?;
 
         Ok(())
     }
@@ -90,19 +90,15 @@ impl ChangerTask {
 pub struct ChangerError {
     guild_id: GuildId,
     schedule: Schedule,
-    source: Box<dyn std::error::Error + Send + Sync>,
+    source: crate::Error,
 }
 
 impl ChangerError {
-    pub fn new(
-        err: impl std::error::Error + Send + Sync + 'static,
-        guild_id: GuildId,
-        schedule: Schedule,
-    ) -> Self {
+    pub fn new(err: Error, guild_id: GuildId, schedule: Schedule) -> Self {
         Self {
             guild_id,
             schedule,
-            source: Box::new(err),
+            source: err,
         }
     }
 
@@ -132,15 +128,7 @@ impl ChangerError {
 
         dm_users(&ctx, owners.clone(), &message).await?;
 
-        let err = match self.source.downcast_ref::<crate::Error>() {
-            Some(err) => err,
-            None => {
-                error!("Recieved error that is not `crate::Error`: {}", self.source);
-                return Err(Error::Other(anyhow::anyhow!(self.source.to_string())));
-            }
-        };
-
-        match err {
+        match &self.source {
             Error::Serenity(error) => match error {
                 serenity_prelude::Error::Http(error) => match error.as_ref() {
                     serenity_prelude::HttpError::UnsuccessfulRequest(error_response) => {

@@ -6,6 +6,7 @@ use thiserror::Error;
 use crate::{
     album_provider::ProviderError,
     constants::{MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
+    guild_id_ext::SetBannerError,
 };
 
 #[derive(Debug, Error)]
@@ -39,6 +40,9 @@ pub enum Error {
 
     #[error(transparent)]
     SendDm(#[from] SendDm),
+
+    #[error(transparent)]
+    SetBanner(#[from] SetBannerError),
 
     #[error(transparent)]
     Other(#[from] anyhow::Error),
