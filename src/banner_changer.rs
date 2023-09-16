@@ -110,7 +110,7 @@ impl ChangerError {
     ///
     /// This is a needed as well as the normal error handling in [crate::error::on_error] because
     /// the scheduler is running in its own task
-    #[tracing::instrument(skip(self, ctx, db))]
+    #[tracing::instrument(skip(self, ctx, db, repeater_handle, owners))]
     pub async fn handle_error(
         &self,
         ctx: Arc<Context>,
