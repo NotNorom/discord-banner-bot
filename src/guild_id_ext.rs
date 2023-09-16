@@ -113,7 +113,7 @@ impl RandomBanner for GuildId {
         })
         .await?;
 
-        info!("{} changed banner to: {}", self.0, url.as_str());
+        info!("Guild {} changed to: {}", self.0, url.as_str());
 
         Ok(())
     }
