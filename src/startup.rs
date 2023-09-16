@@ -2,21 +2,22 @@ use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
 
+use async_repeater::{Repeater, RepeaterHandle};
 use poise::{
     serenity_prelude::{self, GuildId},
     Framework,
 };
 use reqwest::Client;
-use tokio::sync::mpsc::Sender;
 
-use tracing::info;
+use tracing::{error, info};
 use url::Url;
 
 use crate::{
-    album_provider::{Album, ProviderKind},
-    banner_scheduler::{ScheduleQueue, ScheduleMessage},
+    album_provider::{Album, ImageProviders, ProviderKind},
+    banner_changer::ChangerTask,
     constants::USER_AGENT,
     database::{guild_schedule::GuildSchedule, Database},
+    schedule::Schedule,
     settings::Settings,
     utils::{current_unix_timestamp, dm_users},
     Data, Error,
@@ -27,7 +28,7 @@ use crate::{
 /// The User data struct used in poise
 pub struct State {
     /// Used to communicate with the scheduler without needing a &mut self
-    scheduler: Sender<ScheduleMessage>,
+    repeater_handle: RepeaterHandle<Schedule>,
     /// Client for http request
     reqw_client: Client,
     /// database pool
@@ -38,27 +39,22 @@ pub struct State {
 
 impl State {
     /// Enqueue an album for the guild at interval
-    pub async fn enque(
-        &self,
-        guild_id: GuildId,
-        album: Album,
-        interval: u64,
-        offset: Option<u64>,
-    ) -> Result<(), Error> {
-        let message = ScheduleMessage::new_enqueue(guild_id, album, interval, offset);
-        self.scheduler
-            .send(message)
+    pub async fn enque(&self, schedule: Schedule) -> Result<(), Error> {
+        info!("Inserting {schedule:?}");
+        self.repeater_handle
+            .insert(schedule)
             .await
-            .map_err(|err| Error::Scheduler { msg: err.0 })
+            .map_err(|err| Error::Scheduler { msg: err.to_string() })
     }
 
     /// Dequeue a guild
     pub async fn deque(&self, guild_id: GuildId) -> Result<(), Error> {
-        let message = ScheduleMessage::new_dequeue(guild_id);
-        self.scheduler
-            .send(message)
+        info!("Removing {guild_id:?}");
+        self.repeater_handle
+            .remove(guild_id)
             .await
-            .map_err(|err| Error::Scheduler { msg: err.0 })
+            .map_err(|err| Error::Scheduler { msg: err.to_string() })?;
+        Ok(self.database.delete::<GuildSchedule>(guild_id.0).await?)
     }
 
     #[allow(dead_code)]
@@ -90,9 +86,7 @@ pub async fn setup(
 ) -> Result<Data, Error> {
     info!("Setting up user data");
     let settings = Settings::get();
-
-    let ctx = Arc::new(ctx.clone());
-    let capacity = 128;
+    let capacity = settings.scheduler.capacity;
 
     let reqw_client = Client::builder()
         .timeout(Duration::from_secs(30))
@@ -100,21 +94,41 @@ pub async fn setup(
         .build()?;
 
     let database = Database::setup(&settings.database).await?;
+    let providers = Arc::new(ImageProviders::new(&settings.provider, &reqw_client));
+    let repeater = Repeater::with_capacity(capacity);
+    let owners = framework.options().owners.clone();
+    let ctx = Arc::new(ctx.clone());
 
-    let (tx, banner_queue) = ScheduleQueue::new(
-        Arc::clone(&ctx),
-        framework.options().owners.clone(),
-        database.clone(),
-        reqw_client.clone(),
-        capacity,
-        settings,
-    );
+    let state = {
+        let db = database.clone();
+        let ctx2 = ctx.clone();
+        let http = reqw_client.clone();
+        let owners = owners.clone();
 
-    let state = State {
-        scheduler: tx,
-        reqw_client,
-        database,
-        settings,
+        let callback = |schedule, handle| async move {
+            info!("Creating changer task for schedule {schedule:?}");
+            let task = ChangerTask::new(ctx2.clone(), db.clone(), http.clone(), providers, schedule);
+            info!("Running task now");
+
+            let Err(err) = task.run().await else {
+                info!("Task finished successfully");
+                return;
+            };
+            error!("In changer task: {err:?}");
+
+            let Err(critical_err) = err.handle_error(ctx2, handle, db, owners).await else {
+                info!("Error happend and was handled successfully");
+                return;
+            };
+            error!("CRITICAL after handling previous error: {critical_err:?}")
+        };
+
+        State {
+            repeater_handle: repeater.run_with_async_callback(callback),
+            reqw_client,
+            database,
+            settings,
+        }
     };
 
     // schedule already existing guilds
@@ -137,26 +151,27 @@ pub async fn setup(
         let offset = interval - (current_time - last_run) % interval;
 
         info!(
-            " - {} enqueing with interval={}, last_run={}, current_time={}, offset={}",
+            " - guild_id={}, interval={}, last_run={}, next_run={}, in {} seconds",
             entry.guild_id(),
             interval,
             last_run,
-            current_time,
-            offset
+            current_time + offset,
+            offset,
         );
 
-        state
-            .enque(GuildId(entry.guild_id()), album, entry.interval(), Some(offset))
-            .await?;
-    }
+        let schedule = Schedule::with_offset(
+            Duration::from_secs(entry.interval()),
+            GuildId(entry.guild_id()),
+            album,
+            Duration::from_secs(offset),
+        );
 
-    info!("Spawning scheduler task");
-    // Spawn the scheduler in a separate task so it can concurrently
-    tokio::spawn(banner_queue.scheduler());
+        state.enque(schedule).await?;
+    }
 
     // Notify that we're ready
     let bot_ready = "Bot ready!";
-    dm_users(&ctx, framework.options().owners.clone(), &bot_ready).await?;
+    dm_users(&ctx, owners, &bot_ready).await?;
     info!(bot_ready);
 
     Ok(state)

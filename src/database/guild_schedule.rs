@@ -5,7 +5,7 @@ use fred::{
     types::{FromRedis, RedisKey, RedisMap, RedisValue},
 };
 use poise::async_trait;
-use tracing::{instrument, debug};
+use tracing::{debug, instrument};
 
 use super::{get_from_redis_map, Database, Entry};
 
@@ -120,7 +120,7 @@ impl Entry for GuildSchedule {
         {
             return Err(RedisError::new(RedisErrorKind::NotFound, "No active schedule."));
         }
-        db.client.hgetall(Self::key(&db, id)).await
+        db.client.hgetall(Self::key(db, id)).await
     }
 
     #[instrument(skip(db, id))]

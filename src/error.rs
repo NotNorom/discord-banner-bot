@@ -4,8 +4,7 @@ use poise::serenity_prelude::User;
 use thiserror::Error;
 
 use crate::{
-    album_provider::ProviderKind,
-    banner_scheduler::ScheduleMessage,
+    album_provider::ProviderError,
     constants::{MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
 };
 
@@ -24,27 +23,16 @@ pub enum Error {
     InvalidUrl(#[from] url::ParseError),
 
     #[error(transparent)]
-    Imgur(#[from] imgurs::Error),
-
-    #[error(transparent)]
     Command(#[from] Command),
 
     #[error(transparent)]
     SchedulerTask(#[from] SchedulerTask),
 
     #[error("Scheduler Error: {msg:?}. Please contact the developer. See /help")]
-    Scheduler { msg: ScheduleMessage },
+    Scheduler { msg: String },
 
-    #[error("Unsupported provider: {0}. For a list of supported providers see /help")]
-    UnsupportedProvider(String),
-
-    #[error(
-        "Inactive provider: {0:?}. Provider is supported but inactive. Please contact the bot owner /help"
-    )]
-    InactiveProvider(ProviderKind),
-
-    #[error("Extraction of imgur id failed: {0}. Is the url correct?")]
-    ImgurIdExtraction(String),
+    #[error(transparent)]
+    Provider(#[from] ProviderError),
 
     #[error(transparent)]
     StdFmt(#[from] std::fmt::Error),

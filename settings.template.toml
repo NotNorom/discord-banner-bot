@@ -4,6 +4,7 @@ token = "insert_discord_token_here"
 log_level = "discord_banner_bot=debug,reqwest=info,poise=info,serenity=info,warn"
 
 [scheduler]
+capacity = 1024
 minimum_interval = 15
 default_interval = 30
 maximum_interval = 2880

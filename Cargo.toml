@@ -1,6 +1,6 @@
 [package]
 name = "discord-banner-bot"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["Andre Julius <noromoron@gmail.com>"]
 repository = "https://github.com/NotNorom/discord-banner-bot"
@@ -17,31 +17,34 @@ debug = true
 
 
 [dependencies]
-thiserror = "1.0.40"
-anyhow = "1.0.71"
-imgurs = "0.11.1"
+thiserror = "1.0.48"
+anyhow = "1.0.75"
+imgurs = "0.11.2"
 tokio-stream = "0.1.14"
-url = "2.3.1"
+url = "2.4.1"
 rand = "0.8.5"
-base64 = "0.21.0"
+base64 = "0.21.4"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = [
     "tracing-log",
     "env-filter",
     "parking_lot",
 ] }
-fred = { version = "6.2.0", default-features = false, features = [
+fred = { version = "6.3.1", default-features = false, features = [
     "pool-prefer-active",
 ] }
-poise = "0.5.5"
+poise = "0.5.6"
 config = { version = "0.13.3", default-features = false, features = ["toml"] }
-serde = "1.0.160"
-once_cell = "1.17.1"
-reqwest = { version = "0.11.17", default-features = false, features = [
+serde = "1.0.188"
+once_cell = "1.18.0"
+reqwest = { version = "0.11.20", default-features = false, features = [
     "json",
     "native-tls-vendored",
 ] }
-tokio = { version = "1.28.0", features = [
+tokio = { version = "1.32.0", features = [
     "rt-multi-thread",
 ], default-features = false }
 tokio-util = { version = "0.7.8", features = ["time"] }
+async-repeater = { git = "https://github.com/NotNorom/async-repeater.git" }
+# async-repeater = { path = "/home/norom/Documents/Code/async-repeater" }
+

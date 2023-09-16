@@ -1,9 +1,12 @@
+use std::time::Duration;
+
 use poise::serenity_prelude;
 use reqwest::Url;
 
 use crate::{
     album_provider::Album,
     constants::{DEFAULT_INTERVAL, MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
+    schedule::Schedule,
     Context, Error,
 };
 
@@ -49,7 +52,8 @@ pub async fn start(
 
     // schedule it
     // interval is in minutes, so we multiply by 60 seconds
-    user_data.enque(guild_id, album, interval * 60, None).await?;
+    let schedule = Schedule::new(Duration::from_secs(interval * 60), guild_id, album);
+    user_data.enque(schedule).await?;
 
     // answer the user
     poise::send_reply(ctx, |f| {
@@ -161,7 +165,8 @@ pub async fn start_for_guild(
 
     // schedule it
     // interval is in minutes, so we multiply by 60 seconds
-    user_data.enque(guild_id, album, interval * 60, None).await?;
+    let schedule = Schedule::new(Duration::from_secs(interval * 60), guild_id, album);
+    user_data.enque(schedule).await?;
 
     // answer the user
     poise::send_reply(ctx, |f| {

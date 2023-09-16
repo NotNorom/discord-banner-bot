@@ -1,10 +1,11 @@
 pub mod album_provider;
-pub mod banner_scheduler;
+pub mod banner_changer;
 pub mod commands;
 pub mod constants;
 pub mod database;
 pub mod error;
 pub mod guild_id_ext;
+pub mod schedule;
 pub mod settings;
 pub mod startup;
 pub mod utils;

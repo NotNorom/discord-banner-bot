@@ -11,6 +11,7 @@ static SETTINGS: OnceCell<Settings> = OnceCell::new();
 #[derive(Debug, Deserialize)]
 pub struct Settings {
     pub bot: Bot,
+    pub scheduler: Scheduler,
     pub database: Database,
     pub provider: Provider,
 }
@@ -42,6 +43,15 @@ pub struct Bot {
     pub log_level: String,
     pub prefix: String,
     pub token: String,
+}
+
+/// Scheduler settings
+#[derive(Debug, Deserialize)]
+pub struct Scheduler {
+    pub capacity: usize,
+    pub minimum_interval: u64,
+    pub default_interval: u64,
+    pub maximum_interval: u64,
 }
 
 /// Database settings

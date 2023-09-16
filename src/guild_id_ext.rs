@@ -1,18 +1,29 @@
 //! This module is for extending the [GuildId](GuildId) struct
 //! with functions for setting the banner from an URL.
 
-use anyhow::anyhow;
 use base64::Engine;
 use poise::{
     async_trait,
-    serenity_prelude::{GuildId, Http},
+    serenity_prelude::{self, GuildId, Http},
 };
 use rand::prelude::SliceRandom;
 use reqwest::Client;
 use tracing::{debug, info, instrument};
 use url::Url;
 
-use crate::Error;
+#[derive(Debug, thiserror::Error)]
+pub enum SetBannerError {
+    #[error(transparent)]
+    Transport(#[from] reqwest::Error),
+    #[error(transparent)]
+    DiscordApi(#[from] serenity_prelude::Error),
+    #[error("could not pick a url. rng failed")]
+    CouldNotPickAUrl,
+    #[error("could not determin file extenstion on image")]
+    CouldNotDeterminFileExtension,
+    #[error("Missing 'banner' feature")]
+    MissingBannerFeature,
+}
 
 #[async_trait]
 pub(crate) trait RandomBanner {
@@ -24,10 +35,10 @@ pub(crate) trait RandomBanner {
         http: impl AsRef<Http> + Sync + Send + 'async_trait,
         reqw_client: &Client,
         urls: &[Url],
-    ) -> Result<(), Error> {
+    ) -> Result<(), SetBannerError> {
         let url = urls
             .choose(&mut rand::thread_rng())
-            .ok_or_else(|| anyhow!("Could not pick a url"))?;
+            .ok_or(SetBannerError::CouldNotPickAUrl)?;
 
         self.set_banner_from_url(http, reqw_client, url).await
     }
@@ -40,7 +51,7 @@ pub(crate) trait RandomBanner {
         http: impl AsRef<Http> + Sync + Send + 'async_trait,
         reqw_client: &Client,
         url: &Url,
-    ) -> Result<(), Error>;
+    ) -> Result<(), SetBannerError>;
 }
 
 #[async_trait]
@@ -51,7 +62,7 @@ impl RandomBanner for GuildId {
         http: impl AsRef<Http> + Sync + Send + 'async_trait,
         reqw_client: &Client,
         url: &Url,
-    ) -> Result<(), Error> {
+    ) -> Result<(), SetBannerError> {
         // Disable banner feature check when in dev environment
         #[cfg(not(feature = "dev"))]
         {
@@ -59,7 +70,7 @@ impl RandomBanner for GuildId {
             let features = guild.features;
 
             if !features.contains(&"BANNER".to_owned()) {
-                return Err(Error::SchedulerTask(crate::error::SchedulerTask::GuildHasNoBannerFeature));
+                return Err(SetBannerError::MissingBannerFeature);
             }
         }
 
@@ -67,7 +78,7 @@ impl RandomBanner for GuildId {
             .as_str()
             .split('.')
             .last()
-            .ok_or_else(|| anyhow!("No file extension on image url"))?;
+            .ok_or_else(|| SetBannerError::CouldNotDeterminFileExtension)?;
 
         // @todo insert check for animated banners here
 
