@@ -7,7 +7,7 @@ use crate::{
     album_provider::Album,
     constants::{DEFAULT_INTERVAL, MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
     schedule::Schedule,
-    Context, Error,
+    Context, Error, error::Command as CommandErr,
 };
 
 /// Picks a random image from the album every interval minutes and sets it as the banner.
@@ -18,28 +18,26 @@ pub async fn start(
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
 ) -> Result<(), Error> {
-    use crate::error::Command::*;
-
     // guild id
-    let guild_id = ctx.guild_id().ok_or(GuildOnly)?;
+    let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
 
     // disable BANNER check when dev feature is enabled
     #[cfg(not(feature = "dev"))]
     {
         let guild = guild_id.to_partial_guild(ctx.http()).await?;
         if !guild.features.contains(&"BANNER".to_string()) {
-            return Err(GuildHasNoBannerFeature.into());
+            return Err(CommandErr::GuildHasNoBannerFeature.into());
         }
     }
 
     // interval
     let interval = interval.unwrap_or(DEFAULT_INTERVAL);
     if interval < MINIMUM_INTERVAL {
-        return Err(BelowMinTimeout.into());
+        return Err(CommandErr::BelowMinTimeout.into());
     }
 
     if interval > MAXIMUM_INTERVAL {
-        return Err(AboveMaxTimeout.into());
+        return Err(CommandErr::AboveMaxTimeout.into());
     }
 
     // album url
@@ -70,8 +68,7 @@ pub async fn start(
 /// Stops picking random images
 #[poise::command(prefix_command, slash_command, required_permissions = "MANAGE_GUILD")]
 pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
-    use crate::error::Command::*;
-    let guild_id = ctx.guild_id().ok_or(GuildOnly)?;
+    let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
 
     // unschedule it!
     let user_data = ctx.data();
@@ -89,8 +86,7 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
 /// Tells you the album that is being used right now
 #[poise::command(prefix_command, slash_command, required_permissions = "MANAGE_GUILD")]
 pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
-    use crate::error::Command::*;
-    let guild_id = ctx.guild_id().ok_or(GuildOnly)?;
+    let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
 
     let user_data = ctx.data();
     let album = user_data.get_album(guild_id).await?;
@@ -103,20 +99,19 @@ pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
 /// Link to the banner that is currently displayed
 #[poise::command(prefix_command, slash_command)]
 pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
-    use crate::error::Command::*;
-    let guild_id = ctx.guild_id().ok_or(GuildOnly)?;
+    let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
 
     // disable BANNER check when dev feature is enabled
     #[cfg(not(feature = "dev"))]
     {
         let guild = guild_id.to_partial_guild(ctx.http()).await?;
         if !guild.features.contains(&"BANNER".to_string()) {
-            return Err(GuildHasNoBannerFeature.into());
+            return Err(CommandErr::GuildHasNoBannerFeature.into());
         }
     }
 
     let guild = guild_id.to_partial_guild(&ctx).await?;
-    let banner = guild.banner_url().ok_or(GuildHasNoBannerSet)?;
+    let banner = guild.banner_url().ok_or(CommandErr::GuildHasNoBannerSet)?;
 
     // answer the user
     poise::send_reply(ctx, |f| {
@@ -138,19 +133,17 @@ pub async fn start_for_guild(
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
 ) -> Result<(), Error> {
-    use crate::error::Command::*;
-
     // guild id
     let guild_id = guild_id.id;
 
     // interval
     let interval = interval.unwrap_or(DEFAULT_INTERVAL);
     if interval < MINIMUM_INTERVAL {
-        return Err(BelowMinTimeout.into());
+        return Err(CommandErr::BelowMinTimeout.into());
     }
 
     if interval > MAXIMUM_INTERVAL {
-        return Err(AboveMaxTimeout.into());
+        return Err(CommandErr::AboveMaxTimeout.into());
     }
 
     // album url
