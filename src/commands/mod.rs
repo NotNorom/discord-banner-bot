@@ -1,6 +1,5 @@
 pub mod banner;
 pub mod help;
-pub mod notifications;
 
 use poise::serenity_prelude::json::Value;
 
@@ -61,7 +60,6 @@ pub fn commands() -> Vec<poise::Command<crate::State, crate::Error>> {
         banner::start(),
         banner::stop(),
         help::help(),
-        notifications::notification_channel(),
         register_globally(),
         register(),
         servers(),
