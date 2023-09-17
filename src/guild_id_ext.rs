@@ -11,6 +11,8 @@ use reqwest::Client;
 use tracing::{debug, info, instrument};
 use url::Url;
 
+use crate::constants::MAXIMUM_IMAGE_SIZE;
+
 #[derive(Debug, thiserror::Error)]
 pub enum SetBannerError {
     #[error(transparent)]
@@ -24,7 +26,9 @@ pub enum SetBannerError {
     #[error("Missing 'banner' feature")]
     MissingBannerFeature,
     #[error("Image is empty")]
-    ImageIsEmpty
+    ImageIsEmpty(Url),
+    #[error("Image is to big")]
+    ImageIsTooBig(Url),
 }
 
 #[async_trait]
@@ -90,9 +94,11 @@ impl RandomBanner for GuildId {
         let amount_of_bytes = image_bytes.len();
         debug!("Amount of image bytes downloaded: {}", amount_of_bytes);
 
-        if amount_of_bytes == 0 {
-            return Err(SetBannerError::ImageIsEmpty);
-        }
+        match amount_of_bytes {
+            0 => return Err(SetBannerError::ImageIsEmpty(url.clone())),
+            MAXIMUM_IMAGE_SIZE.. => return Err(SetBannerError::ImageIsTooBig(url.to_owned())), // 10mb
+            _ => {}
+        };
 
         let b64 = base64::engine::general_purpose::STANDARD.encode(&image_bytes);
 

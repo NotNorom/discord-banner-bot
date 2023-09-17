@@ -172,57 +172,68 @@ impl ChangerError {
                     imgurs_err => error!("unhandled imgurs error: {imgurs_err}"),
                 },
             },
-            Error::SetBanner(error) => match error {
-                SetBannerError::Transport(err) => {
-                    warn!("guild_id={guild_id}: {err}")
-                }
-                SetBannerError::DiscordApi(discord_err) => match discord_err {
-                    SerenityError::Http(http_err) => match http_err.as_ref() {
-                        SerenityHttpError::UnsuccessfulRequest(error_response) => match error_response
-                            .status_code
-                        {
-                            StatusCode::FORBIDDEN => {
-                                // the bot does not have permissions to change the banner.
-                                // remove guild from queue
-                                let _ = repeater_handle.remove(guild_id).await;
-                                db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
-                                warn!("Missing permissions to change banner for {guild_id}. Unscheduling.");
-                                return Ok(ScheduleAction::Abort);
+            Error::SetBanner(error) => {
+                match error {
+                    SetBannerError::Transport(err) => {
+                        warn!("guild_id={guild_id}: {err}")
+                    }
+                    SetBannerError::DiscordApi(discord_err) => match discord_err {
+                        SerenityError::Http(http_err) => match http_err.as_ref() {
+                            SerenityHttpError::UnsuccessfulRequest(error_response) => {
+                                match error_response.status_code {
+                                    StatusCode::FORBIDDEN => {
+                                        // the bot does not have permissions to change the banner.
+                                        // remove guild from queue
+                                        let _ = repeater_handle.remove(guild_id).await;
+                                        db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
+                                        warn!("Missing permissions to change banner for {guild_id}. Unscheduling.");
+                                        return Ok(ScheduleAction::Abort);
+                                    }
+                                    StatusCode::NOT_FOUND => {
+                                        let _ = repeater_handle.remove(guild_id).await;
+                                        db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
+                                        warn!("Guild does not exist: {guild_id}. Unscheduling.");
+                                        return Ok(ScheduleAction::Abort);
+                                    }
+                                    StatusCode::GATEWAY_TIMEOUT => {
+                                        warn!("Gateway timed out. Retrying once.");
+                                        return Ok(ScheduleAction::Retry);
+                                    }
+                                    _ => error!("unsuccessful http request: {error_response:?}"),
+                                }
                             }
-                            StatusCode::NOT_FOUND => {
-                                let _ = repeater_handle.remove(guild_id).await;
-                                db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
-                                warn!("Guild does not exist: {guild_id}. Unscheduling.");
-                                return Ok(ScheduleAction::Abort);
-                            }
-                            StatusCode::GATEWAY_TIMEOUT => {
-                                warn!("Gateway timed out. Retrying once.");
-                                return Ok(ScheduleAction::Retry);
-                            }
-                            _ => error!("unsuccessful http request: {error_response:?}"),
+                            http_err => error!("unhandled http error in set_banner: {http_err:?}"),
                         },
-                        http_err => error!("unhandled http error in set_banner: {http_err:?}"),
+                        serenity_err => error!("unhandled serenity error in set_banner: {serenity_err:?}"),
                     },
-                    serenity_err => error!("unhandled serenity error in set_banner: {serenity_err:?}"),
-                },
-                SetBannerError::CouldNotPickAUrl => warn!("guild_id={guild_id}: 'Could not pick a url'"),
-                SetBannerError::CouldNotDeterminFileExtension => {
-                    warn!("guild_id={guild_id}: 'Could not determine file extenstion'")
-                }
-                SetBannerError::MissingBannerFeature => {
-                    let _ = repeater_handle.remove(guild_id).await;
-                    db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
+                    SetBannerError::CouldNotPickAUrl => warn!("guild_id={guild_id}: 'Could not pick a url'"),
+                    SetBannerError::CouldNotDeterminFileExtension => {
+                        warn!("guild_id={guild_id}: 'Could not determine file extenstion'")
+                    }
+                    SetBannerError::MissingBannerFeature => {
+                        let _ = repeater_handle.remove(guild_id).await;
+                        db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
 
-                    let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
-                    let guild_owner = partial_guild.owner_id;
-                    info!("Letting owner={guild_owner} of guild={guild_id} know about the missing banner feature");
+                        let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
+                        let guild_owner = partial_guild.owner_id;
+                        info!("Letting owner={guild_owner} of guild={guild_id} know about the missing banner feature");
 
-                    dm_user(&ctx, guild_owner, &"Server has lost the required boost level. Stopping schedule. You can restart the bot after gaining the required boost level.").await?;
-                },
-                SetBannerError::ImageIsEmpty => {
-                    warn!("guild_id={guild_id} with album={} has downloaded an image with 0 bytes", self.schedule.album());
+                        dm_user(&ctx, guild_owner, &"Server has lost the required boost level. Stopping schedule. You can restart the bot after gaining the required boost level.").await?;
+                    }
+                    SetBannerError::ImageIsEmpty(url) => {
+                        warn!("guild_id={guild_id} with album={} has downloaded an image with 0 bytes. url={url}", self.schedule.album());
+                    }
+                    SetBannerError::ImageIsTooBig(url) => {
+                        warn!("guild_id={guild_id} with album={} has downloaded an image that is too big. url={url}", self.schedule.album());
+
+                        let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
+                        let guild_owner = partial_guild.owner_id;
+                        info!("Letting owner={guild_owner} of guild={guild_id} know about an image that is too big");
+
+                        dm_user(&ctx, guild_owner, &format!("The album you've set contains an image that is too big for discord. Maximum size is 10mb. The image is: {url}")).await?;
+                    }
                 }
-            },
+            }
             err => {
                 error!("unhandled bot error: {err:?}");
             }
