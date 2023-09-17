@@ -59,12 +59,6 @@ Give you a link to the currently displayed banner.
 _Command can only be run by anyone._
 
 
-### /notification_channel (Does not work yet)
-`/notification_channel [CHANNEL]`
-When I want to send news or the bot needs to send error messages in your server, this channel will be used.
-
-_Command can only be run by users with `Manage Server` permission._
-
 
 ### /servers
 `/servers`
