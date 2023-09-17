@@ -2,6 +2,7 @@ use std::fmt::{Debug, Display};
 
 use poise::serenity_prelude::User;
 use thiserror::Error;
+use url::ParseError;
 
 use crate::{
     album_provider::ProviderError,
@@ -19,9 +20,6 @@ pub enum Error {
 
     #[error(transparent)]
     Redis(#[from] fred::error::RedisError),
-
-    #[error(transparent)]
-    InvalidUrl(#[from] url::ParseError),
 
     #[error(transparent)]
     Command(#[from] Command),
@@ -57,6 +55,8 @@ pub enum Command {
     GuildHasNoBannerSet,
     #[error("Server doesn't have the required boost level")]
     GuildHasNoBannerFeature,
+    #[error("Album is not a valid URL")]
+    InvalidUrl(ParseError),
 }
 
 #[derive(Debug, thiserror::Error)]

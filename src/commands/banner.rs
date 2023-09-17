@@ -41,7 +41,7 @@ pub async fn start(
     }
 
     // album url
-    let album_url = album.parse::<Url>()?;
+    let album_url = album.parse::<Url>().map_err(CommandErr::InvalidUrl)?;
     let album = Album::try_from(&album_url)?;
 
     let user_data = ctx.data();
@@ -147,7 +147,7 @@ pub async fn start_for_guild(
     }
 
     // album url
-    let album_url = album.parse::<Url>()?;
+    let album_url = album.parse::<Url>().map_err(CommandErr::InvalidUrl)?;
     let album = Album::try_from(&album_url)?;
 
     let user_data = ctx.data();
