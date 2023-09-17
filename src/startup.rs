@@ -75,7 +75,7 @@ impl State {
     }
 }
 
-/// Sets up the user data:
+/// Sets up the state:
 /// - Creates a task that handles the banner queue
 /// - Sets up a reqwest client
 /// - Sets up the database pool
@@ -84,7 +84,7 @@ pub async fn setup(
     _ready: &serenity_prelude::Ready,
     framework: &Framework<Data, Error>,
 ) -> Result<Data, Error> {
-    info!("Setting up user data");
+    info!("Setting up state");
     let settings = Settings::get();
     let capacity = settings.scheduler.capacity;
 
@@ -101,14 +101,13 @@ pub async fn setup(
 
     let state = {
         let db = database.clone();
-        let ctx2 = ctx.clone();
+        let ctx = ctx.clone();
         let http = reqw_client.clone();
         let owners = owners.clone();
 
         let callback = |schedule, handle| async move {
             info!("Creating changer task for schedule {schedule:?}");
-            let task = ChangerTask::new(ctx2.clone(), db.clone(), http.clone(), providers, schedule);
-            info!("Running task now");
+            let task = ChangerTask::new(ctx.clone(), db.clone(), http.clone(), providers, schedule);
 
             let Err(err) = task.run().await else {
                 info!("Task finished successfully");
@@ -116,7 +115,7 @@ pub async fn setup(
             };
             error!("In changer task: {err:?}");
 
-            let Err(critical_err) = err.handle_error(ctx2, handle, db, owners).await else {
+            let Err(critical_err) = err.handle_error(ctx, handle, db, owners).await else {
                 info!("Error happend and was handled successfully");
                 return;
             };
@@ -132,9 +131,8 @@ pub async fn setup(
     };
 
     // schedule already existing guilds
-
     let known_guild_ids: Vec<u64> = state.database().active_schedules().await?;
-    info!("Known guild id's: {:?}", known_guild_ids);
+    info!("Amount of active schedules: {}", known_guild_ids.len());
 
     for id in known_guild_ids {
         let entry = state.database().get::<GuildSchedule>(id).await?;

@@ -3,7 +3,7 @@ use std::str::FromStr;
 use imgurs::ImgurClient;
 use poise::async_trait;
 use reqwest::Url;
-use tracing::{instrument, info};
+use tracing::instrument;
 
 use super::{Provider, ProviderError};
 
@@ -30,7 +30,6 @@ impl Provider for Imgur {
             .map(|image_info| image_info.link.clone())
             .filter_map(|link| Url::from_str(&link).ok())
             .collect();
-        info!("Number of images available for {album_id}: {}", images.len());
 
         Ok(images)
     }
