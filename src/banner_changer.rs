@@ -218,6 +218,9 @@ impl ChangerError {
                     info!("Letting owner={guild_owner} of guild={guild_id} know about the missing banner feature");
 
                     dm_user(&ctx, guild_owner, &"Server has lost the required boost level. Stopping schedule. You can restart the bot after gaining the required boost level.").await?;
+                },
+                SetBannerError::ImageIsEmpty => {
+                    warn!("guild_id={guild_id} with album={} has downloaded an image with 0 bytes", self.schedule.album());
                 }
             },
             err => {

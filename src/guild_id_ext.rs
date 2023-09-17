@@ -23,6 +23,8 @@ pub enum SetBannerError {
     CouldNotDeterminFileExtension,
     #[error("Missing 'banner' feature")]
     MissingBannerFeature,
+    #[error("Image is empty")]
+    ImageIsEmpty
 }
 
 #[async_trait]
@@ -88,10 +90,8 @@ impl RandomBanner for GuildId {
         let amount_of_bytes = image_bytes.len();
         debug!("Amount of image bytes downloaded: {}", amount_of_bytes);
 
-        // @todo proper error handling for this case.
-        // for now an early return will be enough
         if amount_of_bytes == 0 {
-            return Ok(());
+            return Err(SetBannerError::ImageIsEmpty);
         }
 
         let b64 = base64::engine::general_purpose::STANDARD.encode(&image_bytes);
