@@ -1,11 +1,11 @@
 use anyhow::Context;
 use config::Config;
-use once_cell::sync::OnceCell;
 use serde::Deserialize;
+use std::sync::OnceLock;
 
 use crate::Error;
 
-static SETTINGS: OnceCell<Settings> = OnceCell::new();
+static SETTINGS: OnceLock<Settings> = OnceLock::new();
 
 /// Wrapper for all settings
 #[derive(Debug, Deserialize)]

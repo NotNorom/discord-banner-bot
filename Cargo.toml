@@ -36,7 +36,6 @@ fred = { version = "6.3.1", default-features = false, features = [
 poise = "0.5.6"
 config = { version = "0.13.3", default-features = false, features = ["toml"] }
 serde = "1.0.188"
-once_cell = "1.18.0"
 reqwest = { version = "0.11.20", default-features = false, features = [
     "json",
     "native-tls-vendored",
@@ -44,7 +43,6 @@ reqwest = { version = "0.11.20", default-features = false, features = [
 tokio = { version = "1.32.0", features = [
     "rt-multi-thread",
 ], default-features = false }
-tokio-util = { version = "0.7.8", features = ["time"] }
 async-repeater = { git = "https://github.com/NotNorom/async-repeater.git" }
 # async-repeater = { path = "/home/norom/Documents/Code/async-repeater" }
 
