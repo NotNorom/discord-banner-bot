@@ -48,3 +48,5 @@ tokio-util = { version = "0.7.8", features = ["time"] }
 async-repeater = { git = "https://github.com/NotNorom/async-repeater.git" }
 # async-repeater = { path = "/home/norom/Documents/Code/async-repeater" }
 
+[patch.crates-io]
+poise ={ git = "https://github.com/NotNorom/poise.git" }
