@@ -1,11 +1,14 @@
-use anyhow::Context;
-use config::Config;
+use config::{Config, ConfigError};
 use serde::Deserialize;
 use std::sync::OnceLock;
 
-use crate::Error;
-
 static SETTINGS: OnceLock<Settings> = OnceLock::new();
+
+#[derive(Debug, thiserror::Error)]
+pub enum SettingsError {
+    #[error(transparent)]
+    Config(#[from] ConfigError),
+}
 
 /// Wrapper for all settings
 #[derive(Debug, Deserialize)]
@@ -18,13 +21,11 @@ pub struct Settings {
 
 impl Settings {
     /// Load and deserialize settings into static struct
-    pub fn init() -> Result<(), Error> {
+    pub fn init() -> Result<(), SettingsError> {
         let settings = Config::builder()
             .add_source(config::File::with_name("settings"))
-            .build()
-            .context("Settings could not be loaded")?
-            .try_deserialize()
-            .context("Settings could not be deserialized")?;
+            .build()?
+            .try_deserialize()?;
 
         let _ = SETTINGS.set(settings);
 

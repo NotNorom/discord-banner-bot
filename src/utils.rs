@@ -2,7 +2,6 @@
 
 use std::time::SystemTime;
 
-use anyhow::Context;
 use poise::{
     futures_util::{stream::futures_unordered, StreamExt},
     serenity_prelude::{CacheHttp, Message, UserId, UserPublicFlags},
@@ -79,7 +78,6 @@ pub async fn dm_user(
 
     let msg = user
         .dm(cache_http.http(), |msg| msg.content(content))
-        .await
-        .context(format!("User: {user}"))?;
+        .await?;
     Ok(msg)
 }

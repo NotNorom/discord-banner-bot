@@ -1,14 +1,10 @@
-use std::{sync::Arc, time::Duration};
-
-use anyhow::Context;
-
 use async_repeater::{Repeater, RepeaterHandle};
 use poise::{
     serenity_prelude::{self, GuildId},
     Framework,
 };
 use reqwest::Client;
-
+use std::{sync::Arc, time::Duration};
 use tracing::{error, info};
 use url::Url;
 
@@ -137,10 +133,10 @@ pub async fn setup(
     for id in known_guild_ids {
         let entry = state.database().get::<GuildSchedule>(id).await?;
 
-        let album_url = Url::parse(entry.album()).context("album url has already been parsed before")?;
+        let album_url = Url::parse(entry.album()).expect("album url has already been parsed before");
         let kind: ProviderKind = (&album_url)
             .try_into()
-            .context("provider kind has already been parsed before")?;
+            .expect("provider kind has already been parsed before");
         let album = Album::new(album_url, kind);
 
         let interval = entry.interval();

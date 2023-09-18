@@ -18,7 +18,6 @@ debug = true
 
 [dependencies]
 thiserror = "1.0.48"
-anyhow = "1.0.75"
 imgurs = "0.11.2"
 tokio-stream = "0.1.14"
 url = "2.4.1"

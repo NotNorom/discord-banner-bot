@@ -3,7 +3,7 @@ use poise::serenity_prelude;
 use tracing::{error, info};
 
 #[tokio::main]
-async fn main() -> anyhow::Result<(), Error> {
+async fn main() -> Result<(), Error> {
     Settings::init()?;
     let settings = Settings::get();
     println!("Using log level: {}", settings.bot.log_level);

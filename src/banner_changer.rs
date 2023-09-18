@@ -171,6 +171,9 @@ impl ChangerError {
                     }
                     imgurs_err => error!("unhandled imgurs error: {imgurs_err}"),
                 },
+                ProviderError::InvalidDomain(url) => {
+                    warn!("Command was called with invalid domain: {url}");
+                }
             },
             Error::SetBanner(error) => {
                 match error {

@@ -11,7 +11,6 @@ use std::{
     time::Duration,
 };
 
-use anyhow::anyhow;
 use imgurs::ImgurClient;
 use poise::async_trait;
 use reqwest::Url;
@@ -98,16 +97,14 @@ pub enum ProviderKind {
 }
 
 impl TryFrom<&Url> for ProviderKind {
-    type Error = Error;
+    type Error = ProviderError;
 
     fn try_from(url: &Url) -> Result<Self, Self::Error> {
-        let domain = url
-            .domain()
-            .ok_or_else(|| anyhow!("Must be a domain, not an IP address"))?;
+        let domain = url.domain().ok_or(ProviderError::InvalidDomain(url.to_owned()))?;
 
         Ok(match domain {
             "imgur.com" => Self::Imgur,
-            _ => Err(ProviderError::Unsupported(domain.to_owned()))?,
+            _ => return Err(ProviderError::Unsupported(domain.to_owned())),
         })
     }
 }
@@ -159,6 +156,9 @@ pub enum ProviderError {
 
     #[error("Extraction of imgur id failed: {0}. Is the url correct?")]
     ImgurIdExtraction(String),
+
+    #[error("Invalid domain")]
+    InvalidDomain(Url),
 
     #[error(transparent)]
     Imgur(#[from] imgurs::Error),

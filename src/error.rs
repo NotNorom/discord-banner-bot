@@ -7,11 +7,14 @@ use url::ParseError;
 use crate::{
     album_provider::ProviderError,
     constants::{MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
-    guild_id_ext::SetBannerError,
+    guild_id_ext::SetBannerError, settings::SettingsError,
 };
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error(transparent)]
+    Settings(#[from] SettingsError),
+
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
 
@@ -38,9 +41,6 @@ pub enum Error {
 
     #[error(transparent)]
     SetBanner(#[from] SetBannerError),
-
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
 }
 
 #[derive(Debug, thiserror::Error)]
