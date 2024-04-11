@@ -17,33 +17,34 @@ debug = true
 
 
 [dependencies]
-thiserror = "1.0.48"
-imgurs = "0.11.2"
-tokio-stream = "0.1.14"
-url = "2.4.1"
+thiserror = "1.0.58"
+imgurs = "0.11.3"
+tokio-stream = "0.1.15"
+url = "2.5.0"
 rand = "0.8.5"
-base64 = "0.21.4"
-tracing = "0.1.37"
-tracing-subscriber = { version = "0.3.17", features = [
+base64 = "0.22.0"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = [
     "tracing-log",
     "env-filter",
     "parking_lot",
 ] }
-fred = { version = "6.3.1", default-features = false, features = [
-    "pool-prefer-active",
-] }
-poise = "0.5.6"
-config = { version = "0.13.3", default-features = false, features = ["toml"] }
-serde = "1.0.188"
-reqwest = { version = "0.11.20", default-features = false, features = [
+fred = { version = "8.0.6", default-features = false, features = [] }
+poise = "0.6.1"
+config = { version = "0.14", default-features = false, features = ["toml"] }
+serde = "1.0.197"
+reqwest = { version = "0.12.3", default-features = false, features = [
     "json",
     "native-tls-vendored",
 ] }
-tokio = { version = "1.32.0", features = [
+tokio = { version = "1.37.0", features = [
     "rt-multi-thread",
 ], default-features = false }
 async-repeater = { git = "https://github.com/NotNorom/async-repeater.git" }
 # async-repeater = { path = "/home/norom/Documents/Code/async-repeater" }
 
+#[patch.crates-io]
+#poise = { git = "https://github.com/NotNorom/poise.git" }
+
 [patch.crates-io]
-poise ={ git = "https://github.com/NotNorom/poise.git" }
+imgurs = { git = "https://github.com/M3DZIK/imgurs" }

@@ -4,7 +4,7 @@ use std::time::SystemTime;
 
 use poise::{
     futures_util::{stream::futures_unordered, StreamExt},
-    serenity_prelude::{CacheHttp, Message, UserId, UserPublicFlags},
+    serenity_prelude::{CacheHttp, CreateMessage, Message, UserId, UserPublicFlags},
 };
 use tracing::{info, warn};
 
@@ -33,7 +33,7 @@ pub fn start_logging(log_level: &str) {
 pub async fn dm_users(
     cache_http: &impl CacheHttp,
     users: impl IntoIterator<Item = UserId>,
-    content: &impl std::fmt::Display,
+    content: &str,
 ) -> Result<(), Error> {
     use std::fmt::Write as _;
 
@@ -42,8 +42,10 @@ pub async fn dm_users(
 
     write!(log_msg, "Sending dm to users: (")?;
 
+    let content = content.into();
+
     for user in users {
-        write!(log_msg, "{}, ", user.0)?;
+        write!(log_msg, "{}, ", user.get())?;
         tasks.push(dm_user(&cache_http, user, content));
     }
 
@@ -60,11 +62,7 @@ pub async fn dm_users(
 }
 
 /// Send a dm to a user
-pub async fn dm_user(
-    cache_http: &impl CacheHttp,
-    user: UserId,
-    content: &impl std::fmt::Display,
-) -> Result<Message, Error> {
+pub async fn dm_user(cache_http: &impl CacheHttp, user: UserId, content: &str) -> Result<Message, Error> {
     let user = user.to_user(cache_http.http()).await?;
     if user.bot {
         return Err(SendDm::bot_user(Box::new(user)));
@@ -77,7 +75,7 @@ pub async fn dm_user(
     }
 
     let msg = user
-        .dm(cache_http.http(), |msg| msg.content(content))
+        .dm(cache_http.http(), CreateMessage::new().content(content))
         .await?;
     Ok(msg)
 }

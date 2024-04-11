@@ -1,13 +1,17 @@
 use std::time::Duration;
 
-use poise::serenity_prelude;
+use poise::{
+    serenity_prelude::{self, CreateEmbed},
+    CreateReply,
+};
 use reqwest::Url;
 
 use crate::{
     album_provider::Album,
     constants::{DEFAULT_INTERVAL, MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
+    error::Command as CommandErr,
     schedule::Schedule,
-    Context, Error, error::Command as CommandErr,
+    Context, Error,
 };
 
 /// Picks a random image from the album every interval minutes and sets it as the banner.
@@ -52,15 +56,12 @@ pub async fn start(
     user_data.enque(schedule).await?;
 
     // answer the user
-    poise::send_reply(ctx, |f| {
-        let content = format!(
-            "Scheduling banner change for every {} minutes using this album: <{}>",
-            &interval,
-            album_url.as_str()
-        );
-        f.content(content).ephemeral(true)
-    })
-    .await?;
+    let content = format!(
+        "Scheduling banner change for every {} minutes using this album: <{}>",
+        &interval,
+        album_url.as_str()
+    );
+    poise::send_reply(ctx, CreateReply::default().content(content).ephemeral(true)).await?;
 
     Ok(())
 }
@@ -75,9 +76,12 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
     user_data.deque(guild_id).await?;
 
     // answer the user
-    poise::send_reply(ctx, |f| {
-        f.content("Stopped currently running timer").ephemeral(true)
-    })
+    poise::send_reply(
+        ctx,
+        CreateReply::default()
+            .content("Stopped currently running timer")
+            .ephemeral(true),
+    )
     .await?;
 
     Ok(())
@@ -91,7 +95,7 @@ pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
     let user_data = ctx.data();
     let album = user_data.get_album(guild_id).await?;
 
-    poise::send_reply(ctx, |f| f.content(album.clone()).ephemeral(true)).await?;
+    poise::send_reply(ctx, CreateReply::default().content(album.clone()).ephemeral(true)).await?;
 
     Ok(())
 }
@@ -114,11 +118,13 @@ pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
     let banner = guild.banner_url().ok_or(CommandErr::GuildHasNoBannerSet)?;
 
     // answer the user
-    poise::send_reply(ctx, |f| {
-        f.content(&banner)
+    poise::send_reply(
+        ctx,
+        CreateReply::default()
+            .content(&banner)
             .ephemeral(true)
-            .embed(|e| e.image(&banner).colour((255, 0, 255)))
-    })
+            .embed(CreateEmbed::new().image(&banner).colour((255, 0, 255))),
+    )
     .await?;
 
     Ok(())
@@ -158,15 +164,12 @@ pub async fn start_for_guild(
     user_data.enque(schedule).await?;
 
     // answer the user
-    poise::send_reply(ctx, |f| {
-        let content = format!(
-            "Scheduling banner change for every {} minutes using this album: <{}>",
-            &interval,
-            &album_url.as_str()
-        );
-        f.content(content).ephemeral(true)
-    })
-    .await?;
+    let content = format!(
+        "Scheduling banner change for every {} minutes using this album: <{}>",
+        &interval,
+        &album_url.as_str()
+    );
+    poise::send_reply(ctx, CreateReply::default().content(content).ephemeral(true)).await?;
 
     Ok(())
 }

@@ -5,7 +5,10 @@ use discord_banner_bot::{
     utils::start_logging,
     Settings,
 };
-use poise::{serenity_prelude::GatewayIntents, FrameworkOptions, PrefixFrameworkOptions};
+use poise::{
+    serenity_prelude::{self, GatewayIntents},
+    FrameworkOptions, PrefixFrameworkOptions,
+};
 use tracing::{error, info};
 
 #[tokio::main]
@@ -19,9 +22,7 @@ async fn main() -> Result<(), Error> {
     info!("Setup: prefix={}", settings.bot.prefix);
 
     // set up & start client
-    let result = poise::Framework::builder()
-        .token(&settings.bot.token)
-        .intents(GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT)
+    let framework = poise::Framework::builder()
         .setup(move |ctx, ready, framework| Box::pin(setup(ctx, ready, framework)))
         .options(FrameworkOptions {
             commands: commands(),
@@ -39,11 +40,17 @@ async fn main() -> Result<(), Error> {
             },
             ..Default::default()
         })
-        .run()
-        .await;
+        .build();
+
+    let mut client = serenity_prelude::ClientBuilder::new(
+        &settings.bot.token,
+        GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
+    )
+    .framework(framework)
+    .await?;
 
     // If there is an error starting up the client
-    if let Err(e) = result {
+    if let Err(e) = client.start_autosharded().await {
         error!("Startup Error: {:?}", e);
     }
 

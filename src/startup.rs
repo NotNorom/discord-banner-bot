@@ -50,7 +50,7 @@ impl State {
             .remove(guild_id)
             .await
             .map_err(|err| Error::Scheduler { msg: err.to_string() })?;
-        Ok(self.database.delete::<GuildSchedule>(guild_id.0).await?)
+        Ok(self.database.delete::<GuildSchedule>(guild_id.get()).await?)
     }
 
     #[allow(dead_code)]
@@ -66,7 +66,7 @@ impl State {
 
     /// Gets the current album link
     pub async fn get_album(&self, guild_id: GuildId) -> Result<String, Error> {
-        let db_entry = self.database.get::<GuildSchedule>(guild_id.0).await?;
+        let db_entry = self.database.get::<GuildSchedule>(guild_id.get()).await?;
         Ok(db_entry.album().to_owned())
     }
 }
@@ -155,7 +155,7 @@ pub async fn setup(
 
         let schedule = Schedule::with_offset(
             Duration::from_secs(entry.interval()),
-            GuildId(entry.guild_id()),
+            GuildId::new(entry.guild_id()),
             album,
             Duration::from_secs(offset),
         );

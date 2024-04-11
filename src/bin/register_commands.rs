@@ -13,12 +13,7 @@ async fn main() -> Result<(), Error> {
     let http = serenity_prelude::HttpBuilder::new(&settings.bot.token).build();
     let commands = poise::builtins::create_application_commands(&commands());
 
-    match serenity_prelude::Command::set_global_application_commands(http, |a| {
-        *a = commands;
-        a
-    })
-    .await
-    {
+    match serenity_prelude::Command::set_global_commands(http, commands).await {
         Ok(set_cmds) => {
             info!("{} commands have been set globally", set_cmds.len());
         }

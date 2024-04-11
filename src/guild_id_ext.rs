@@ -4,7 +4,7 @@
 use base64::Engine;
 use poise::{
     async_trait,
-    serenity_prelude::{self, GuildId, Http},
+    serenity_prelude::{self, EditGuild, GuildId, Http},
 };
 use rand::prelude::SliceRandom;
 use reqwest::Client;
@@ -104,22 +104,24 @@ impl RandomBanner for GuildId {
 
         let payload = format!("data:image/{extension};base64,{b64}");
 
-        self.edit(http.as_ref(), |g| {
+        let edit_guild = {
             #[cfg(feature = "dev")]
             {
+                let attachment = CreateAttachment::bytes(image_bytes, "");
                 debug!("Setting icon");
-                g.icon(Some(&payload))
+                EditGuild::new().icon(attachment);
             }
 
             #[cfg(not(feature = "dev"))]
             {
                 debug!("Setting banner");
-                g.banner(Some(&payload))
+                EditGuild::new().banner(Some(payload))
             }
-        })
-        .await?;
+        };
 
-        info!("Guild {} changed to: {}", self.0, url.as_str());
+        self.edit(http.as_ref(), edit_guild).await?;
+
+        info!("Guild {} changed to: {}", self.get(), url.as_str());
 
         Ok(())
     }

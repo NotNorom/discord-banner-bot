@@ -2,9 +2,9 @@ use std::{collections::HashSet, sync::Arc};
 
 use async_repeater::RepeaterHandle;
 use poise::serenity_prelude::{
-    Context, Error as SerenityError, GuildId, HttpError as SerenityHttpError, MessageBuilder, UserId,
+    Context, Error as SerenityError, GuildId, HttpError as SerenityHttpError, MessageBuilder, StatusCode,
+    UserId,
 };
-use reqwest::StatusCode;
 
 use tracing::{error, info, warn};
 
@@ -54,7 +54,7 @@ impl ChangerTask {
 
         info!("Inserting schedule into database");
         let schedule = GuildSchedule::new(
-            guild_id.0,
+            guild_id.get(),
             album.url().to_string(),
             interval.as_secs(),
             current_unix_timestamp(),
@@ -130,20 +130,20 @@ impl ChangerError {
 
         match &self.source {
             Error::Serenity(error) => match error {
-                SerenityError::Http(error) => match error.as_ref() {
+                SerenityError::Http(error) => match error {
                     SerenityHttpError::UnsuccessfulRequest(error_response) => {
                         match error_response.status_code {
                             StatusCode::FORBIDDEN => {
                                 // the bot does not have permissions to change the banner.
                                 // remove guild from queue
                                 let _ = repeater_handle.remove(guild_id).await;
-                                db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
+                                db.delete::<GuildSchedule>(self.schedule.guild_id().get()).await?;
                                 warn!("Missing permissions to change banner for {guild_id}. Unscheduling.");
                                 return Ok(ScheduleAction::Abort);
                             }
                             StatusCode::NOT_FOUND => {
                                 let _ = repeater_handle.remove(guild_id).await;
-                                db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
+                                db.delete::<GuildSchedule>(self.schedule.guild_id().get()).await?;
                                 warn!("Guild does not exist: {guild_id}. Unscheduling.");
                                 return Ok(ScheduleAction::Abort);
                             }
@@ -181,20 +181,20 @@ impl ChangerError {
                         warn!("guild_id={guild_id}: {err}")
                     }
                     SetBannerError::DiscordApi(discord_err) => match discord_err {
-                        SerenityError::Http(http_err) => match http_err.as_ref() {
+                        SerenityError::Http(http_err) => match http_err {
                             SerenityHttpError::UnsuccessfulRequest(error_response) => {
                                 match error_response.status_code {
                                     StatusCode::FORBIDDEN => {
                                         // the bot does not have permissions to change the banner.
                                         // remove guild from queue
                                         let _ = repeater_handle.remove(guild_id).await;
-                                        db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
+                                        db.delete::<GuildSchedule>(self.schedule.guild_id().get()).await?;
                                         warn!("Missing permissions to change banner for {guild_id}. Unscheduling.");
                                         return Ok(ScheduleAction::Abort);
                                     }
                                     StatusCode::NOT_FOUND => {
                                         let _ = repeater_handle.remove(guild_id).await;
-                                        db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
+                                        db.delete::<GuildSchedule>(self.schedule.guild_id().get()).await?;
                                         warn!("Guild does not exist: {guild_id}. Unscheduling.");
                                         return Ok(ScheduleAction::Abort);
                                     }
@@ -215,7 +215,7 @@ impl ChangerError {
                     }
                     SetBannerError::MissingBannerFeature => {
                         let _ = repeater_handle.remove(guild_id).await;
-                        db.delete::<GuildSchedule>(self.schedule.guild_id().0).await?;
+                        db.delete::<GuildSchedule>(self.schedule.guild_id().get()).await?;
 
                         let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
                         let guild_owner = partial_guild.owner_id;

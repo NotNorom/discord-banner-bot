@@ -56,8 +56,9 @@ impl Database {
     /// Sets up database connections
     pub async fn setup(settings: &settings::Database) -> Result<Self, crate::Error> {
         let config = RedisConfig::from_url(&settings.host)?;
+        let connection = ConnectionConfig::default();
         let policy = ReconnectPolicy::new_exponential(1, 20, 100, 2);
-        let client = RedisClient::new(config, None, Some(policy));
+        let client = RedisClient::new(config, None, Some(connection), Some(policy));
         info!("Connecting to database at {}", settings.host);
 
         let _ = client.connect();

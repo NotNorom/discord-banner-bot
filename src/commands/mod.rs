@@ -22,7 +22,7 @@ pub async fn register_globally(ctx: Context<'_>) -> Result<(), Error> {
 /// Unregister application commands in this guild
 #[poise::command(prefix_command, hide_in_help, owners_only)]
 pub async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
-    let Some(guild) = ctx.guild() else {
+    let Some(guild) = ctx.partial_guild().await else {
         ctx.say("Must be called in guild").await?;
         return Ok(());
     };
@@ -41,7 +41,7 @@ pub async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
     ctx.say("Deleting all commands...").await?;
     ctx.serenity_context()
         .http
-        .create_guild_application_commands(guild.id.0, &Value::Array(vec![]))
+        .create_guild_commands(guild.id, &Value::Array(vec![]))
         .await?;
     Ok(())
 }

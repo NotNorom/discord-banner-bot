@@ -1,4 +1,7 @@
-use std::fmt::{Debug, Display};
+use std::{
+    fmt::{Debug, Display},
+    num::NonZeroU16,
+};
 
 use poise::serenity_prelude::User;
 use thiserror::Error;
@@ -7,7 +10,8 @@ use url::ParseError;
 use crate::{
     album_provider::ProviderError,
     constants::{MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
-    guild_id_ext::SetBannerError, settings::SettingsError,
+    guild_id_ext::SetBannerError,
+    settings::SettingsError,
 };
 
 #[derive(Debug, Error)]
@@ -100,7 +104,7 @@ impl Display for SendDm {
         use SendDmKind::*;
 
         let user_name = &self.user.name;
-        let discriminator = self.user.discriminator;
+        let discriminator = self.user.discriminator.map(NonZeroU16::get).unwrap_or_default();
         let user_id = self.user.id;
 
         write!(f, "Could not send dm to {user_name}#{discriminator}, {user_id}: ")?;
@@ -121,8 +125,7 @@ pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
     match error {
         poise::FrameworkError::Setup { error, framework, .. } => {
             tracing::error!("Error during framework setup: {:#?}", error);
-            let mut shard_manager = framework.shard_manager().lock().await;
-            shard_manager.shutdown_all().await;
+            framework.shard_manager().shutdown_all().await;
         }
         _ => poise::builtins::on_error(error).await?,
     }
