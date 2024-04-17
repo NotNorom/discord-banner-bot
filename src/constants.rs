@@ -16,3 +16,6 @@ pub const MAXIMUM_INTERVAL: u64 = 60 * 48; // 48h
 
 /// Maximum image size in bytes for uploads to discord
 pub const MAXIMUM_IMAGE_SIZE: usize = 1024 * 1024 * 10; // 10mb
+
+/// Maximum message length for discord
+pub const DISCORD_MESSAGE_CONTENT_LIMIT: usize = 2000;

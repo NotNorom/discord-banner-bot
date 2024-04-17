@@ -4,7 +4,7 @@
 use base64::Engine;
 use poise::{
     async_trait,
-    serenity_prelude::{self, EditGuild, GuildId, Http},
+    serenity_prelude::{self, small_fixed_array::FixedString, CreateAttachment, EditGuild, GuildId, Http},
 };
 use rand::prelude::SliceRandom;
 use reqwest::Client;
@@ -75,7 +75,7 @@ impl RandomBanner for GuildId {
             let guild = self.to_partial_guild(http.as_ref()).await?;
             let features = guild.features;
 
-            if !features.contains(&"BANNER".to_owned()) {
+            if !features.contains(&FixedString::from_static_trunc("BANNER")) {
                 return Err(SetBannerError::MissingBannerFeature);
             }
         }
@@ -90,7 +90,13 @@ impl RandomBanner for GuildId {
 
         debug!("Found extention: {extension}");
 
-        let image_bytes = reqw_client.get(url.as_ref()).send().await?.bytes().await?;
+        let image_bytes = reqw_client
+            .get(url.as_ref())
+            .send()
+            .await?
+            .bytes()
+            .await?
+            .to_vec();
         let amount_of_bytes = image_bytes.len();
         debug!("Amount of image bytes downloaded: {}", amount_of_bytes);
 
@@ -100,22 +106,20 @@ impl RandomBanner for GuildId {
             _ => {}
         };
 
-        let b64 = base64::engine::general_purpose::STANDARD.encode(&image_bytes);
-
-        let payload = format!("data:image/{extension};base64,{b64}");
-
         let edit_guild = {
             #[cfg(feature = "dev")]
             {
                 let attachment = CreateAttachment::bytes(image_bytes, "");
                 debug!("Setting icon");
-                EditGuild::new().icon(attachment);
+                EditGuild::new().icon(Some(&attachment))
             }
 
             #[cfg(not(feature = "dev"))]
             {
                 debug!("Setting banner");
-                EditGuild::new().banner(Some(payload))
+                let b64 = base64::engine::general_purpose::STANDARD.encode(&image_bytes);
+                let payload = format!("data:image/{extension};base64,{b64}");
+                EditGuild::new().banner(Some(payload.into()))
             }
         };
 

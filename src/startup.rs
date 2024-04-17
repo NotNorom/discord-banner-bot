@@ -1,10 +1,10 @@
 use async_repeater::{Repeater, RepeaterHandle};
-use poise::{
-    serenity_prelude::{self, GuildId},
-    Framework,
-};
+use poise::serenity_prelude::{FullEvent, GuildId, Ready};
 use reqwest::Client;
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{Arc, OnceLock},
+    time::Duration,
+};
 use tracing::{error, info};
 use url::Url;
 
@@ -24,7 +24,7 @@ use crate::{
 /// The User data struct used in poise
 pub struct State {
     /// Used to communicate with the scheduler without needing a &mut self
-    repeater_handle: RepeaterHandle<Schedule>,
+    repeater_handle: OnceLock<RepeaterHandle<Schedule>>,
     /// Client for http request
     reqw_client: Client,
     /// database pool
@@ -34,10 +34,31 @@ pub struct State {
 }
 
 impl State {
+    pub async fn new() -> Result<Self, Error> {
+        info!("Setting up state");
+        let settings = Settings::get();
+
+        let reqw_client = Client::builder()
+            .timeout(Duration::from_secs(30))
+            .user_agent(USER_AGENT)
+            .build()?;
+
+        let database = Database::setup(&settings.database).await?;
+
+        Ok(State {
+            repeater_handle: OnceLock::default(),
+            reqw_client,
+            database,
+            settings,
+        })
+    }
+
     /// Enqueue an album for the guild at interval
     pub async fn enque(&self, schedule: Schedule) -> Result<(), Error> {
         info!("Inserting {schedule:?}");
         self.repeater_handle
+            .get()
+            .unwrap()
             .insert(schedule)
             .await
             .map_err(|err| Error::Scheduler { msg: err.to_string() })
@@ -47,6 +68,8 @@ impl State {
     pub async fn deque(&self, guild_id: GuildId) -> Result<(), Error> {
         info!("Removing {guild_id:?}");
         self.repeater_handle
+            .get()
+            .unwrap()
             .remove(guild_id)
             .await
             .map_err(|err| Error::Scheduler { msg: err.to_string() })?;
@@ -71,67 +94,65 @@ impl State {
     }
 }
 
-/// Sets up the state:
-/// - Creates a task that handles the banner queue
-/// - Sets up a reqwest client
-/// - Sets up the database pool
-pub async fn setup(
-    ctx: &serenity_prelude::Context,
-    _ready: &serenity_prelude::Ready,
-    framework: &Framework<Data, Error>,
-) -> Result<Data, Error> {
-    info!("Setting up state");
+pub async fn event_handler(
+    framework: poise::FrameworkContext<'_, Data, Error>,
+    event: &FullEvent,
+) -> Result<(), Error> {
+    match event {
+        FullEvent::Ready { data_about_bot } => {
+            let data = framework.user_data();
+            if data.repeater_handle.get().is_some() {
+                info!("Already initialized, skipping setup.");
+                return Ok(());
+            }
+            handle_event_ready(framework, data_about_bot).await
+        }
+        _ => Ok(()),
+    }
+}
+
+async fn handle_event_ready(
+    framework: poise::FrameworkContext<'_, Data, Error>,
+    _data_about_bot: &Ready,
+) -> Result<(), Error> {
+    let ctx = framework.serenity_context;
     let settings = Settings::get();
-    let capacity = settings.scheduler.capacity;
+    let data: Arc<State> = ctx.data();
+    let db = data.database().clone();
+    let http = data.reqw_client().clone();
 
-    let reqw_client = Client::builder()
-        .timeout(Duration::from_secs(30))
-        .user_agent(USER_AGENT)
-        .build()?;
-
-    let database = Database::setup(&settings.database).await?;
-    let providers = Arc::new(ImageProviders::new(&settings.provider, &reqw_client));
-    let repeater = Repeater::with_capacity(capacity);
+    let providers = Arc::new(ImageProviders::new(&settings.provider, &http));
+    let repeater = Repeater::with_capacity(settings.scheduler.capacity);
     let owners = framework.options().owners.clone();
     let ctx = Arc::new(ctx.clone());
 
-    let state = {
-        let db = database.clone();
-        let ctx = ctx.clone();
-        let http = reqw_client.clone();
-        let owners = owners.clone();
+    let callback = move |schedule, handle| async move {
+        info!("Creating changer task for schedule {schedule:?}");
+        let task = ChangerTask::new(ctx.clone(), db.clone(), http.clone(), providers, schedule);
 
-        let callback = |schedule, handle| async move {
-            info!("Creating changer task for schedule {schedule:?}");
-            let task = ChangerTask::new(ctx.clone(), db.clone(), http.clone(), providers, schedule);
-
-            let Err(err) = task.run().await else {
-                info!("Task finished successfully");
-                return;
-            };
-            error!("In changer task: {err:?}");
-
-            let Err(critical_err) = err.handle_error(ctx, handle, db, owners).await else {
-                info!("Error happend and was handled successfully");
-                return;
-            };
-            error!("CRITICAL after handling previous error: {critical_err:?}")
+        let Err(err) = task.run().await else {
+            info!("Task finished successfully");
+            return;
         };
+        error!("In changer task: {err:?}");
 
-        State {
-            repeater_handle: repeater.run_with_async_callback(callback),
-            reqw_client,
-            database,
-            settings,
-        }
+        let Err(critical_err) = err.handle_error(ctx, handle, db.clone(), owners).await else {
+            info!("Error happend and was handled successfully");
+            return;
+        };
+        error!("CRITICAL after handling previous error: {critical_err:?}")
     };
 
+    data.repeater_handle
+        .set(repeater.run_with_async_callback(callback))
+        .expect("run only once");
+
     // schedule already existing guilds
-    let known_guild_ids: Vec<u64> = state.database().active_schedules().await?;
+    let known_guild_ids: Vec<u64> = data.database().active_schedules().await?;
     info!("Amount of active schedules: {}", known_guild_ids.len());
 
     for id in known_guild_ids {
-        let entry = state.database().get::<GuildSchedule>(id).await?;
+        let entry = data.database().get::<GuildSchedule>(id).await?;
 
         let album_url = Url::parse(entry.album()).expect("album url has already been parsed before");
         let kind: ProviderKind = (&album_url)
@@ -160,13 +181,17 @@ pub async fn setup(
             Duration::from_secs(offset),
         );
 
-        state.enque(schedule).await?;
+        data.enque(schedule).await?;
     }
 
     // Notify that we're ready
     let bot_ready = "Bot ready!";
-    dm_users(&ctx, owners, &bot_ready).await?;
+    dm_users(
+        &framework.serenity_context,
+        framework.options().owners.clone(),
+        &bot_ready,
+    )
+    .await?;
     info!(bot_ready);
-
-    Ok(state)
+    Ok(())
 }

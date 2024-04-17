@@ -1,7 +1,7 @@
 use discord_banner_bot::{
     commands::commands,
     error::{self, Error},
-    startup::setup,
+    startup::{event_handler, State},
     utils::start_logging,
     Settings,
 };
@@ -23,7 +23,6 @@ async fn main() -> Result<(), Error> {
 
     // set up & start client
     let framework = poise::Framework::builder()
-        .setup(move |ctx, ready, framework| Box::pin(setup(ctx, ready, framework)))
         .options(FrameworkOptions {
             commands: commands(),
             on_error: |err| {
@@ -34,10 +33,11 @@ async fn main() -> Result<(), Error> {
                 })
             },
             prefix_options: PrefixFrameworkOptions {
-                prefix: Some(settings.bot.prefix.clone()),
+                prefix: Some(settings.bot.prefix.as_str().into()),
 
                 ..Default::default()
             },
+            event_handler: |framework, event| Box::pin(event_handler(framework, event)),
             ..Default::default()
         })
         .build();
@@ -46,6 +46,7 @@ async fn main() -> Result<(), Error> {
         &settings.bot.token,
         GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
     )
+    .data(State::new().await?.into())
     .framework(framework)
     .await?;
 

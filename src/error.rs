@@ -121,14 +121,12 @@ impl Display for SendDm {
 /// Does __not__ handle scheduler related errors
 pub async fn on_error<U, E: std::fmt::Display + std::fmt::Debug>(
     error: poise::FrameworkError<'_, U, E>,
-) -> Result<(), Error> {
-    match error {
-        poise::FrameworkError::Setup { error, framework, .. } => {
-            tracing::error!("Error during framework setup: {:#?}", error);
-            framework.shard_manager().shutdown_all().await;
-        }
-        _ => poise::builtins::on_error(error).await?,
-    }
+) -> Result<(), Error>
+where
+    U: Send + Sync + 'static,
+    E: std::fmt::Display + std::fmt::Debug,
+{
+    poise::builtins::on_error(error).await?;
 
     Ok(())
 }

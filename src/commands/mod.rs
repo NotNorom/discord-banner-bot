@@ -1,7 +1,7 @@
 pub mod banner;
 pub mod help;
 
-use poise::serenity_prelude::json::Value;
+use poise::serenity_prelude::CacheHttp;
 
 use crate::{Context, Error};
 
@@ -39,10 +39,7 @@ pub async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
     }
 
     ctx.say("Deleting all commands...").await?;
-    ctx.serenity_context()
-        .http
-        .create_guild_commands(guild.id, &Value::Array(vec![]))
-        .await?;
+    guild.id.set_commands(ctx.serenity_context().http(), &[]).await?;
     Ok(())
 }
 

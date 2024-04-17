@@ -118,12 +118,12 @@ impl ChangerError {
     ) -> Result<ScheduleAction, Error> {
         let guild_id = self.schedule.guild_id();
 
-        let guild_name = format!("{guild_id}: {}", guild_id.name(&ctx).unwrap_or_default());
+        let guild_name = format!("{guild_id}: {}", guild_id.name(&ctx.cache).unwrap_or_default());
 
         let message = MessageBuilder::new()
             .push_bold("Error in guild: ")
-            .push_mono_line_safe(&guild_name)
-            .push_codeblock(self.to_string(), Some("rust"))
+            .push_mono_line_safe(&*guild_name)
+            .push_codeblock(&*self.to_string(), Some("rust"))
             .build();
 
         dm_users(&ctx, owners.clone(), &message).await?;

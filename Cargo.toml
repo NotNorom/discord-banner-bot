@@ -41,10 +41,13 @@ tokio = { version = "1.37.0", features = [
     "rt-multi-thread",
 ], default-features = false }
 async-repeater = { git = "https://github.com/NotNorom/async-repeater.git" }
+# async-cron-scheduler = "2.0.1"
 # async-repeater = { path = "/home/norom/Documents/Code/async-repeater" }
-
-#[patch.crates-io]
-#poise = { git = "https://github.com/NotNorom/poise.git" }
 
 [patch.crates-io]
 imgurs = { git = "https://github.com/M3DZIK/imgurs" }
+poise = { git = "https://github.com/serenity-rs/poise.git", branch = "serenity-next" }
+
+
+#[patch.'https://github.com/serenity-rs/serenity']
+#serenity = { path = "/home/norom/Documents/Code/serenity" }

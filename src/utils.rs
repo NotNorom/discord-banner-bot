@@ -8,7 +8,7 @@ use poise::{
 };
 use tracing::{info, warn};
 
-use crate::{error::SendDm, Error};
+use crate::{constants::DISCORD_MESSAGE_CONTENT_LIMIT, error::SendDm, Error};
 
 /// Returns the amount of seconds since UNIX 0.
 pub fn current_unix_timestamp() -> u64 {
@@ -42,8 +42,6 @@ pub async fn dm_users(
 
     write!(log_msg, "Sending dm to users: (")?;
 
-    let content = content.into();
-
     for user in users {
         write!(log_msg, "{}, ", user.get())?;
         tasks.push(dm_user(&cache_http, user, content));
@@ -64,7 +62,7 @@ pub async fn dm_users(
 /// Send a dm to a user
 pub async fn dm_user(cache_http: &impl CacheHttp, user: UserId, content: &str) -> Result<Message, Error> {
     let user = user.to_user(cache_http.http()).await?;
-    if user.bot {
+    if user.bot() {
         return Err(SendDm::bot_user(Box::new(user)));
     }
 
@@ -73,6 +71,17 @@ pub async fn dm_user(cache_http: &impl CacheHttp, user: UserId, content: &str) -
             return Err(SendDm::pseudo_user(Box::new(user)));
         }
     }
+
+    // truncate content
+    let content = if content.len() > DISCORD_MESSAGE_CONTENT_LIMIT {
+        let mut truncate_at = DISCORD_MESSAGE_CONTENT_LIMIT;
+        while !content.is_char_boundary(truncate_at) {
+            truncate_at -= 1;
+        }
+        &content[0..truncate_at]
+    } else {
+        content
+    };
 
     let msg = user
         .dm(cache_http.http(), CreateMessage::new().content(content))

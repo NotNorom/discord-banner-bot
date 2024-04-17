@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use poise::{
-    serenity_prelude::{self, CreateEmbed},
+    serenity_prelude::{self, small_fixed_array::FixedString, CreateEmbed},
     CreateReply,
 };
 use reqwest::Url;
@@ -29,7 +29,7 @@ pub async fn start(
     #[cfg(not(feature = "dev"))]
     {
         let guild = guild_id.to_partial_guild(ctx.http()).await?;
-        if !guild.features.contains(&"BANNER".to_string()) {
+        if !guild.features.contains(&FixedString::from_static_trunc("BANNER")) {
             return Err(CommandErr::GuildHasNoBannerFeature.into());
         }
     }
@@ -109,7 +109,7 @@ pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
     #[cfg(not(feature = "dev"))]
     {
         let guild = guild_id.to_partial_guild(ctx.http()).await?;
-        if !guild.features.contains(&"BANNER".to_string()) {
+        if !guild.features.contains(&FixedString::from_static_trunc("BANNER")) {
             return Err(CommandErr::GuildHasNoBannerFeature.into());
         }
     }
