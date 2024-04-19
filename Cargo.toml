@@ -49,5 +49,6 @@ imgurs = { git = "https://github.com/M3DZIK/imgurs" }
 poise = { git = "https://github.com/serenity-rs/poise.git", branch = "serenity-next" }
 
 
-#[patch.'https://github.com/serenity-rs/serenity']
-#serenity = { path = "/home/norom/Documents/Code/serenity" }
+[patch.'https://github.com/serenity-rs/serenity']
+# serenity = { path = "/home/norom/Documents/Code/serenity" }
+serenity = { git = "https://github.com/NotNorom/serenity.git", branch = "next-editguild-changes" }
