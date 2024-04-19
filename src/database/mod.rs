@@ -3,9 +3,11 @@
 pub mod guild_schedule;
 pub mod guild_settings;
 
+use std::{borrow::Cow, sync::Arc};
+
 use fred::{
     prelude::*,
-    types::{RedisKey, RedisMap},
+    types::{ConnectHandle, RedisKey, RedisMap},
 };
 
 use poise::async_trait;
@@ -46,10 +48,12 @@ pub trait Entry {
 pub struct Database {
     /// The redis client
     client: RedisClient,
+    /// Handle to the connection
+    connection_handle: Arc<ConnectHandle>,
     /// Every redis key is prefixed with this string.
     /// This helps identifying this program in case multiple prgrams are using the same
     /// redis instance.
-    prefix: String,
+    prefix: Cow<'static, str>,
 }
 
 impl Database {
@@ -61,14 +65,21 @@ impl Database {
         let client = RedisClient::new(config, None, Some(connection), Some(policy));
         info!("Connecting to database at {}", settings.host);
 
-        let _ = client.connect();
-        client.wait_for_connect().await?;
+        let connection = client.init().await?;
         info!("Database connected");
 
         Ok(Self {
             client,
-            prefix: settings.prefix.clone(),
+            connection_handle: Arc::new(connection),
+            prefix: Cow::from(settings.prefix.clone()),
         })
+    }
+
+    /// Shut down database
+    pub async fn shutdown(&self) -> Result<(), RedisError> {
+        self.client.shutdown(None).await?;
+        self.connection_handle.abort();
+        Ok(())
     }
 
     /// Returns a reference to the RedisClient
