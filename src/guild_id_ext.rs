@@ -3,7 +3,7 @@
 
 use poise::{
     async_trait,
-    serenity_prelude::{self, small_fixed_array::FixedString, CreateAttachment, EditGuild, GuildId, Http},
+    serenity_prelude::{self, CreateAttachment, EditGuild, GuildId, Http},
 };
 use rand::prelude::SliceRandom;
 use reqwest::Client;
@@ -71,6 +71,8 @@ impl RandomBanner for GuildId {
         // Disable banner feature check when in dev environment
         #[cfg(not(feature = "dev"))]
         {
+            use serenity_prelude::small_fixed_array::FixedString;
+
             let guild = self.to_partial_guild(http.as_ref()).await?;
             let features = guild.features;
 
