@@ -1,7 +1,6 @@
 //! This module is for extending the [GuildId](GuildId) struct
 //! with functions for setting the banner from an URL.
 
-use base64::Engine;
 use poise::{
     async_trait,
     serenity_prelude::{self, small_fixed_array::FixedString, CreateAttachment, EditGuild, GuildId, Http},
@@ -88,7 +87,7 @@ impl RandomBanner for GuildId {
 
         // @todo insert check for animated banners here
 
-        debug!("Found extention: {extension}");
+        debug!("Found extension: {extension}");
 
         let image_bytes = reqw_client
             .get(url.as_ref())
@@ -101,15 +100,16 @@ impl RandomBanner for GuildId {
         debug!("Amount of image bytes downloaded: {}", amount_of_bytes);
 
         match amount_of_bytes {
-            0 => return Err(SetBannerError::ImageIsEmpty(url.clone())),
+            0 => return Err(SetBannerError::ImageIsEmpty(url.to_owned())),
             MAXIMUM_IMAGE_SIZE.. => return Err(SetBannerError::ImageIsTooBig(url.to_owned())), // 10mb
             _ => {}
         };
 
+        let attachment = CreateAttachment::bytes(image_bytes, format!("banner.{extension}"));
+
         let edit_guild = {
             #[cfg(feature = "dev")]
             {
-                let attachment = CreateAttachment::bytes(image_bytes, "");
                 debug!("Setting icon");
                 EditGuild::new().icon(Some(&attachment))
             }
@@ -117,9 +117,7 @@ impl RandomBanner for GuildId {
             #[cfg(not(feature = "dev"))]
             {
                 debug!("Setting banner");
-                let b64 = base64::engine::general_purpose::STANDARD.encode(&image_bytes);
-                let payload = format!("data:image/{extension};base64,{b64}");
-                EditGuild::new().banner(Some(payload.into()))
+                EditGuild::new().banner(Some(&attachment))
             }
         };
 
