@@ -221,7 +221,7 @@ impl ChangerError {
                         let guild_owner = partial_guild.owner_id;
                         info!("Letting owner={guild_owner} of guild={guild_id} know about the missing banner feature");
 
-                        dm_user(&ctx, guild_owner, &"Server has lost the required boost level. Stopping schedule. You can restart the bot after gaining the required boost level.").await?;
+                        dm_user(&ctx, guild_owner, "Server has lost the required boost level. Stopping schedule. You can restart the bot after gaining the required boost level.").await?;
                     }
                     SetBannerError::ImageIsEmpty(url) => {
                         warn!("guild_id={guild_id} with album={} has downloaded an image with 0 bytes. url={url}", self.schedule.album());

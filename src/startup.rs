@@ -189,7 +189,7 @@ async fn handle_event_ready(
     dm_users(
         &framework.serenity_context,
         framework.options().owners.clone(),
-        &bot_ready,
+        bot_ready,
     )
     .await?;
     info!(bot_ready);
