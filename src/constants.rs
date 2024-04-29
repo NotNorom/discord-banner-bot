@@ -2,7 +2,9 @@
 //!
 //! See invidividual items' description
 
-/// The user agent for the reqwest instance that's talking to e.g. imgur for the albums
+use poise::serenity_prelude;
+
+/// The user agent for the reqwest instance that's talking to discord
 pub const USER_AGENT: &str = concat!(env!("CARGO_PKG_REPOSITORY"), " - ", env!("CARGO_PKG_VERSION"));
 
 /// Minimum amount of minutes between banner changes
@@ -18,4 +20,4 @@ pub const MAXIMUM_INTERVAL: u64 = 60 * 48; // 48h
 pub const MAXIMUM_IMAGE_SIZE: usize = 1024 * 1024 * 10; // 10mb
 
 /// Maximum message length for discord
-pub const DISCORD_MESSAGE_CONTENT_LIMIT: usize = 2000;
+pub const DISCORD_MESSAGE_CONTENT_LIMIT: usize = serenity_prelude::constants::MESSAGE_CODE_LIMIT;
