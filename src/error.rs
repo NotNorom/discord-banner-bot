@@ -5,10 +5,8 @@ use std::{
 
 use poise::serenity_prelude::User;
 use thiserror::Error;
-use url::ParseError;
 
 use crate::{
-    album_provider::ProviderError,
     constants::{MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
     guild_id_ext::SetBannerError,
     settings::SettingsError,
@@ -35,9 +33,6 @@ pub enum Error {
     Scheduler { msg: String },
 
     #[error(transparent)]
-    Provider(#[from] ProviderError),
-
-    #[error(transparent)]
     StdFmt(#[from] std::fmt::Error),
 
     #[error(transparent)]
@@ -59,8 +54,6 @@ pub enum Command {
     GuildHasNoBannerSet,
     #[error("Server doesn't have the required boost level")]
     GuildHasNoBannerFeature,
-    #[error("Album is not a valid URL")]
-    InvalidUrl(ParseError),
 }
 
 #[derive(Debug, thiserror::Error)]

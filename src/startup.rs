@@ -1,15 +1,13 @@
 use async_repeater::{Repeater, RepeaterHandle};
-use poise::serenity_prelude::{FullEvent, GuildId, Ready};
+use poise::serenity_prelude::{ChannelId, FullEvent, GuildId, Ready};
 use reqwest::Client;
 use std::{
     sync::{Arc, OnceLock},
     time::Duration,
 };
 use tracing::{error, info};
-use url::Url;
 
 use crate::{
-    album_provider::{Album, ImageProviders, ProviderKind},
     banner_changer::ChangerTask,
     constants::USER_AGENT,
     database::{guild_schedule::GuildSchedule, Database},
@@ -53,7 +51,7 @@ impl State {
         })
     }
 
-    /// Enqueue an album for the guild at interval
+    /// Enqueue a schedule for the guild at interval
     pub async fn enque(&self, schedule: Schedule) -> Result<(), Error> {
         info!("Inserting {schedule:?}");
         self.repeater_handle
@@ -87,10 +85,10 @@ impl State {
         &self.database
     }
 
-    /// Gets the current album link
-    pub async fn get_album(&self, guild_id: GuildId) -> Result<String, Error> {
+    /// Gets the current channel
+    pub async fn get_channel(&self, guild_id: GuildId) -> Result<ChannelId, Error> {
         let db_entry = self.database.get::<GuildSchedule>(guild_id.get()).await?;
-        Ok(db_entry.album().to_owned())
+        Ok(ChannelId::new(db_entry.channel_id()))
     }
 }
 
@@ -115,20 +113,20 @@ async fn handle_event_ready(
     framework: poise::FrameworkContext<'_, Data, Error>,
     _data_about_bot: &Ready,
 ) -> Result<(), Error> {
+    info!("handling ready event");
     let ctx = framework.serenity_context;
     let settings = Settings::get();
     let data: Arc<State> = ctx.data();
     let db = data.database().clone();
     let http = data.reqw_client().clone();
 
-    let providers = Arc::new(ImageProviders::new(&settings.provider, &http));
     let repeater = Repeater::with_capacity(settings.scheduler.capacity);
     let owners = framework.options().owners.clone();
     let ctx = Arc::new(ctx.clone());
 
     let callback = move |schedule, handle| async move {
         info!("Creating changer task for schedule {schedule:?}");
-        let task = ChangerTask::new(ctx.clone(), db.clone(), http.clone(), providers, schedule);
+        let task = ChangerTask::new(ctx.clone(), db.clone(), http.clone(), schedule);
 
         let Err(err) = task.run().await else {
             info!("Task finished successfully");
@@ -152,13 +150,21 @@ async fn handle_event_ready(
     info!("Amount of active schedules: {}", known_guild_ids.len());
 
     for id in known_guild_ids {
-        let entry = data.database().get::<GuildSchedule>(id).await?;
-
-        let album_url = Url::parse(entry.album()).expect("album url has already been parsed before");
-        let kind: ProviderKind = (&album_url)
-            .try_into()
-            .expect("provider kind has already been parsed before");
-        let album = Album::new(album_url, kind);
+        let entry = match data.database().get::<GuildSchedule>(id).await {
+            Ok(entry) => entry,
+            Err(err) => {
+                let msg =
+                    format!(" - guild_id={id}, failed to fetch schedule from db: {err:#?} Skipping entry");
+                error!(msg);
+                dm_users(
+                    &framework.serenity_context,
+                    framework.options().owners.clone(),
+                    &msg,
+                )
+                .await?;
+                continue;
+            }
+        };
 
         let interval = entry.interval();
         let last_run = entry.last_run();
@@ -177,7 +183,7 @@ async fn handle_event_ready(
         let schedule = Schedule::with_offset(
             Duration::from_secs(entry.interval()),
             GuildId::new(entry.guild_id()),
-            album,
+            ChannelId::new(entry.channel_id()),
             Duration::from_secs(offset),
         );
 

@@ -1,8 +1,8 @@
-pub mod album_provider;
 pub mod banner_changer;
 pub mod commands;
 pub mod constants;
 pub mod database;
+pub mod messages_with_media;
 pub mod error;
 pub mod guild_id_ext;
 pub mod schedule;

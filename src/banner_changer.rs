@@ -6,12 +6,14 @@ use poise::serenity_prelude::{
     UserId,
 };
 
+use tokio_stream::StreamExt;
 use tracing::{error, info, warn};
+use url::Url;
 
 use crate::{
-    album_provider::{ImageProviders, ProviderError},
     database::{guild_schedule::GuildSchedule, Database},
     guild_id_ext::{RandomBanner, SetBannerError},
+    messages_with_media::find_media_in_channel,
     schedule::Schedule,
     utils::{current_unix_timestamp, dm_user, dm_users},
     Error,
@@ -27,7 +29,6 @@ pub struct ChangerTask {
     ctx: Arc<poise::serenity_prelude::Context>,
     database: Database,
     http_client: reqwest::Client,
-    providers: Arc<ImageProviders>,
     schedule: Schedule,
 }
 
@@ -35,15 +36,22 @@ impl ChangerTask {
     pub async fn run(self) -> Result<(), ChangerError> {
         let schedule = self.schedule.clone();
         let mut guild_id = schedule.guild_id();
-        let album = schedule.album();
+        let channel = schedule.channel();
         let interval = schedule.interval();
 
         info!("Fetching images");
-        let images = self
-            .providers
-            .images(album)
-            .await
-            .map_err(|err| ChangerError::new(err.into(), guild_id, self.schedule.clone()))?;
+
+        let messages_with_media = find_media_in_channel(&self.ctx, &channel)
+            .take(100)
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>()
+            .await;
+
+        let images = messages_with_media
+            .into_iter()
+            .flat_map(|msg| msg.media)
+            .filter_map(|media| Url::parse(&media).ok())
+            .collect::<Vec<_>>();
 
         let img_count = images.len();
         info!("Fetched {} images. Setting banner", img_count);
@@ -55,7 +63,7 @@ impl ChangerTask {
         info!("Inserting schedule into database");
         let schedule = GuildSchedule::new(
             guild_id.get(),
-            album.url().to_string(),
+            channel.get(),
             interval.as_secs(),
             current_unix_timestamp(),
         );
@@ -74,14 +82,12 @@ impl ChangerTask {
         ctx: Arc<poise::serenity_prelude::Context>,
         database: Database,
         http_client: reqwest::Client,
-        providers: Arc<ImageProviders>,
         schedule: Schedule,
     ) -> Self {
         Self {
             ctx,
             database,
             http_client,
-            providers,
             schedule,
         }
     }
@@ -158,23 +164,6 @@ impl ChangerError {
                 },
                 serenity_err => error!("unhandled serenity error: {serenity_err:?}"),
             },
-            Error::Provider(error) => match error {
-                ProviderError::Unsupported(name) => error!("Unsupported provider kind: {name}"),
-                ProviderError::Inactive(kind) => error!("Inactive provider: {kind:?}"),
-                ProviderError::ImgurIdExtraction(error) => error!("Could not extract imgur id: {error}"),
-                ProviderError::Imgur(error) => match error {
-                    imgurs::Error::SendApiRequest(send_api_err) => {
-                        warn!("Error with imgur request: {send_api_err:#?}");
-                    }
-                    imgurs::Error::ApiError(code, message) => {
-                        warn!("Imgur responded with status_code={code} and message={message}");
-                    }
-                    imgurs_err => error!("unhandled imgurs error: {imgurs_err}"),
-                },
-                ProviderError::InvalidDomain(url) => {
-                    warn!("Command was called with invalid domain: {url}");
-                }
-            },
             Error::SetBanner(error) => {
                 match error {
                     SetBannerError::Transport(err) => {
@@ -224,16 +213,16 @@ impl ChangerError {
                         dm_user(&ctx, guild_owner, "Server has lost the required boost level. Stopping schedule. You can restart the bot after gaining the required boost level.").await?;
                     }
                     SetBannerError::ImageIsEmpty(url) => {
-                        warn!("guild_id={guild_id} with album={} has downloaded an image with 0 bytes. url={url}", self.schedule.album());
+                        warn!("guild_id={guild_id} with channel={} has downloaded an image with 0 bytes. url={url}", self.schedule.channel());
                     }
                     SetBannerError::ImageIsTooBig(url) => {
-                        warn!("guild_id={guild_id} with album={} has downloaded an image that is too big. url={url}", self.schedule.album());
+                        warn!("guild_id={guild_id} with channel={} has downloaded an image that is too big. url={url}", self.schedule.channel());
 
                         let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
                         let guild_owner = partial_guild.owner_id;
                         info!("Letting owner={guild_owner} of guild={guild_id} know about an image that is too big");
 
-                        dm_user(&ctx, guild_owner, &format!("The album you've set contains an image that is too big for discord. Maximum size is 10mb. The image is: {url}")).await?;
+                        dm_user(&ctx, guild_owner, &format!("The channel you've set contains an image that is too big for discord. Maximum size is 10mb. The image is: {url}")).await?;
                     }
                 }
             }

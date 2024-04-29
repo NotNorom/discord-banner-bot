@@ -14,8 +14,8 @@ use super::{get_from_redis_map, Database, Entry};
 pub struct GuildSchedule {
     /// The Guilds ID
     guild_id: u64,
-    /// Url to the album
-    album: String,
+    /// Channel ID to fetch images from
+    channel: u64,
     /// How frequent the schudle run. In seconds
     interval: u64,
     /// Unix timestamp since the banner was last changed
@@ -23,10 +23,10 @@ pub struct GuildSchedule {
 }
 
 impl GuildSchedule {
-    pub fn new(guild_id: u64, album: String, interval: u64, last_run: u64) -> Self {
+    pub fn new(guild_id: u64, channel: u64, interval: u64, last_run: u64) -> Self {
         Self {
             guild_id,
-            album,
+            channel,
             interval,
             last_run,
         }
@@ -37,9 +37,9 @@ impl GuildSchedule {
         self.guild_id
     }
 
-    /// Get a reference to the db entry's album.
-    pub fn album(&self) -> &str {
-        self.album.as_ref()
+    /// Get a reference to the db entry's channel id.
+    pub fn channel_id(&self) -> u64 {
+        self.channel
     }
 
     /// Get a reference to the db entry's interval.
@@ -63,7 +63,7 @@ impl From<&GuildSchedule> for RedisMap {
     fn from(entry: &GuildSchedule) -> Self {
         let mut map = HashMap::with_capacity(5);
         map.insert("guild_id", entry.guild_id.to_string());
-        map.insert("album", entry.album.clone());
+        map.insert("album", entry.channel.to_string());
         map.insert("interval", entry.interval.to_string());
         map.insert("last_run", entry.last_run.to_string());
 
@@ -83,13 +83,13 @@ impl FromRedis for GuildSchedule {
         let value = value.into_map()?;
 
         let guild_id = get_from_redis_map(&value, "guild_id")?;
-        let album = get_from_redis_map(&value, "album")?;
+        let channel = get_from_redis_map(&value, "album")?;
         let interval = get_from_redis_map(&value, "interval")?;
         let last_run = get_from_redis_map(&value, "last_run")?;
 
         Ok(Self {
             guild_id,
-            album,
+            channel,
             interval,
             last_run,
         })

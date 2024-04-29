@@ -1,70 +1,27 @@
 use std::time::Duration;
 
 use poise::{
-    serenity_prelude::{self, CreateEmbed},
+    serenity_prelude::{self, ChannelId, CreateEmbed, GuildId, MessageBuilder},
     CreateReply,
 };
-use reqwest::Url;
 
 use crate::{
-    album_provider::Album,
     constants::{DEFAULT_INTERVAL, MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
     error::Command as CommandErr,
     schedule::Schedule,
     Context, Error,
 };
 
-/// Picks a random image from the album every interval minutes and sets it as the banner.
+/// Picks a random image from the channel every interval minutes and sets it as the banner.
 #[poise::command(prefix_command, slash_command, required_permissions = "MANAGE_GUILD")]
 pub async fn start(
     ctx: Context<'_>,
-    #[description = "Album link"] album: String,
+    #[description = "Channel"] channel: ChannelId,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
 ) -> Result<(), Error> {
-    // guild id
     let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
-
-    // disable BANNER check when dev feature is enabled
-    #[cfg(not(feature = "dev"))]
-    {
-        use serenity_prelude::small_fixed_array::FixedString;
-        let guild = guild_id.to_partial_guild(ctx.http()).await?;
-        if !guild.features.contains(&FixedString::from_static_trunc("BANNER")) {
-            return Err(CommandErr::GuildHasNoBannerFeature.into());
-        }
-    }
-
-    // interval
-    let interval = interval.unwrap_or(DEFAULT_INTERVAL);
-    if interval < MINIMUM_INTERVAL {
-        return Err(CommandErr::BelowMinTimeout.into());
-    }
-
-    if interval > MAXIMUM_INTERVAL {
-        return Err(CommandErr::AboveMaxTimeout.into());
-    }
-
-    // album url
-    let album_url = album.parse::<Url>().map_err(CommandErr::InvalidUrl)?;
-    let album = Album::try_from(&album_url)?;
-
-    let user_data = ctx.data();
-
-    // schedule it
-    // interval is in minutes, so we multiply by 60 seconds
-    let schedule = Schedule::new(Duration::from_secs(interval * 60), guild_id, album);
-    user_data.enque(schedule).await?;
-
-    // answer the user
-    let content = format!(
-        "Scheduling banner change for every {} minutes using this album: <{}>",
-        &interval,
-        album_url.as_str()
-    );
-    poise::send_reply(ctx, CreateReply::default().content(content).ephemeral(true)).await?;
-
-    Ok(())
+    do_the_banner_thing(ctx, guild_id, channel, interval).await
 }
 
 /// Stops picking random images
@@ -80,7 +37,7 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
     poise::send_reply(
         ctx,
         CreateReply::default()
-            .content("Stopped currently running timer")
+            .content("Stopped currently running schedule")
             .ephemeral(true),
     )
     .await?;
@@ -88,15 +45,17 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-/// Tells you the album that is being used right now
+/// Tells you the channel that is being used right now
 #[poise::command(prefix_command, slash_command, required_permissions = "MANAGE_GUILD")]
-pub async fn album(ctx: Context<'_>) -> Result<(), Error> {
+pub async fn channel(ctx: Context<'_>) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
 
     let user_data = ctx.data();
-    let album = user_data.get_album(guild_id).await?;
+    let channel = user_data.get_channel(guild_id).await?;
 
-    poise::send_reply(ctx, CreateReply::default().content(album.clone()).ephemeral(true)).await?;
+    let message = MessageBuilder::new().channel(channel).build();
+
+    poise::send_reply(ctx, CreateReply::default().content(message).ephemeral(true)).await?;
 
     Ok(())
 }
@@ -132,17 +91,33 @@ pub async fn current(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-/// Picks a random image from the album every n minutes and sets it as the banner for that server.
+/// Picks a random image from the channel every n minutes and sets it as the banner for that server.
 #[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
 pub async fn start_for_guild(
     ctx: Context<'_>,
     #[description = "Guild ID"] guild_id: serenity_prelude::Guild,
-    #[description = "Album"] album: String,
+    #[description = "Channel"] channel: ChannelId,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
 ) -> Result<(), Error> {
-    // guild id
-    let guild_id = guild_id.id;
+    do_the_banner_thing(ctx, guild_id.id, channel, interval).await
+}
+
+async fn do_the_banner_thing(
+    ctx: Context<'_>,
+    guild_id: GuildId,
+    channel: ChannelId,
+    interval: Option<u64>,
+) -> Result<(), Error> {
+    // disable BANNER check when dev feature is enabled
+    #[cfg(not(feature = "dev"))]
+    {
+        use serenity_prelude::small_fixed_array::FixedString;
+        let guild = guild_id.to_partial_guild(ctx.http()).await?;
+        if !guild.features.contains(&FixedString::from_static_trunc("BANNER")) {
+            return Err(CommandErr::GuildHasNoBannerFeature.into());
+        }
+    }
 
     // interval
     let interval = interval.unwrap_or(DEFAULT_INTERVAL);
@@ -154,23 +129,21 @@ pub async fn start_for_guild(
         return Err(CommandErr::AboveMaxTimeout.into());
     }
 
-    // album url
-    let album_url = album.parse::<Url>().map_err(CommandErr::InvalidUrl)?;
-    let album = Album::try_from(&album_url)?;
-
     let user_data = ctx.data();
 
     // schedule it
     // interval is in minutes, so we multiply by 60 seconds
-    let schedule = Schedule::new(Duration::from_secs(interval * 60), guild_id, album);
+    let schedule = Schedule::new(Duration::from_secs(interval * 60), guild_id, channel);
     user_data.enque(schedule).await?;
 
+    let content = MessageBuilder::new()
+        .push(&*format!(
+            "Scheduling banner change for every {interval} minutes using channel "
+        ))
+        .channel(channel)
+        .build();
+
     // answer the user
-    let content = format!(
-        "Scheduling banner change for every {} minutes using this album: <{}>",
-        &interval,
-        &album_url.as_str()
-    );
     poise::send_reply(ctx, CreateReply::default().content(content).ephemeral(true)).await?;
 
     Ok(())

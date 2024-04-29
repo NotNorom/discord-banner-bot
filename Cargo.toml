@@ -18,7 +18,6 @@ debug = true
 
 [dependencies]
 thiserror = "1.0.58"
-imgurs = "0.11.3"
 tokio-stream = "0.1.15"
 url = "2.5.0"
 rand = "0.8.5"
@@ -45,10 +44,6 @@ async-repeater = { git = "https://github.com/NotNorom/async-repeater.git" }
 # async-repeater = { path = "/home/norom/Documents/Code/async-repeater" }
 
 [patch.crates-io]
-imgurs = { git = "https://github.com/M3DZIK/imgurs" }
 poise = { git = "https://github.com/serenity-rs/poise.git", branch = "serenity-next" }
-
-
-[patch.'https://github.com/serenity-rs/serenity']
 # serenity = { path = "/home/norom/Documents/Code/serenity" }
-serenity = { git = "https://github.com/NotNorom/serenity.git", branch = "next-editguild-changes" }
+#serenity = { git = "https://github.com/serenity/serenity.git", branch = "next" }

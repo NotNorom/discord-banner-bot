@@ -24,9 +24,9 @@ pub enum SetBannerError {
     CouldNotDeterminFileExtension,
     #[error("Missing 'banner' feature")]
     MissingBannerFeature,
-    #[error("Image is empty")]
+    #[error("Image is empty: {}", .0)]
     ImageIsEmpty(Url),
-    #[error("Image is to big")]
+    #[error("Image is to big: {}", .0)]
     ImageIsTooBig(Url),
 }
 
@@ -82,7 +82,7 @@ impl RandomBanner for GuildId {
         }
 
         let extension = url
-            .as_str()
+            .path()
             .split('.')
             .last()
             .ok_or_else(|| SetBannerError::CouldNotDeterminFileExtension)?;

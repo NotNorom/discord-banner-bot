@@ -6,10 +6,6 @@ This bot will change the banner of a discord server every few minutes.
 Minimum is 15 minutes.
 Maximum is currently 2880 minutes (48h).
 
-The only supported image hosting service right now is imgur.
-I do plan on extending this to others services in the future... eventually... tm.
-
-
 This is a work in progress, please message me if you have any questions (my timeone is UTC+1 or +2 during summer):
 - Discord: [Bot Support Server](https://discord.gg/MMJFtCtYPP)
 - Twitter: [@\_norom\_](https://twitter.com/_norom_)
@@ -24,12 +20,10 @@ When entering the commands in discord, don't actually type any brackets.
 
 
 ### /start
-`/start [ALBUM] <INTERVAL>`
+`/start [CHANNEL] <INTERVAL>`
 Start changing banners every INTERVAL minutes.
-The banner will be picked randomly from the ALBUM link.
-
-Supported links:
-- imgur.com/a/HASH
+The banner will be picked randomly from messages in the CHANNEL.
+Note: The CHANNEL does not have to be inside the same server, it's just that the bot needs access to the channel.
 
 Interval range:
 - minimum: 15
@@ -45,9 +39,9 @@ Stop automatic banner changing.
 _Command can only be run by users with `Manage Server` permission.*_
 
 
-### /album
-`/album`
-Shows the album link you are using. In case you forgot :D
+### /channel
+`/channel`
+Shows the channel link you are using. In case you forgot :D
 
 _Command can only be run by users with `Manage Server` permission._
 
@@ -76,7 +70,7 @@ _Command can only be run by anyone._
 
 
 ### /start_for_guild
-`/start_for_guild [GUILD_ID] [ALBUM] <INTERVAL>`
+`/start_for_guild [GUILD_ID] [CHANNEL_ID] <INTERVAL>`
 Same as `/start` but a server can be specified.
 This allows to start the bot for servers without the user being in the server.
 This is just for bot owners and intended for debugging purposes.
@@ -100,7 +94,7 @@ This bot needs these permissions to work:
 The following commands can only be run by users with the `Manage Server` permissions:
 - `/start`
 - `/stop`
-- `/album`
+- `/channel`
 - `/notification_channel`
 
 
@@ -123,7 +117,7 @@ https://github.com/NotNorom/discord-banner-bot/blob/master/settings.template.tom
 - `PREFIX:active_schedules` keeps a list of currently active guild schedules.
 - `PREFIX:active_schedule:GUILD_ID` is a schedule for a specific guild. It contains the following fields:
   - `guild_id`: The guild_id
-  - `album`: The album url
+  - `album`: The channel_id
   - `interval`: Minutes between banner changes
   - `last_run`: Unix timestamp, when the banner was last changed successfully
 
@@ -131,9 +125,9 @@ https://github.com/NotNorom/discord-banner-bot/blob/master/settings.template.tom
 ## Credits
 
 This bot is built using
-- Poise: https://github.com/kangalioo/poise
-- Serenity: https://github.com/serenity-rs/serenity/
-- Imgurs: https://github.com/M3DZIK/imgurs
+- Poise: https://github.com/serenity-rs/poise
+- Serenity: https://github.com/serenity-rs/serenity
+- Imgurs: https://github.com/M3DZIK/imgurs (back when I was still using imgur)
 - Tokio: https://github.com/tokio-rs/tokio/
 - Fred: https://github.com/aembke/fred.rs
 

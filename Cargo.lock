@@ -424,7 +424,6 @@ dependencies = [
  "base64 0.22.0",
  "config",
  "fred",
- "imgurs",
  "poise",
  "rand",
  "reqwest",
@@ -863,19 +862,6 @@ checksum = "634d9b1461af396cad843f47fdba5597a4f9e6ddd4bfb6ff5d85028c25cb12f6"
 dependencies = [
  "unicode-bidi",
  "unicode-normalization",
-]
-
-[[package]]
-name = "imgurs"
-version = "0.11.3"
-source = "git+https://github.com/M3DZIK/imgurs#b6ef4241ca36f2666c9e5eef5c10bbc0be5ef0c7"
-dependencies = [
- "base64 0.22.0",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror",
- "url",
 ]
 
 [[package]]
@@ -1664,7 +1650,7 @@ dependencies = [
 [[package]]
 name = "serenity"
 version = "0.12.1"
-source = "git+https://github.com/NotNorom/serenity.git?branch=next-editguild-changes#dbbce9ccef96c12ab3d977ad34bc305ff7589120"
+source = "git+https://github.com/serenity-rs/serenity?branch=next#83ba59e3a942706f4a67f715a95567c6fd0293f9"
 dependencies = [
  "arrayvec",
  "async-trait",
