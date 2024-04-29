@@ -16,7 +16,6 @@ pub struct Settings {
     pub bot: Bot,
     pub scheduler: Scheduler,
     pub database: Database,
-    pub provider: Provider,
 }
 
 impl Settings {
@@ -60,17 +59,4 @@ pub struct Scheduler {
 pub struct Database {
     pub host: String,
     pub prefix: String,
-}
-
-/// Settings for every provider
-#[derive(Debug, Deserialize, Clone)]
-pub struct Provider {
-    pub imgur: Option<Imgur>,
-}
-
-/// Imgur settings
-#[derive(Debug, Deserialize, Clone)]
-pub struct Imgur {
-    pub client_id: String,
-    pub secret: String,
 }
