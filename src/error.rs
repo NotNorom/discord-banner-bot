@@ -126,7 +126,21 @@ where
     U: Send + Sync + 'static,
     E: std::fmt::Display + std::fmt::Debug,
 {
-    poise::builtins::on_error(error).await?;
+    match &error {
+        poise::FrameworkError::EventHandler {
+            error: event_err,
+            event,
+            framework,
+            ..
+        } => match event {
+            poise::serenity_prelude::FullEvent::Ready { .. } => {
+                tracing::error!("during startup: {event_err:?} - Shutting down!");
+                framework.shard_manager().shutdown_all().await;
+            }
+            _ => poise::builtins::on_error(error).await?,
+        },
+        _ => poise::builtins::on_error(error).await?,
+    }
 
     Ok(())
 }
