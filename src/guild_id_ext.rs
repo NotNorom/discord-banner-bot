@@ -3,10 +3,7 @@
 
 use std::collections::HashMap;
 
-use poise::{
-    async_trait,
-    serenity_prelude::{self, CreateAttachment, EditGuild, GuildId, Http},
-};
+use poise::serenity_prelude::{self, CreateAttachment, EditGuild, GuildId, Http};
 use rand::prelude::SliceRandom;
 use reqwest::Client;
 use tracing::{debug, info, instrument};
@@ -32,14 +29,13 @@ pub enum SetBannerError {
     ImageIsTooBig(Url),
 }
 
-#[async_trait]
 pub(crate) trait RandomBanner {
     /// Given a slice of [Url](Url), pick a random entry
     /// and try and set it as the guild banner
     #[instrument(skip(self, http, reqw_client, urls))]
     async fn set_random_banner<'url>(
         &mut self,
-        http: impl AsRef<Http> + Sync + Send + 'async_trait,
+        http: impl AsRef<Http> + Sync + Send + 'static,
         reqw_client: &Client,
         urls: &'url [Url],
     ) -> Result<&'url Url, SetBannerError> {
@@ -57,18 +53,17 @@ pub(crate) trait RandomBanner {
     /// convert the bytes to base64 and then send it to discord
     async fn set_banner_from_url(
         &mut self,
-        http: impl AsRef<Http> + Sync + Send + 'async_trait,
+        http: impl AsRef<Http> + Sync + Send + 'static,
         reqw_client: &Client,
         url: &Url,
     ) -> Result<(), SetBannerError>;
 }
 
-#[async_trait]
 impl RandomBanner for GuildId {
     #[instrument(skip(http, reqw_client, url))]
     async fn set_banner_from_url(
         &mut self,
-        http: impl AsRef<Http> + Sync + Send + 'async_trait,
+        http: impl AsRef<Http> + Sync + Send + 'static,
         reqw_client: &Client,
         url: &Url,
     ) -> Result<(), SetBannerError> {
