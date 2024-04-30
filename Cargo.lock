@@ -418,7 +418,6 @@ name = "discord-banner-bot"
 version = "0.5.1"
 dependencies = [
  "async-repeater",
- "base64 0.22.0",
  "config",
  "fred",
  "poise",

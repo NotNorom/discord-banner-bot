@@ -21,14 +21,17 @@ thiserror = "1.0.59"
 tokio-stream = "0.1.15"
 url = "2.5.0"
 rand = "0.8.5"
-base64 = "0.22.0"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = [
     "tracing-log",
     "env-filter",
     "parking_lot",
 ] }
-fred = { version = "9.0.1", default-features = false, features = ["i-std", "i-sets", "i-hashes"] }
+fred = { version = "9.0.1", default-features = false, features = [
+    "i-std",
+    "i-sets",
+    "i-hashes",
+] }
 poise = "0.6.1"
 config = { version = "0.14", default-features = false, features = ["toml"] }
 serde = "1.0.199"
