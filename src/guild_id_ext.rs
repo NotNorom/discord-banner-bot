@@ -23,6 +23,8 @@ pub enum SetBannerError {
     CouldNotDeterminFileExtension,
     #[error("Missing 'banner' feature")]
     MissingBannerFeature,
+    #[error("Missing 'animated banner' feature: {}", .0)]
+    MissingAnimatedBannerFeature(Url),
     #[error("Image is empty: {}", .0)]
     ImageIsEmpty(Url),
     #[error("Image is to big: {}", .0)]
@@ -67,6 +69,13 @@ impl RandomBanner for GuildId {
         reqw_client: &Client,
         url: &Url,
     ) -> Result<(), SetBannerError> {
+        let extension = url
+            .path()
+            .split('.')
+            .last()
+            .ok_or_else(|| SetBannerError::CouldNotDeterminFileExtension)?;
+
+        debug!("Found extension: {extension}");
         // Disable banner feature check when in dev environment
         #[cfg(not(feature = "dev"))]
         {
@@ -78,16 +87,13 @@ impl RandomBanner for GuildId {
             if !features.contains(&FixedString::from_static_trunc("BANNER")) {
                 return Err(SetBannerError::MissingBannerFeature);
             }
+
+            if extension.to_lowercase() == "gif"
+                && !features.contains(&FixedString::from_static_trunc("ANIMATED_BANNER"))
+            {
+                return Err(SetBannerError::MissingAnimatedBannerFeature(url.clone()));
+            }
         }
-
-        let extension = url
-            .path()
-            .split('.')
-            .last()
-            .ok_or_else(|| SetBannerError::CouldNotDeterminFileExtension)?;
-
-        debug!("Found extension: {extension}");
-        // @todo insert check for animated banners here
 
         // discord cdn has a few image parameters and we can limit the size here
         // hopefully preventing us from runnig into the 10mb limit.

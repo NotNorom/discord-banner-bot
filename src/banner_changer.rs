@@ -19,6 +19,7 @@ use crate::{
     Error,
 };
 
+#[derive(Debug)]
 pub enum ScheduleAction {
     Continue,
     Retry,
@@ -210,6 +211,14 @@ impl ChangerError {
                         info!("Letting owner={guild_owner} of guild={guild_id} know about the missing banner feature");
 
                         dm_user(&ctx, guild_owner, "Server has lost the required boost level. Stopping schedule. You can restart the bot after gaining the required boost level.").await?;
+                    }
+                    SetBannerError::MissingAnimatedBannerFeature(url) => {
+                        warn!("guild_id={guild_id} with channel={} was trying to set an animated banner but does not have the feature. url={url}", self.schedule.channel());
+                        let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
+                        let guild_owner = partial_guild.owner_id;
+                        info!("Letting owner={guild_owner} of guild={guild_id} know about the missing animated banner feature");
+
+                        dm_user(&ctx, guild_owner, &format!("Tried to set an animated banner but the server '{}' does not have the required boost level for animated banners", partial_guild.name)).await?;
                     }
                     SetBannerError::ImageIsEmpty(url) => {
                         warn!("guild_id={guild_id} with channel={} has downloaded an image with 0 bytes. url={url}", self.schedule.channel());
