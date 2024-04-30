@@ -54,7 +54,7 @@ impl State {
     }
 
     /// Enqueue a schedule for the guild at interval
-    /// 
+    ///
     /// # Panics
     /// Will panic if called before initialization is complete
     pub async fn enque(&self, schedule: Schedule) -> Result<(), Error> {
@@ -68,7 +68,7 @@ impl State {
     }
 
     /// Dequeue a guild
-    /// 
+    ///
     /// # Panics
     /// Will panic if called before initialization is complete
     pub async fn deque(&self, guild_id: GuildId) -> Result<(), Error> {

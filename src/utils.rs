@@ -11,7 +11,7 @@ use tracing::{info, warn};
 use crate::{constants::DISCORD_MESSAGE_CONTENT_LIMIT, error::SendDm, Error};
 
 /// Returns the amount of seconds since UNIX 0.
-/// 
+///
 /// # Panics
 /// Could panic if timstamp lies before unix zero but like... why would that happen :V
 pub fn current_unix_timestamp() -> u64 {
@@ -24,7 +24,7 @@ pub fn current_unix_timestamp() -> u64 {
 /// Starts logging based on `log_level` passed in.
 ///
 /// `log_level` should be defined the same like `RUST_ENV`
-/// 
+///
 /// # Panics
 /// When logging cannot be set up
 pub fn start_logging(log_level: &str) {

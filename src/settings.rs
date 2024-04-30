@@ -32,7 +32,7 @@ impl Settings {
     }
 
     /// Get settings.
-    /// 
+    ///
     /// # Panics
     /// Panics if called before [init].
     pub fn get() -> &'static Settings {
