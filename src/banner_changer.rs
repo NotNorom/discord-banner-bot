@@ -41,7 +41,7 @@ impl ChangerTask {
 
         info!("Fetching images");
 
-        let messages_with_media = find_media_in_channel(&self.ctx, &channel)
+        let messages_with_media = find_media_in_channel(&self.ctx, channel)
             .take(100)
             .filter_map(Result::ok)
             .collect::<Vec<_>>()
@@ -167,7 +167,7 @@ impl ChangerError {
             Error::SetBanner(error) => {
                 match error {
                     SetBannerError::Transport(err) => {
-                        warn!("guild_id={guild_id}: {err}")
+                        warn!("guild_id={guild_id}: {err}");
                     }
                     SetBannerError::DiscordApi(discord_err) => match discord_err {
                         SerenityError::Http(http_err) => match http_err {
@@ -200,7 +200,7 @@ impl ChangerError {
                     },
                     SetBannerError::CouldNotPickAUrl => warn!("guild_id={guild_id}: 'Could not pick a url'"),
                     SetBannerError::CouldNotDeterminFileExtension => {
-                        warn!("guild_id={guild_id}: 'Could not determine file extenstion'")
+                        warn!("guild_id={guild_id}: 'Could not determine file extenstion'");
                     }
                     SetBannerError::MissingBannerFeature => {
                         let _ = repeater_handle.remove(guild_id).await;

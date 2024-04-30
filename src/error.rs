@@ -122,16 +122,13 @@ where
     match &error {
         poise::FrameworkError::EventHandler {
             error: event_err,
-            event,
+            event: poise::serenity_prelude::FullEvent::Ready { .. },
             framework,
             ..
-        } => match event {
-            poise::serenity_prelude::FullEvent::Ready { .. } => {
-                tracing::error!("during startup: {event_err:?} - Shutting down!");
-                framework.shard_manager().shutdown_all().await;
-            }
-            _ => poise::builtins::on_error(error).await?,
-        },
+        } => {
+            tracing::error!("during startup: {event_err:?} - Shutting down!");
+            framework.shard_manager().shutdown_all().await;
+        }
         _ => poise::builtins::on_error(error).await?,
     }
 

@@ -31,7 +31,10 @@ impl Settings {
         Ok(())
     }
 
-    /// Get settings. Panics if called before [init].
+    /// Get settings.
+    /// 
+    /// # Panics
+    /// Panics if called before [init].
     pub fn get() -> &'static Settings {
         SETTINGS.get().expect("Settings are not initialized")
     }

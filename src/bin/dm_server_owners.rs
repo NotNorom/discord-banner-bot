@@ -46,7 +46,7 @@ async fn main() -> Result<(), Error> {
             .push(&*args().nth(1).unwrap_or_default())
             .build();
         info!("sending dm to {}: {}", owner, content);
-        dm_user(&http, *owner, &*content).await?;
+        dm_user(&http, *owner, &content).await?;
     }
 
     Ok(())

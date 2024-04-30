@@ -32,6 +32,8 @@ pub struct State {
 }
 
 impl State {
+    /// Creates a new state but does not fully initialize it yet.
+    /// initialization happens when the first READY event is received
     pub async fn new() -> Result<Self, Error> {
         info!("Setting up state");
         let settings = Settings::get();
@@ -52,6 +54,9 @@ impl State {
     }
 
     /// Enqueue a schedule for the guild at interval
+    /// 
+    /// # Panics
+    /// Will panic if called before initialization is complete
     pub async fn enque(&self, schedule: Schedule) -> Result<(), Error> {
         info!("Inserting {schedule:?}");
         self.repeater_handle
@@ -63,6 +68,9 @@ impl State {
     }
 
     /// Dequeue a guild
+    /// 
+    /// # Panics
+    /// Will panic if called before initialization is complete
     pub async fn deque(&self, guild_id: GuildId) -> Result<(), Error> {
         info!("Removing {guild_id:?}");
         self.repeater_handle
@@ -111,7 +119,7 @@ pub async fn event_handler(
 
 async fn handle_event_ready(
     framework: poise::FrameworkContext<'_, Data, Error>,
-    _data_about_bot: &Ready,
+    _: &Ready,
 ) -> Result<(), Error> {
     info!("handling ready event");
     let ctx = framework.serenity_context;
@@ -138,7 +146,7 @@ async fn handle_event_ready(
             info!("Error happend and was handled successfully");
             return;
         };
-        error!("CRITICAL after handling previous error: {critical_err:?}")
+        error!("CRITICAL after handling previous error: {critical_err:?}");
     };
 
     data.repeater_handle

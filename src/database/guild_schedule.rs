@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use fred::{
-    prelude::{HashesInterface, KeysInterface, RedisError, RedisErrorKind, SetsInterface},
+    error::{RedisError, RedisErrorKind},
+    interfaces::{HashesInterface, KeysInterface, SetsInterface},
     types::{FromRedis, RedisKey, RedisMap, RedisValue},
 };
 use poise::async_trait;

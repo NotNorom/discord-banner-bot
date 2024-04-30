@@ -63,7 +63,7 @@ impl RepeaterEntry for Schedule {
     }
 
     fn reset_delay(&mut self) {
-        self.offset = None
+        self.offset = None;
     }
 }
 

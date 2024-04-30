@@ -15,6 +15,7 @@ async fn main() -> Result<(), Error> {
 
     let http = serenity_prelude::HttpBuilder::new(&settings.bot.token).build();
 
+    #[allow(clippy::unreadable_literal)]
     let channel_id = ChannelId::new(1169436925350924390);
 
     info!("finding media in channel {}", channel_id);

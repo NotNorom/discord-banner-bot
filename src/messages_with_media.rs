@@ -24,11 +24,11 @@ impl Display for MessageWithMedia {
             author, timestamp, ..
         } = &self.message;
 
-        write!(f, "[{} {}] {}\n", timestamp, author.name, self.message.link())?;
+        writeln!(f, "[{} {}] {}", timestamp, author.name, self.message.link())?;
         for media in &self.media {
             writeln!(f, "  - {media}")?;
         }
-        writeln!(f, "")
+        writeln!(f)
     }
 }
 
@@ -40,7 +40,7 @@ pub fn find_media_in_channel<'a>(
         .messages_iter(http)
         .try_filter_map(|message| async move {
             let mut images = vec![];
-            for embed in message.embeds.iter() {
+            for embed in &message.embeds {
                 match (&embed.image, &embed.thumbnail) {
                     (None, None) => continue,
                     (None, Some(thumb)) => images.push(thumb.url.clone()),
@@ -48,13 +48,8 @@ pub fn find_media_in_channel<'a>(
                 }
             }
 
-            for attachment in message.attachments.iter() {
-                if attachment
-                    .content_type
-                    .as_ref()
-                    .map(media_type_is_image)
-                    .unwrap_or(false)
-                {
+            for attachment in &message.attachments {
+                if attachment.content_type.as_ref().is_some_and(media_type_is_image) {
                     images.push(attachment.url.clone());
                 }
             }
@@ -68,8 +63,8 @@ pub fn find_media_in_channel<'a>(
 }
 
 pub fn media_type_is_image(media_type: impl AsRef<str>) -> bool {
-    match media_type.as_ref().to_lowercase().as_str() {
-        "image/png" | "image/jpg" | "image/jpeg" | "image/gif" => true,
-        _ => false,
-    }
+    matches!(
+        media_type.as_ref().to_lowercase().as_str(),
+        "image/png" | "image/jpg" | "image/jpeg" | "image/gif"
+    )
 }

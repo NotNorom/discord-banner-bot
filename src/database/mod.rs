@@ -82,7 +82,7 @@ impl Database {
         Ok(())
     }
 
-    /// Returns a reference to the RedisClient
+    /// Returns a reference to the `RedisClient`
     pub fn client(&self) -> &RedisClient {
         &self.client
     }
