@@ -37,17 +37,19 @@ pub(crate) trait RandomBanner {
     /// Given a slice of [Url](Url), pick a random entry
     /// and try and set it as the guild banner
     #[instrument(skip(self, http, reqw_client, urls))]
-    async fn set_random_banner(
+    async fn set_random_banner<'url>(
         &mut self,
         http: impl AsRef<Http> + Sync + Send + 'async_trait,
         reqw_client: &Client,
-        urls: &[Url],
-    ) -> Result<(), SetBannerError> {
+        urls: &'url [Url],
+    ) -> Result<&'url Url, SetBannerError> {
         let url = urls
             .choose(&mut rand::thread_rng())
             .ok_or(SetBannerError::CouldNotPickAUrl)?;
 
-        self.set_banner_from_url(http, reqw_client, url).await
+        self.set_banner_from_url(http, reqw_client, url).await?;
+
+        Ok(url)
     }
 
     /// Given an [Url](Url) to an image, set the guild banner
