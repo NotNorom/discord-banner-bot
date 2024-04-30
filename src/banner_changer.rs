@@ -13,7 +13,7 @@ use url::Url;
 use crate::{
     database::{guild_schedule::GuildSchedule, Database},
     guild_id_ext::{RandomBanner, SetBannerError},
-    messages_with_media::find_media_in_channel,
+    messages_with_media::{find_media_in_channel, MediaWithMessage},
     schedule::Schedule,
     utils::{current_unix_timestamp, dm_user, dm_users},
     Error,
@@ -41,7 +41,7 @@ impl ChangerTask {
 
         info!("Fetching images");
 
-        let messages_with_media = find_media_in_channel(&self.ctx, channel)
+        let messages_with_media: Vec<MediaWithMessage> = find_media_in_channel(&self.ctx, channel)
             .take(100)
             .filter_map(Result::ok)
             .collect::<Vec<_>>()
@@ -49,9 +49,8 @@ impl ChangerTask {
 
         let images = messages_with_media
             .into_iter()
-            .flat_map(|msg| msg.media)
-            .filter_map(|media| Url::parse(&media).ok())
-            .collect::<Vec<_>>();
+            .filter_map(|media| Url::parse(&media.media).ok())
+            .collect::<Vec<Url>>();
 
         let img_count = images.len();
         info!("Fetched {} images. Setting banner", img_count);
