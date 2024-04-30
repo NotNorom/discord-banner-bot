@@ -1,6 +1,6 @@
 # Discord Banner Bot
 
-Invite the bot using this link: [invite](https://discord.com/api/oauth2/authorize?client_id=586680217049759744&permissions=274877910112&scope=applications.commands%20bot).
+Invite the bot using this link: [invite](https://discord.com/api/oauth2/authorize?client_id=586680217049759744&permissions=274877975648&scope=applications.commands%20bot).
 
 This bot will change the banner of a discord server every few minutes.
 Minimum is 15 minutes.
@@ -86,6 +86,7 @@ Bot username: `@banner changer #2858`.
 This bot needs these permissions to work:
 - `Manage Server` for editing the banner
 - `Read Messages/ View Channels` for using prefix commands
+- `Read Message History` for reading messages in a channel to look for images
 - `Send Messages` for using prefix commands (and error responses)
 - `Send Messages in Threads` for using prefix commands (and error responses)
 - `Add Reactions` for nice visuals... eventually :D
