@@ -140,13 +140,12 @@ async fn handle_event_ready(
             info!("Task finished successfully");
             return;
         };
-        error!("In changer task: {err:?}");
+        error!("Task had an error: {err:?}");
 
-        let Err(critical_err) = err.handle_error(ctx, handle, db.clone(), owners).await else {
-            info!("Error happend and was handled successfully");
-            return;
-        };
-        error!("CRITICAL after handling previous error: {critical_err:?}");
+        match err.handle_error(ctx, handle, db.clone(), owners).await {
+            Ok(action) => info!("Error was handled successfully. Recommended action={action:?}"),
+            Err(critical_err) => error!("CRITICAL after handling previous error: {critical_err:?}"),
+        }
     };
 
     data.repeater_handle
