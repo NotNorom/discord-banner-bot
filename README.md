@@ -89,7 +89,7 @@ This bot needs these permissions to work:
 - `Read Message History` for reading messages in a channel to look for images
 - `Send Messages` for using prefix commands (and error responses)
 - `Send Messages in Threads` for using prefix commands (and error responses)
-- `Add Reactions` for nice visuals... eventually :D
+- `Add Reactions` for nice visuals... eventually :D (things like: this images is not supported)
 
 
 The following commands can only be run by users with the `Manage Server` permissions:
@@ -106,7 +106,6 @@ The following commands can only be run by users with the `Manage Server` permiss
 - Create a discord bot. Probably using https://discord.com/developers/applications
 - Clone the project & compile
 - Add discord token into settings.toml
-- Add provider infos into settings.toml
 - Run
 
 Default settings.toml:
