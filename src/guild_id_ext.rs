@@ -1,6 +1,8 @@
 //! This module is for extending the [GuildId](GuildId) struct
 //! with functions for setting the banner from an URL.
 
+use std::collections::HashMap;
+
 use poise::{
     async_trait,
     serenity_prelude::{self, CreateAttachment, EditGuild, GuildId, Http},
@@ -87,9 +89,28 @@ impl RandomBanner for GuildId {
             .last()
             .ok_or_else(|| SetBannerError::CouldNotDeterminFileExtension)?;
 
+        debug!("Found extension: {extension}");
         // @todo insert check for animated banners here
 
-        debug!("Found extension: {extension}");
+        // discord cdn has a few image parameters and we can limit the size here
+        // hopefully preventing us from runnig into the 10mb limit.
+        // the only thing thats a little wierd is having to save the ex, is and hm
+        // query parameters. oh well.
+        let mut query_params = HashMap::with_capacity(3);
+        for (key, value) in url
+            .query_pairs()
+            .filter(|(key, _)| matches!(key.as_bytes(), b"ex" | b"is" | b"hm"))
+        {
+            query_params.insert(key, value);
+        }
+
+        let mut url = url.clone();
+        url.query_pairs_mut()
+            .clear()
+            .extend_pairs(query_params.iter())
+            .append_pair("width", "1920")
+            .append_pair("height", "1080")
+            .finish();
 
         let image_bytes = reqw_client
             .get(url.as_ref())
