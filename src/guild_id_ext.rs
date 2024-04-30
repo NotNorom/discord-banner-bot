@@ -120,8 +120,8 @@ impl RandomBanner for GuildId {
         debug!("Amount of image bytes downloaded: {}", amount_of_bytes);
 
         match amount_of_bytes {
-            0 => return Err(SetBannerError::ImageIsEmpty(url.to_owned())),
-            MAXIMUM_IMAGE_SIZE.. => return Err(SetBannerError::ImageIsTooBig(url.to_owned())), // 10mb
+            0 => return Err(SetBannerError::ImageIsEmpty(url.clone())),
+            MAXIMUM_IMAGE_SIZE.. => return Err(SetBannerError::ImageIsTooBig(url.clone())), // 10mb
             _ => {}
         };
 

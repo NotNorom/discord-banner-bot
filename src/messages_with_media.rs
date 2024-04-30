@@ -59,7 +59,7 @@ pub fn find_media_in_channel<'a>(
             match (&embed.image, &embed.thumbnail) {
                 (None, None) => continue,
                 (None, Some(thumb)) => {
-                    result.push(Ok(MediaWithMessage::new(thumb.url.clone(), message.clone())))
+                    result.push(Ok(MediaWithMessage::new(thumb.url.clone(), message.clone())));
                 }
                 (Some(img), _) => result.push(Ok(MediaWithMessage::new(img.url.clone(), message.clone()))),
             }
