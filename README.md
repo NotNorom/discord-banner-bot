@@ -132,3 +132,48 @@ This bot is built using
 - Fred: https://github.com/aembke/fred.rs
 
 Amazing libraries, highly recommend \<3
+
+
+## Legal for my hosted bot  (draft, not applicable as of the 1st of May 2024)
+
+By inviting the bot to your server, you agree to the privacy policy and terms of services as stated below.
+
+### Privacy Policy
+
+### The following data points are collected from users:
+
+- Guild ids
+- Text channel ids
+- Message ids
+- Message content in the text channel selected
+
+
+#### Why I need this information
+
+I need the information described above to provide the basic services we offer to you.
+
+I need the guild id to associate other data with the correct guild.
+I need the text channel ids to know in which channel to look for content for.
+I need the message ids for debugging purposes.
+I need the message content to search for media that can be used as a guild banner.
+
+#### How we use your information
+
+We use the information we collect in the following ways:
+
+- Provide, operate, and maintain my discord bot
+- Provide all the functionalities that the bot has to offer
+
+**STORED INFORMATION IS NOT SHARED WITH ANY THIRD PARTIES**
+
+### Terms of Service
+
+These terms only apply to the discord application and bot user with this id: `586680217049759744` and when run by me.
+These terms do not apply to applications run by 3rd partys, even if the same code is run.
+
+I may change these terms any time I want.
+Breaking any of these terms might result in a ban in using the service.
+
+- When using this application, all of discords Terms of Services apply.
+- I reserve the right to terminate the service to anyone without providing any reason.
+- You may not use this bot to inflict harm on others.
