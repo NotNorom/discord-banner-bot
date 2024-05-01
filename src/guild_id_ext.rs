@@ -29,6 +29,8 @@ pub enum SetBannerError {
     ImageIsEmpty(Url),
     #[error("Image is to big: {}", .0)]
     ImageIsTooBig(Url),
+    #[error("Image size not provided by discord: {}", .0)]
+    ImageUnkownSize(Url),
 }
 
 pub(crate) trait RandomBanner {
@@ -115,22 +117,15 @@ impl RandomBanner for GuildId {
             .append_pair("height", "1080")
             .finish();
 
-        let image_bytes = reqw_client
-            .get(url.as_ref())
-            .send()
-            .await?
-            .bytes()
-            .await?
-            .to_vec();
-        let amount_of_bytes = image_bytes.len();
-        debug!("Amount of image bytes downloaded: {}", amount_of_bytes);
+        let response = reqw_client.get(url.as_ref()).send().await?;
 
-        match amount_of_bytes {
-            0 => return Err(SetBannerError::ImageIsEmpty(url.clone())),
-            MAXIMUM_IMAGE_SIZE.. => return Err(SetBannerError::ImageIsTooBig(url.clone())), // 10mb
-            _ => {}
-        };
-
+        match response.content_length().map(|len| len as usize) {
+            Some(0) => return Err(SetBannerError::ImageIsEmpty(url.clone())),
+            Some(MAXIMUM_IMAGE_SIZE..) => return Err(SetBannerError::ImageIsTooBig(url.clone())),
+            None => return Err(SetBannerError::ImageUnkownSize(url.clone())),
+            Some(_) => {}
+        }
+        let image_bytes = response.bytes().await?.to_vec();
         let attachment = CreateAttachment::bytes(image_bytes, format!("banner.{extension}"));
 
         let edit_guild = {

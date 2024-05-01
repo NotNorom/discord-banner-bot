@@ -221,16 +221,19 @@ impl ChangerError {
                         dm_user(&ctx, guild_owner, &format!("Tried to set an animated banner but the server '{}' does not have the required boost level for animated banners", partial_guild.name)).await?;
                     }
                     SetBannerError::ImageIsEmpty(url) => {
-                        warn!("guild_id={guild_id} with channel={} has downloaded an image with 0 bytes. url={url}", self.schedule.channel());
+                        warn!("guild_id={guild_id} with channel={} has selected an image with 0 bytes. url={url}", self.schedule.channel());
                     }
                     SetBannerError::ImageIsTooBig(url) => {
-                        warn!("guild_id={guild_id} with channel={} has downloaded an image that is too big. url={url}", self.schedule.channel());
+                        warn!("guild_id={guild_id} with channel={} has selecte an image that is too big. url={url}", self.schedule.channel());
 
                         let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
                         let guild_owner = partial_guild.owner_id;
                         info!("Letting owner={guild_owner} of guild={guild_id} know about an image that is too big");
 
                         dm_user(&ctx, guild_owner, &format!("The channel you've set contains an image that is too big for discord. Maximum size is 10mb. The image is: {url}")).await?;
+                    }
+                    SetBannerError::ImageUnkownSize(url) => {
+                        warn!("guild_id={guild_id} with channel={} has selected an image with unknown size. url={url}", self.schedule.channel());
                     }
                 }
             }
