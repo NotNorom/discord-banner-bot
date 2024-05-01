@@ -22,7 +22,8 @@ use crate::{
 #[derive(Debug)]
 pub enum ScheduleAction {
     Continue,
-    Retry,
+    RetrySameImage,
+    RetryNewImage,
     Abort,
 }
 
@@ -155,7 +156,7 @@ impl ChangerError {
                             }
                             StatusCode::GATEWAY_TIMEOUT => {
                                 warn!("Gateway timed out. Retrying once.");
-                                return Ok(ScheduleAction::Retry);
+                                return Ok(ScheduleAction::RetrySameImage);
                             }
                             _ => error!("unsuccessful http request: {error_response:?}"),
                         }
@@ -189,7 +190,7 @@ impl ChangerError {
                                     }
                                     StatusCode::GATEWAY_TIMEOUT => {
                                         warn!("Gateway timed out. Retrying once.");
-                                        return Ok(ScheduleAction::Retry);
+                                        return Ok(ScheduleAction::RetrySameImage);
                                     }
                                     _ => error!("unsuccessful http request: {error_response:?}"),
                                 }
