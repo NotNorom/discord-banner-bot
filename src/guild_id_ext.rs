@@ -119,7 +119,7 @@ impl RandomBanner for GuildId {
 
         let response = reqw_client.get(url.as_ref()).send().await?;
 
-        match response.content_length().map(|len| len as usize) {
+        match response.content_length().map(|len| usize::try_from(len).unwrap_or(usize::MAX)) {
             Some(0) => return Err(SetBannerError::ImageIsEmpty(url.clone())),
             Some(MAXIMUM_IMAGE_SIZE..) => return Err(SetBannerError::ImageIsTooBig(url.clone())),
             None => return Err(SetBannerError::ImageUnkownSize(url.clone())),
