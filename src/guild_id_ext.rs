@@ -113,8 +113,8 @@ impl RandomBanner for GuildId {
         url.query_pairs_mut()
             .clear()
             .extend_pairs(query_params.iter())
-            .append_pair("width", "1920")
-            .append_pair("height", "1080")
+            .append_pair("width", "960")
+            .append_pair("height", "540")
             .finish();
 
         let response = reqw_client.get(url.as_ref()).send().await?;
