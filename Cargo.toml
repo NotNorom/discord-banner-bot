@@ -27,14 +27,14 @@ tracing-subscriber = { version = "0.3.18", features = [
     "env-filter",
     "parking_lot",
 ] }
-fred = { version = "9.0.1", default-features = false, features = [
+fred = { version = "9.0.3", default-features = false, features = [
     "i-std",
     "i-sets",
     "i-hashes",
 ] }
 poise = "0.6.1"
 config = { version = "0.14", default-features = false, features = ["toml"] }
-serde = "1.0.199"
+serde = "1.0.200"
 reqwest = { version = "0.12.4", default-features = false, features = [
     "json",
     "native-tls-vendored",
