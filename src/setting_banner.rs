@@ -11,47 +11,39 @@ use url::Url;
 
 use crate::constants::MAXIMUM_IMAGE_SIZE;
 
+/// Errors possible when setting a banner
 #[derive(Debug, thiserror::Error)]
 pub enum SetBannerError {
     #[error(transparent)]
     Transport(#[from] reqwest::Error),
+    
     #[error(transparent)]
     DiscordApi(#[from] serenity_prelude::Error),
-    #[error("could not pick a url. rng failed")]
+    
+    #[error("Could not pick a url. Rng failed")]
     CouldNotPickAUrl,
-    #[error("could not determin file extenstion on image")]
+    
+    #[error("Could not determin file extenstion on image")]
     CouldNotDeterminFileExtension,
+    
     #[error("Missing 'banner' feature")]
     MissingBannerFeature,
+    
     #[error("Missing 'animated banner' feature: {}", .0)]
     MissingAnimatedBannerFeature(Url),
+    
     #[error("Image is empty: {}", .0)]
     ImageIsEmpty(Url),
+    
     #[error("Image is to big: {}", .0)]
     ImageIsTooBig(Url),
+    
     #[error("Image size not provided by discord: {}", .0)]
     ImageUnkownSize(Url),
 }
 
-pub(crate) trait RandomBanner {
-    /// Given a slice of [Url](Url), pick a random entry
-    /// and try and set it as the guild banner
-    #[instrument(skip(self, http, reqw_client, urls))]
-    async fn set_random_banner<'url>(
-        &mut self,
-        http: impl AsRef<Http> + Sync + Send + 'static,
-        reqw_client: &Client,
-        urls: &'url [Url],
-    ) -> Result<&'url Url, SetBannerError> {
-        let url = urls
-            .choose(&mut rand::thread_rng())
-            .ok_or(SetBannerError::CouldNotPickAUrl)?;
-
-        self.set_banner_from_url(http, reqw_client, url).await?;
-
-        Ok(url)
-    }
-
+/// Trait for setting a banner from an url
+pub(crate) trait BannerFromUrl {
     /// Given an [Url](Url) to an image, set the guild banner
     /// This will download the image into memory,
     /// convert the bytes to base64 and then send it to discord
@@ -63,7 +55,7 @@ pub(crate) trait RandomBanner {
     ) -> Result<(), SetBannerError>;
 }
 
-impl RandomBanner for GuildId {
+impl BannerFromUrl for GuildId {
     #[instrument(skip(http, reqw_client, url))]
     async fn set_banner_from_url(
         &mut self,
@@ -119,7 +111,10 @@ impl RandomBanner for GuildId {
 
         let response = reqw_client.get(url.as_ref()).send().await?;
 
-        match response.content_length().map(|len| usize::try_from(len).unwrap_or(usize::MAX)) {
+        match response
+            .content_length()
+            .map(|len| usize::try_from(len).unwrap_or(usize::MAX))
+        {
             Some(0) => return Err(SetBannerError::ImageIsEmpty(url.clone())),
             Some(MAXIMUM_IMAGE_SIZE..) => return Err(SetBannerError::ImageIsTooBig(url.clone())),
             None => return Err(SetBannerError::ImageUnkownSize(url.clone())),
@@ -149,3 +144,27 @@ impl RandomBanner for GuildId {
         Ok(())
     }
 }
+
+pub(crate) trait RandomBanner: BannerFromUrl {
+    /// Given a slice of [Url](Url), pick a random entry
+    /// and try and set it as the guild banner
+    ///
+    /// Returns Ok(url) with the url being choosen
+    #[instrument(skip(self, http, reqw_client, urls))]
+    async fn set_random_banner<'url>(
+        &mut self,
+        http: impl AsRef<Http> + Sync + Send + 'static,
+        reqw_client: &Client,
+        urls: &'url [Url],
+    ) -> Result<&'url Url, SetBannerError> {
+        let url = urls
+            .choose(&mut rand::thread_rng())
+            .ok_or(SetBannerError::CouldNotPickAUrl)?;
+
+        self.set_banner_from_url(http, reqw_client, url).await?;
+
+        Ok(url)
+    }
+}
+
+impl<T> RandomBanner for T where T: BannerFromUrl {}

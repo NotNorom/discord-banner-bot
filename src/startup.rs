@@ -8,10 +8,11 @@ use std::{
 use tracing::{error, info};
 
 use crate::{
-    banner_changer::ChangerTask,
     constants::USER_AGENT,
     database::{guild_schedule::GuildSchedule, Database},
+    error::handle_schedule_error,
     schedule::Schedule,
+    schedule_runner::ScheduleRunner,
     settings::Settings,
     utils::{current_unix_timestamp, dm_users},
     Data, Error,
@@ -134,7 +135,7 @@ async fn handle_event_ready(
 
     let callback = move |schedule, handle| async move {
         info!("Creating changer task for schedule {schedule:?}");
-        let task = ChangerTask::new(ctx.clone(), db.clone(), http.clone(), schedule);
+        let task = ScheduleRunner::new(ctx.clone(), db.clone(), http.clone(), schedule);
 
         let Err(err) = task.run().await else {
             info!("Task finished successfully");
@@ -142,7 +143,7 @@ async fn handle_event_ready(
         };
         error!("Task had an error: {err:?}");
 
-        match err.handle_error(ctx, handle, db.clone(), owners).await {
+        match handle_schedule_error(&err, ctx, handle, db.clone(), owners).await {
             Ok(action) => info!("Error was handled successfully. Recommended action={action:?}"),
             Err(critical_err) => error!("CRITICAL after handling previous error: {critical_err:?}"),
         }

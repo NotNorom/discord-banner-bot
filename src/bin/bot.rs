@@ -27,7 +27,7 @@ async fn main() -> Result<(), Error> {
             commands: commands(),
             on_error: |err| {
                 Box::pin(async move {
-                    if let Err(e) = error::on_error(err).await {
+                    if let Err(e) = error::handle_framework_error(err).await {
                         error!("{e:?}");
                     };
                 })

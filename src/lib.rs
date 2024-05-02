@@ -1,11 +1,11 @@
-pub mod banner_changer;
 pub mod commands;
 pub mod constants;
 pub mod database;
 pub mod error;
-pub mod guild_id_ext;
-pub mod messages_with_media;
+pub mod finding_media;
 pub mod schedule;
+pub mod schedule_runner;
+pub mod setting_banner;
 pub mod settings;
 pub mod startup;
 pub mod utils;

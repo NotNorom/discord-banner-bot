@@ -1,5 +1,5 @@
 use discord_banner_bot::{
-    error::Error, messages_with_media::find_media_in_channel, utils::start_logging, Settings,
+    error::Error, finding_media::find_media_in_channel, utils::start_logging, Settings,
 };
 use poise::serenity_prelude::{self, ChannelId};
 use tokio_stream::StreamExt;

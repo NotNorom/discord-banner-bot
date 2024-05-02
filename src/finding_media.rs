@@ -39,6 +39,7 @@ impl Display for MediaWithMessage {
     }
 }
 
+/// Creates a stream of media in a channel
 pub fn find_media_in_channel<'a>(
     http: &'a impl CacheHttp,
     channel_id: &ChannelId,
@@ -56,6 +57,8 @@ pub fn find_media_in_channel<'a>(
         };
 
         for embed in &message.embeds {
+            // read  the match block as:
+            // only use a thumbnail if there is no embed
             match (&embed.image, &embed.thumbnail) {
                 (None, None) => continue,
                 (None, Some(thumb)) => {
