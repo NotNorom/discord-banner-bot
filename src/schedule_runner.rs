@@ -37,7 +37,7 @@ impl ScheduleRunner {
         }
     }
 
-    pub async fn run(self) -> Result<(), RunnerError> {
+    pub async fn run(self) -> Result<Url, RunnerError> {
         let schedule = self.schedule.clone();
         let mut guild_id = schedule.guild_id();
         let channel = schedule.channel();
@@ -58,7 +58,7 @@ impl ScheduleRunner {
 
         let img_count = images.len();
         debug!("Fetched {} images. Setting banner", img_count);
-        guild_id
+        let new_banner = guild_id
             .set_random_banner(self.ctx.http.clone(), &self.http_client, &images)
             .await
             .map_err(|err| RunnerError::new(err.into(), guild_id, self.schedule.clone()))?;
@@ -76,7 +76,7 @@ impl ScheduleRunner {
             .await
             .map_err(|err| RunnerError::new(err.into(), guild_id, self.schedule.clone()))?;
 
-        Ok(())
+        Ok(new_banner.to_owned())
     }
 }
 
