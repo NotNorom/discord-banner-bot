@@ -12,7 +12,6 @@ This is a work in progress, please message me if you have any questions (my time
 - Email: noromoron \[at\] gmail \[dot\] com
 
 
-
 ## Usage
 Text in \[\] brackets are mandatory arguments.<br>
 Text in \<\> brackets are optional arguments.<br>
@@ -78,7 +77,6 @@ This is just for bot owners and intended for debugging purposes.
 _Command can only be run by bot owners._
 
 
-
 ## Bot information & permissions
 
 Bot username: `@banner changer #2858`.
@@ -114,13 +112,14 @@ https://github.com/NotNorom/discord-banner-bot/blob/master/settings.template.tom
 
 ## Redis layout
 
+`PREFIX` is set in settings.toml and defaults to "dbb".
+
 - `PREFIX:active_schedules` keeps a list of currently active guild schedules.
 - `PREFIX:active_schedule:GUILD_ID` is a schedule for a specific guild. It contains the following fields:
   - `guild_id`: The guild_id
   - `album`: The channel_id
   - `interval`: Minutes between banner changes
   - `last_run`: Unix timestamp, when the banner was last changed successfully
-
 
 ## Credits
 
@@ -138,9 +137,11 @@ Amazing libraries, highly recommend \<3
 
 By inviting the bot to your server, you agree to the privacy policy and terms of services as stated below.
 
+
 ### Privacy Policy
 
-### The following data points are collected from users:
+
+#### 1. The following data points are collected from users:
 
 - Guild ids
 - Text channel ids
@@ -148,7 +149,7 @@ By inviting the bot to your server, you agree to the privacy policy and terms of
 - Message content in the text channel selected
 
 
-#### Why I need this information
+#### 2. Why I need this information
 
 I need the information described above to provide the basic services we offer to you.
 
@@ -157,14 +158,34 @@ I need the text channel ids to know in which channel to look for content for.
 I need the message ids for debugging purposes.
 I need the message content to search for media that can be used as a guild banner.
 
-#### How we use your information
+
+#### 3. How we use your information
 
 We use the information we collect in the following ways:
 
 - Provide, operate, and maintain my discord bot
 - Provide all the functionalities that the bot has to offer
 
-**STORED INFORMATION IS NOT SHARED WITH ANY THIRD PARTIES**
+
+#### 4. Other than Discord the company and users of your own bot, who do I share the collected data with
+
+Stored Information is not shared with any third parties.
+
+
+#### 5. How can users contact you with concerns?
+
+Possible ways of contacting me:
+- Discord: [Bot Support Server](https://discord.gg/MMJFtCtYPP)
+- Twitter: [@\_norom\_](https://twitter.com/_norom_)
+- Email: noromoron \[at\] gmail \[dot\] com
+
+
+#### 6. If you store data, how can users have that data removed?
+
+Data is automatically removed when the services of the bot is stopped using the `/stop` command.
+Debug logs may continue containing information. This information would then be deleted when the bot is restarted.
+You can also request deletion of this information via the contact information mentioned above.
+
 
 ### Terms of Service
 
@@ -175,5 +196,5 @@ I may change these terms any time I want.
 Breaking any of these terms might result in a ban in using the service.
 
 - When using this application, all of discords Terms of Services apply.
-- I reserve the right to terminate the service to anyone without providing any reason.
+- I reserve the right to terminate and/or deny services to anyone without providing a reason.
 - You may not use this bot to inflict harm on others.
