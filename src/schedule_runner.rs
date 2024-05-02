@@ -3,7 +3,7 @@ use std::sync::Arc;
 use poise::serenity_prelude::GuildId;
 
 use tokio_stream::StreamExt;
-use tracing::{error, info};
+use tracing::{debug, error};
 use url::Url;
 
 use crate::{
@@ -43,7 +43,7 @@ impl ScheduleRunner {
         let channel = schedule.channel();
         let interval = schedule.interval();
 
-        info!("Fetching images");
+        debug!("Fetching images");
 
         let messages_with_media: Vec<MediaWithMessage> = find_media_in_channel(&self.ctx, channel)
             .take(100)
@@ -57,13 +57,13 @@ impl ScheduleRunner {
             .collect::<Vec<Url>>();
 
         let img_count = images.len();
-        info!("Fetched {} images. Setting banner", img_count);
+        debug!("Fetched {} images. Setting banner", img_count);
         guild_id
             .set_random_banner(self.ctx.http.clone(), &self.http_client, &images)
             .await
             .map_err(|err| RunnerError::new(err.into(), guild_id, self.schedule.clone()))?;
 
-        info!("Inserting schedule into database");
+        debug!("Inserting schedule into database");
         let schedule = GuildSchedule::new(
             guild_id.get(),
             channel.get(),

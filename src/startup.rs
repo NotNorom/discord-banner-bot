@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, OnceLock},
     time::Duration,
 };
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 use crate::{
     constants::USER_AGENT,
@@ -122,7 +122,7 @@ async fn handle_event_ready(
     framework: poise::FrameworkContext<'_, Data, Error>,
     _: &Ready,
 ) -> Result<(), Error> {
-    info!("handling ready event");
+    debug!("handling ready event");
     let ctx = framework.serenity_context;
     let settings = Settings::get();
     let data: Arc<State> = ctx.data();
@@ -134,11 +134,10 @@ async fn handle_event_ready(
     let ctx = Arc::new(ctx.clone());
 
     let callback = move |schedule, handle| async move {
-        info!("Creating changer task for schedule {schedule:?}");
         let task = ScheduleRunner::new(ctx.clone(), db.clone(), http.clone(), schedule);
 
         let Err(err) = task.run().await else {
-            info!("Task finished successfully");
+            debug!("Task finished successfully");
             return;
         };
         error!("Task had an error: {err:?}");
