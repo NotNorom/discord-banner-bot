@@ -16,28 +16,28 @@ use crate::constants::MAXIMUM_IMAGE_SIZE;
 pub enum SetBannerError {
     #[error(transparent)]
     Transport(#[from] reqwest::Error),
-    
+
     #[error(transparent)]
     DiscordApi(#[from] serenity_prelude::Error),
-    
+
     #[error("Could not pick a url. Rng failed")]
     CouldNotPickAUrl,
-    
+
     #[error("Could not determin file extenstion on image")]
     CouldNotDeterminFileExtension,
-    
+
     #[error("Missing 'banner' feature")]
     MissingBannerFeature,
-    
+
     #[error("Missing 'animated banner' feature: {}", .0)]
     MissingAnimatedBannerFeature(Url),
-    
+
     #[error("Image is empty: {}", .0)]
     ImageIsEmpty(Url),
-    
+
     #[error("Image is to big: {}", .0)]
     ImageIsTooBig(Url),
-    
+
     #[error("Image size not provided by discord: {}", .0)]
     ImageUnkownSize(Url),
 }
