@@ -14,7 +14,7 @@ use thiserror::Error;
 use tracing::{info, warn};
 
 use crate::{
-    constants::{MAXIMUM_INTERVAL, MINIMUM_INTERVAL},
+    constants::{MAXIMUM_INTERVAL, MAXIMUM_MESSAGE_LIMIT, MINIMUM_INTERVAL},
     database::{guild_schedule::GuildSchedule, Database},
     schedule::Schedule,
     schedule_runner::{RunnerError, ScheduleAction},
@@ -63,6 +63,12 @@ pub enum Command {
 
     #[error("Interval must be at most {} minutes", MAXIMUM_INTERVAL)]
     AboveMaxTimeout,
+
+    #[error("Message limit must be greater than 0")]
+    MessageLimitIszero,
+
+    #[error("Message limit must be at most {}", MAXIMUM_MESSAGE_LIMIT)]
+    AboveMaxMessageLimit,
 
     #[error("Server doesn't have a banner set")]
     GuildHasNoBannerSet,
