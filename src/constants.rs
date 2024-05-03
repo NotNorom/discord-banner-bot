@@ -16,6 +16,12 @@ pub const DEFAULT_INTERVAL: u64 = 30;
 /// Maximum amount of minutes between banner changes
 pub const MAXIMUM_INTERVAL: u64 = 60 * 48; // 48h
 
+/// Default amount of messages to look back for
+pub const DEFAULT_MESSAGE_LIMIT: usize = 100;
+
+/// Maximum amount of messages to look back for
+pub const MAXIMUM_MESSAGE_LIMIT: usize = 200;
+
 /// Maximum image size in bytes for uploads to discord
 pub const MAXIMUM_IMAGE_SIZE: usize = 1024 * 1024 * 10; // 10mb
 
