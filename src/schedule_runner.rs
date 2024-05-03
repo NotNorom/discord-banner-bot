@@ -11,7 +11,6 @@ use crate::{
     finding_media::{find_media_in_channel, MediaWithMessage},
     schedule::Schedule,
     setting_banner::RandomBanner,
-    utils::current_unix_timestamp,
     Error,
 };
 
@@ -40,16 +39,17 @@ impl ScheduleRunner {
     pub async fn run(self) -> Result<Url, RunnerError> {
         let schedule = self.schedule.clone();
         let mut guild_id = schedule.guild_id();
-        let channel = schedule.channel();
-        let interval = schedule.interval();
+        let channel = schedule.channel_id();
 
         debug!("Fetching images");
 
-        let messages_with_media: Vec<MediaWithMessage> = find_media_in_channel(&self.ctx, channel)
-            .take(100)
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>()
-            .await;
+        let stream_of_media = match schedule.message_limit() {
+            Some(limit) => find_media_in_channel(&self.ctx, &channel).take(limit.get()),
+            None => find_media_in_channel(&self.ctx, &channel).take(usize::MAX),
+        };
+
+        let messages_with_media: Vec<MediaWithMessage> =
+            stream_of_media.filter_map(Result::ok).collect::<Vec<_>>().await;
 
         let images = messages_with_media
             .into_iter()
@@ -64,12 +64,7 @@ impl ScheduleRunner {
             .map_err(|err| RunnerError::new(err.into(), guild_id, self.schedule.clone()))?;
 
         debug!("Inserting schedule into database");
-        let schedule = GuildSchedule::new(
-            guild_id.get(),
-            channel.get(),
-            interval.as_secs(),
-            current_unix_timestamp(),
-        );
+        let schedule = GuildSchedule::from(schedule);
 
         self.database
             .insert(&schedule, schedule.guild_id())

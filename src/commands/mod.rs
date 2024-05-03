@@ -51,10 +51,11 @@ pub async fn servers(ctx: Context<'_>) -> Result<(), Error> {
 
 pub fn commands() -> Vec<poise::Command<crate::State, crate::Error>> {
     vec![
-        banner::channel(),
-        banner::current(),
+        banner::current_schedule(),
+        banner::current_banner(),
         banner::start_for_guild(),
         banner::start(),
+        banner::stop_for_guild(),
         banner::stop(),
         help::help(),
         register_globally(),

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, num::NonZeroUsize};
 
 use fred::{
     error::{RedisError, RedisErrorKind},
@@ -8,6 +8,8 @@ use fred::{
 use poise::async_trait;
 use tracing::{debug, instrument};
 
+use crate::{schedule::Schedule, utils::current_unix_timestamp};
+
 use super::{get_from_redis_map, Database, Entry};
 
 /// How a schedule is stored in the database
@@ -16,41 +18,72 @@ pub struct GuildSchedule {
     /// The Guilds ID
     guild_id: u64,
     /// Channel ID to fetch images from
-    channel: u64,
+    channel_id: u64,
     /// How frequent the schudle run. In seconds
     interval: u64,
     /// Unix timestamp since the banner was last changed
     last_run: u64,
+    /// How many messages to look into the past for
+    message_limit: u64,
 }
 
 impl GuildSchedule {
-    pub fn new(guild_id: u64, channel: u64, interval: u64, last_run: u64) -> Self {
+    pub fn new(guild_id: u64, channel_id: u64, interval: u64, last_run: u64, message_limit: u64) -> Self {
         Self {
             guild_id,
-            channel,
+            channel_id,
             interval,
             last_run,
+            message_limit,
         }
     }
 
-    /// Get a reference to the db entry's guild id.
+    /// Get the db entry's guild id.
     pub fn guild_id(&self) -> u64 {
         self.guild_id
     }
 
-    /// Get a reference to the db entry's channel id.
+    /// Get the db entry's channel id.
     pub fn channel_id(&self) -> u64 {
-        self.channel
+        self.channel_id
     }
 
-    /// Get a reference to the db entry's interval.
+    /// Get the db entry's interval.
     pub fn interval(&self) -> u64 {
         self.interval
     }
 
-    /// Get a reference to the db entry's last run.
+    /// Get db entry's last run.
     pub fn last_run(&self) -> u64 {
         self.last_run
+    }
+
+    /// Get the db entry's message limit.
+    pub fn message_limit(&self) -> u64 {
+        self.message_limit
+    }
+}
+
+impl From<Schedule> for GuildSchedule {
+    fn from(schedule: Schedule) -> Self {
+        let guild_id = schedule.guild_id().get();
+        let channel_id = schedule.channel_id().get();
+        let interval = schedule.interval().as_secs();
+        let last_run = current_unix_timestamp();
+        let message_limit = schedule
+            .message_limit()
+            .map(NonZeroUsize::get)
+            .unwrap_or_default()
+            .try_into()
+            .expect("If the limit does not fit in  a 64 bit uint may god help us all");
+
+        Self {
+            guild_id,
+            channel_id,
+            interval,
+            last_run,
+            message_limit,
+        }
     }
 }
 
@@ -64,9 +97,10 @@ impl From<&GuildSchedule> for RedisMap {
     fn from(entry: &GuildSchedule) -> Self {
         let mut map = HashMap::with_capacity(5);
         map.insert("guild_id", entry.guild_id.to_string());
-        map.insert("album", entry.channel.to_string());
+        map.insert("album", entry.channel_id.to_string());
         map.insert("interval", entry.interval.to_string());
         map.insert("last_run", entry.last_run.to_string());
+        map.insert("message_limit", entry.message_limit.to_string());
 
         // this cannot fail
         RedisMap::try_from(map).unwrap()
@@ -84,15 +118,17 @@ impl FromRedis for GuildSchedule {
         let value = value.into_map()?;
 
         let guild_id = get_from_redis_map(&value, "guild_id")?;
-        let channel = get_from_redis_map(&value, "album")?;
+        let channel_id = get_from_redis_map(&value, "album")?;
         let interval = get_from_redis_map(&value, "interval")?;
         let last_run = get_from_redis_map(&value, "last_run")?;
+        let message_limit = get_from_redis_map(&value, "message_limit")?;
 
         Ok(Self {
             guild_id,
-            channel,
+            channel_id,
             interval,
             last_run,
+            message_limit,
         })
     }
 }

@@ -1,11 +1,11 @@
-use std::fmt::Display;
+use std::{fmt::Display, num::NonZeroUsize};
 
 use poise::serenity_prelude::{
-    futures::{stream, StreamExt as FuturesStreamExt},
-    small_fixed_array::FixedString,
-    CacheHttp, ChannelId, Error, Message,
+    futures::stream as futures_stream, small_fixed_array::FixedString, CacheHttp, ChannelId, Error, Message,
 };
-use tokio_stream::Stream;
+use tokio_stream::{Stream, StreamExt};
+
+use crate::schedule::Schedule;
 
 #[derive(Debug)]
 pub struct MediaWithMessage {
@@ -44,7 +44,7 @@ pub fn find_media_in_channel<'a>(
     http: &'a impl CacheHttp,
     channel_id: &ChannelId,
 ) -> impl Stream<Item = Result<MediaWithMessage, Error>> + 'a {
-    FuturesStreamExt::then(channel_id.messages_iter(http), |message| async move {
+    let stream = futures_stream::StreamExt::then(channel_id.messages_iter(http), |message| async move {
         let mut result = vec![];
 
         let message = match message {
@@ -52,7 +52,7 @@ pub fn find_media_in_channel<'a>(
             Err(err) => {
                 tracing::error!("fetching message: {err:?}");
                 result.push(Err(err));
-                return stream::iter(result);
+                return futures_stream::iter(result);
             }
         };
 
@@ -74,9 +74,27 @@ pub fn find_media_in_channel<'a>(
             }
         }
 
-        stream::iter(result)
-    })
-    .flatten()
+        futures_stream::iter(result)
+    });
+    futures_stream::StreamExt::flatten(stream)
+}
+
+
+/// Return the last message the bot is gonna look at for that schedule
+pub async fn last_reachable_message<'a>(http: &'a impl CacheHttp, schedule: &Schedule) -> Option<Message> {
+    let messages: Vec<Message> = schedule
+        .channel_id()
+        .messages_iter(http)
+        .take(
+            schedule
+                .message_limit()
+                .map(NonZeroUsize::get)
+                .unwrap_or_default(),
+        )
+        .filter_map(Result::ok)
+        .collect()
+        .await;
+    messages.last().cloned()
 }
 
 pub fn media_type_is_image(media_type: impl AsRef<str>) -> bool {

@@ -1,5 +1,5 @@
 use async_repeater::{Repeater, RepeaterHandle};
-use poise::serenity_prelude::{ChannelId, FullEvent, GuildId, Ready};
+use poise::serenity_prelude::{FullEvent, GuildId, Ready};
 use reqwest::Client;
 use std::{
     sync::{Arc, OnceLock},
@@ -14,7 +14,7 @@ use crate::{
     schedule::Schedule,
     schedule_runner::ScheduleRunner,
     settings::Settings,
-    utils::{current_unix_timestamp, dm_users},
+    utils::dm_users,
     Data, Error,
 };
 
@@ -94,10 +94,10 @@ impl State {
         &self.database
     }
 
-    /// Gets the current channel
-    pub async fn get_channel(&self, guild_id: GuildId) -> Result<ChannelId, Error> {
+    /// Get the schedule for the guild
+    pub async fn get_schedule(&self, guild_id: GuildId) -> Result<Schedule, Error> {
         let db_entry = self.database.get::<GuildSchedule>(guild_id.get()).await?;
-        Ok(ChannelId::new(db_entry.channel_id()))
+        Ok(db_entry.into())
     }
 }
 
@@ -173,26 +173,9 @@ async fn handle_event_ready(
             }
         };
 
-        let interval = entry.interval();
-        let last_run = entry.last_run();
-        let current_time = current_unix_timestamp();
-        let offset = interval - (current_time - last_run) % interval;
+        let schedule = entry.into();
 
-        info!(
-            " - guild_id={}, interval={}, last_run={}, next_run={}, in {} seconds",
-            entry.guild_id(),
-            interval,
-            last_run,
-            current_time + offset,
-            offset,
-        );
-
-        let schedule = Schedule::with_offset(
-            Duration::from_secs(entry.interval()),
-            GuildId::new(entry.guild_id()),
-            ChannelId::new(entry.channel_id()),
-            Duration::from_secs(offset),
-        );
+        info!(" - {schedule:?}");
 
         data.enque(schedule).await?;
     }

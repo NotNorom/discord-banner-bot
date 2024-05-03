@@ -137,9 +137,7 @@ impl Display for SendDm {
 
 /// Handles framework related errors.
 /// Does __not__ handle scheduler related errors
-pub async fn handle_framework_error<U, E: std::fmt::Display + std::fmt::Debug>(
-    error: poise::FrameworkError<'_, U, E>,
-) -> Result<(), Error>
+pub async fn handle_framework_error<U, E>(error: poise::FrameworkError<'_, U, E>) -> Result<(), Error>
 where
     U: Send + Sync + 'static,
     E: std::fmt::Display + std::fmt::Debug,
@@ -272,7 +270,7 @@ pub async fn handle_schedule_error(
                     dm_user(&ctx, guild_owner, "Server has lost the required boost level. Stopping schedule. You can restart the bot after gaining the required boost level.").await?;
                 }
                 SetBannerError::MissingAnimatedBannerFeature(url) => {
-                    warn!("guild_id={guild_id} with channel={} was trying to set an animated banner but does not have the feature. url={url}", error.schedule().channel());
+                    warn!("guild_id={guild_id} with channel={} was trying to set an animated banner but does not have the feature. url={url}", error.schedule().channel_id());
                     let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
                     let guild_owner = partial_guild.owner_id;
                     info!("Letting owner={guild_owner} of guild={guild_id} know about the missing animated banner feature");
@@ -282,13 +280,13 @@ pub async fn handle_schedule_error(
                 SetBannerError::ImageIsEmpty(url) => {
                     warn!(
                         "guild_id={guild_id} with channel={} has selected an image with 0 bytes. url={url}",
-                        error.schedule().channel()
+                        error.schedule().channel_id()
                     );
                 }
                 SetBannerError::ImageIsTooBig(url) => {
                     warn!(
                         "guild_id={guild_id} with channel={} has selecte an image that is too big. url={url}",
-                        error.schedule().channel()
+                        error.schedule().channel_id()
                     );
 
                     let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
@@ -300,7 +298,7 @@ pub async fn handle_schedule_error(
                     dm_user(&ctx, guild_owner, &format!("The channel you've set contains an image that is too big for discord. Maximum size is 10mb. The image is: {url}")).await?;
                 }
                 SetBannerError::ImageUnkownSize(url) => {
-                    warn!("guild_id={guild_id} with channel={} has selected an image with unknown size. url={url}", error.schedule().channel());
+                    warn!("guild_id={guild_id} with channel={} has selected an image with unknown size. url={url}", error.schedule().channel_id());
                 }
             }
         }
