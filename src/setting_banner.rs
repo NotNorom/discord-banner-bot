@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use poise::serenity_prelude::{self, CreateAttachment, EditGuild, GuildId, Http};
 use rand::prelude::SliceRandom;
 use reqwest::Client;
-use tracing::{debug, info, instrument};
+use tracing::{debug, info};
 use url::Url;
 
 use crate::constants::MAXIMUM_IMAGE_SIZE;
@@ -56,7 +56,6 @@ pub(crate) trait BannerFromUrl {
 }
 
 impl BannerFromUrl for GuildId {
-    #[instrument(skip(self, http, reqw_client, url))]
     async fn set_banner_from_url(
         &mut self,
         http: impl AsRef<Http> + Sync + Send + 'static,
@@ -150,7 +149,6 @@ pub(crate) trait RandomBanner: BannerFromUrl {
     /// and try and set it as the guild banner
     ///
     /// Returns Ok(url) with the url being choosen
-    #[instrument(skip(self, http, reqw_client, urls))]
     async fn set_random_banner<'url>(
         &mut self,
         http: impl AsRef<Http> + Sync + Send + 'static,
