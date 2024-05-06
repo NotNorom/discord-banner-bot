@@ -56,7 +56,7 @@ pub(crate) trait BannerFromUrl {
 }
 
 impl BannerFromUrl for GuildId {
-    #[instrument(skip(http, reqw_client, url))]
+    #[instrument(skip(self, http, reqw_client, url))]
     async fn set_banner_from_url(
         &mut self,
         http: impl AsRef<Http> + Sync + Send + 'static,
