@@ -79,7 +79,6 @@ pub fn find_media_in_channel<'a>(
     futures_stream::StreamExt::flatten(stream)
 }
 
-
 /// Return the last message the bot is gonna look at for that schedule
 pub async fn last_reachable_message<'a>(http: &'a impl CacheHttp, schedule: &Schedule) -> Option<Message> {
     let messages: Vec<Message> = schedule
