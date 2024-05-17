@@ -43,6 +43,8 @@ tokio = { version = "1.37.0", features = [
     "rt-multi-thread",
 ], default-features = false }
 async-repeater = { git = "https://github.com/NotNorom/async-repeater.git" }
+clap = { version = "4.5.4", features = ["derive"] }
+bytes = "1.6.0"
 # async-cron-scheduler = "2.0.1"
 # async-repeater = { path = "/home/norom/Documents/Code/async-repeater" }
 
