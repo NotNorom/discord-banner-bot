@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{num::NonZeroUsize, sync::Arc};
 
 use poise::serenity_prelude::GuildId;
 
@@ -40,13 +40,14 @@ impl ScheduleRunner {
         let schedule = self.schedule.clone();
         let mut guild_id = schedule.guild_id();
         let channel = schedule.channel_id();
+        let limit = schedule
+            .message_limit()
+            .map(NonZeroUsize::get)
+            .unwrap_or(usize::MAX);
 
-        debug!("Fetching images");
+        debug!("Fetching images, limited to {} messages", limit);
 
-        let stream_of_media = match schedule.message_limit() {
-            Some(limit) => find_media_in_channel(&self.ctx, &channel).take(limit.get()),
-            None => find_media_in_channel(&self.ctx, &channel).take(usize::MAX),
-        };
+        let stream_of_media = find_media_in_channel(&self.ctx, &channel, limit);
 
         let messages_with_media: Vec<MediaWithMessage> =
             stream_of_media.filter_map(Result::ok).collect::<Vec<_>>().await;
