@@ -1,0 +1,151 @@
+use std::collections::HashMap;
+
+use clap::Parser;
+use discord_banner_bot::{
+    cli::{GuildOrGlobally, ServerOwners, UtilCli, UtilCommand},
+    commands::commands,
+    database::Database,
+    error::Error,
+    utils::{dm_user, start_logging},
+    Settings,
+};
+use poise::serenity_prelude::{self, GuildId, Http, MessageBuilder, PartialGuild, UserId};
+use tracing::{error, info};
+
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    let cli = UtilCli::parse();
+    println!("{cli:?}");
+    // return Ok(());
+
+    Settings::init()?;
+    let settings = Settings::get();
+    println!("Using log level: {}", settings.bot.log_level);
+
+    start_logging(&settings.bot.log_level);
+    let http = serenity_prelude::HttpBuilder::new(&settings.bot.token).build();
+    let cache_settings = {
+        let mut cache_settings = serenity_prelude::Settings::default();
+        cache_settings.cache_channels = false;
+        cache_settings.cache_users = false;
+        cache_settings.max_messages = 1;
+
+        cache_settings
+    };
+
+    let cache = serenity_prelude::Cache::new_with_settings(cache_settings);
+    let database = Database::setup(&settings.database).await?;
+
+    match cli.command {
+        UtilCommand::RegisterCommands { command } => register_commands(http, command).await?,
+        UtilCommand::UnregisterCommands { command } => unregister_commands(http, command).await?,
+        UtilCommand::DmServerOwners {
+            who,
+            message,
+            mention_owned_guilds,
+        } => dm_server_owners(&http, &database, who, message, mention_owned_guilds).await?,
+    };
+
+    Ok(())
+}
+
+pub async fn register_commands(
+    http: Http,
+    guild_or_globally: GuildOrGlobally,
+) -> Result<(), serenity_prelude::Error> {
+    let commands = poise::builtins::create_application_commands(&commands());
+
+    let result = match guild_or_globally {
+        GuildOrGlobally::InGuild { guild } => guild.set_commands(&http, &commands).await,
+        GuildOrGlobally::Globally => serenity_prelude::Command::set_global_commands(&http, &commands).await,
+    };
+
+    match &result {
+        Ok(cmds) => match guild_or_globally {
+            GuildOrGlobally::InGuild { guild } => {
+                info!("{} commands have been set in guild: {}", cmds.len(), guild)
+            }
+            GuildOrGlobally::Globally => info!("{} commands have been set globally", cmds.len()),
+        },
+        Err(err) => error!("Failed to set commands: {err:#}"),
+    };
+
+    Ok(())
+}
+
+pub async fn unregister_commands(
+    http: Http,
+    guild_or_globally: GuildOrGlobally,
+) -> Result<(), serenity_prelude::Error> {
+    let result = match guild_or_globally {
+        GuildOrGlobally::InGuild { guild } => guild.set_commands(&http, &[]).await,
+        GuildOrGlobally::Globally => serenity_prelude::Command::set_global_commands(&http, &[]).await,
+    };
+
+    match &result {
+        Ok(_) => match guild_or_globally {
+            GuildOrGlobally::InGuild { guild } => {
+                info!("All commands have been removed in guild: {}", guild);
+            }
+            GuildOrGlobally::Globally => info!("All commands have been removed globally"),
+        },
+        Err(err) => error!("Failed to remove commands: {err:#}"),
+    };
+
+    Ok(())
+}
+
+pub async fn dm_server_owners(
+    http: &Http,
+    database: &Database,
+    who: ServerOwners,
+    message: String,
+    mention_owned_guilds: bool,
+) -> Result<(), Error> {
+    let owners = get_owners(http, database, who).await?;
+
+    for (owner, guilds) in &owners {
+        let mut content_builder = MessageBuilder::new();
+        if mention_owned_guilds {
+            content_builder = content_builder.push("Hi! You are receiving this message because you own: ");
+            for guild in guilds {
+                content_builder = content_builder.push_safe(&*format!("{}, ", guild.name));
+            }
+            content_builder = content_builder.push_bold_line("");
+        }
+        let content = content_builder.push(&*message).build();
+        info!("sending dm to {}: {}", owner, content);
+        dm_user(&http, *owner, &content).await?;
+    }
+
+    Ok(())
+}
+
+async fn get_owners(
+    http: &Http,
+    database: &Database,
+    who: ServerOwners,
+) -> Result<HashMap<UserId, Vec<PartialGuild>>, Error> {
+    let mut owners = HashMap::with_capacity(100);
+
+    match who {
+        ServerOwners::AllOfThem => {
+            // http.guilds
+            todo!()
+        }
+        ServerOwners::WithActiveSchedule => {
+            let active_schedules: Vec<u64> = database.active_schedules().await?;
+            println!("Known guilds = {active_schedules:?}");
+
+            for guild_id in active_schedules.into_iter().map(GuildId::new) {
+                let guild = guild_id.to_partial_guild(&http).await?;
+                owners
+                    .entry(guild.owner_id)
+                    .and_modify(|e: &mut Vec<PartialGuild>| e.push(guild.clone()))
+                    .or_insert(vec![guild]);
+            }
+        }
+    }
+
+    Ok(owners)
+}
