@@ -3,7 +3,8 @@
 
 use std::collections::HashMap;
 
-use poise::serenity_prelude::{self, CreateAttachment, EditGuild, GuildId, Http};
+use bytes::Bytes;
+use poise::serenity_prelude::{self, futures::TryStreamExt, CreateAttachment, EditGuild, GuildId, Http};
 use rand::prelude::SliceRandom;
 use reqwest::Client;
 use tracing::{debug, info};
@@ -110,6 +111,7 @@ impl BannerFromUrl for GuildId {
 
         let response = reqw_client.get(url.as_ref()).send().await?;
 
+        // check content length header
         match response
             .content_length()
             .map(|len| usize::try_from(len).unwrap_or(usize::MAX))
@@ -119,7 +121,36 @@ impl BannerFromUrl for GuildId {
             None => return Err(SetBannerError::ImageUnkownSize(url.clone())),
             Some(_) => {}
         }
-        let image_bytes = response.bytes().await?.to_vec();
+
+        // Use stream to get image bytes because if using response.bytes()
+        // there would be a risk of downloading huuuuuge files into RAM if for example
+        // the content_length header would be spoofed.
+        // To give me some headroom
+
+        let (image_bytes, _): (Vec<u8>, Url) = response
+            .bytes_stream()
+            .map_err(|err| SetBannerError::Transport(err))
+            // .filter_map(|bytes| async move { bytes.ok() })
+            .try_fold(
+                (Vec::<u8>::new(), url.clone()),
+                |(mut acc, url), value: Bytes| async move {
+                    if acc.len() + value.len() > MAXIMUM_IMAGE_SIZE {
+                        return Err(SetBannerError::ImageIsTooBig(url));
+                    }
+
+                    acc.extend_from_slice(&value);
+                    Ok((acc, url))
+                },
+            )
+            .await?;
+
+        // check actual content length
+        match image_bytes.len() {
+            0 => return Err(SetBannerError::ImageIsEmpty(url)),
+            MAXIMUM_IMAGE_SIZE.. => return Err(SetBannerError::ImageIsTooBig(url)),
+            _ => {}
+        }
+
         let attachment = CreateAttachment::bytes(image_bytes, format!("banner.{extension}"));
 
         let edit_guild = {
