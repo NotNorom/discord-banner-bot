@@ -97,7 +97,7 @@ impl From<&GuildSchedule> for RedisMap {
     fn from(entry: &GuildSchedule) -> Self {
         let mut map = HashMap::with_capacity(5);
         map.insert("guild_id", entry.guild_id.to_string());
-        map.insert("album", entry.channel_id.to_string());
+        map.insert("channel_id", entry.channel_id.to_string());
         map.insert("interval", entry.interval.to_string());
         map.insert("last_run", entry.last_run.to_string());
         map.insert("message_limit", entry.message_limit.to_string());
@@ -118,7 +118,7 @@ impl FromRedis for GuildSchedule {
         let value = value.into_map()?;
 
         let guild_id = get_from_redis_map(&value, "guild_id")?;
-        let channel_id = get_from_redis_map(&value, "album")?;
+        let channel_id = get_from_redis_map(&value, "channel_id")?;
         let interval = get_from_redis_map(&value, "interval")?;
         let last_run = get_from_redis_map(&value, "last_run")?;
         let message_limit = get_from_redis_map(&value, "message_limit")?;
