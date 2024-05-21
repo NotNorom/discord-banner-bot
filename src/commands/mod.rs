@@ -49,6 +49,7 @@ pub async fn servers(ctx: Context<'_>) -> Result<(), Error> {
     poise::builtins::servers(ctx).await.map_err(Into::into)
 }
 
+/// Generates a vector of all the commands
 pub fn commands() -> Vec<poise::Command<crate::State, crate::Error>> {
     vec![
         banner::current_schedule(),
