@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand, ValueEnum};
-use poise::serenity_prelude::GuildId;
+use poise::serenity_prelude::{ChannelId, GuildId};
 
 #[derive(Parser)]
 pub struct BotCli {}
@@ -28,6 +28,12 @@ pub enum UtilCommand {
         mention_owned_guilds: bool,
         message: String,
     },
+    FindMedia {
+        #[arg(short, long)]
+        channel_id: ChannelId,
+        #[arg(short, long, default_value = "200")]
+        limit: usize
+    }
 }
 
 #[derive(Debug, Clone, Subcommand)]

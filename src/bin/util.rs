@@ -6,17 +6,18 @@ use discord_banner_bot::{
     commands::commands,
     database::Database,
     error::Error,
+    finding_media::{find_media_in_channel, MediaWithMessage},
     utils::{dm_user, start_logging},
     Settings,
 };
 use poise::serenity_prelude::{self, GuildId, Http, MessageBuilder, PartialGuild, UserId};
+use tokio_stream::StreamExt;
 use tracing::{error, info};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let cli = UtilCli::parse();
     println!("{cli:?}");
-    // return Ok(());
 
     Settings::init()?;
     let settings = Settings::get();
@@ -34,6 +35,17 @@ async fn main() -> Result<(), Error> {
             message,
             mention_owned_guilds,
         } => dm_server_owners(&http, &database, who, message, mention_owned_guilds).await?,
+        UtilCommand::FindMedia { channel_id, limit } => {
+            let mut thingies: Vec<MediaWithMessage> = find_media_in_channel(&http, &channel_id, limit)
+                .filter_map(Result::ok)
+                .collect()
+                .await;
+            thingies.reverse();
+
+            for media in thingies {
+                println!("{}:\n\t{}\n", media.message.link(), media.media);
+            }
+        }
     };
 
     Ok(())
