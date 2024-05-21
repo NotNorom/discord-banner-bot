@@ -114,6 +114,21 @@ pub async fn event_handler(
             }
             handle_event_ready(framework, data_about_bot).await
         }
+        FullEvent::GuildDelete { incomplete, .. } => {
+            info!("GuildDelete: {:?}", incomplete);
+
+            let ctx = framework.serenity_context;
+            let data: Arc<State> = ctx.data();
+
+            // do nothing if guild has gone offline. could just be a temporary outtage
+            if incomplete.unavailable {
+                return Ok(());
+            }
+
+            // otherwise the bot might have been kicked
+            data.deque(incomplete.id).await?;
+            Ok(())
+        },
         _ => Ok(()),
     }
 }
