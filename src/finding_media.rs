@@ -59,14 +59,12 @@ pub fn find_media_in_channel<'a>(
             };
 
             for embed in &message.embeds {
-                // read  the match block as:
-                // only use a thumbnail if there is no embed
+                // only use embeds, don't use thumbnails
+                // this is done to avoid requests to 3rd parties
                 match (&embed.image, &embed.thumbnail) {
-                    (None, None) => continue,
-                    (None, Some(thumb)) => {
-                        result.push(Ok(MediaWithMessage::new(thumb.url.clone(), message.clone())));
-                    }
+                    (None, _) => continue, 
                     (Some(img), _) => {
+                        // tracing::trace!("{} - {} EMBED", message.link(), img.url);
                         result.push(Ok(MediaWithMessage::new(img.url.clone(), message.clone())))
                     }
                 }
@@ -74,6 +72,7 @@ pub fn find_media_in_channel<'a>(
 
             for attachment in &message.attachments {
                 if attachment.content_type.as_ref().is_some_and(media_type_is_image) {
+                    // tracing::trace!("{} - {} ATTACHMENT", message.link(), attachment.url);
                     result.push(Ok(MediaWithMessage::new(attachment.url.clone(), message.clone())));
                 }
             }
