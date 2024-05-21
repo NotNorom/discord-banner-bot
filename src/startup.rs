@@ -169,7 +169,7 @@ async fn handle_event_ready(
 
     // schedule already existing guilds
     let known_guild_ids: Vec<u64> = data.database().active_schedules().await?;
-    info!("Amount of active schedules: {}", known_guild_ids.len());
+    info!("Amount of schedules in db: {}", known_guild_ids.len());
 
     for id in known_guild_ids {
         let entry = match data.database().get::<GuildSchedule>(id).await {
