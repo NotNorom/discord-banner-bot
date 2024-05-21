@@ -24,16 +24,6 @@ async fn main() -> Result<(), Error> {
 
     start_logging(&settings.bot.log_level);
     let http = serenity_prelude::HttpBuilder::new(&settings.bot.token).build();
-    let cache_settings = {
-        let mut cache_settings = serenity_prelude::Settings::default();
-        cache_settings.cache_channels = false;
-        cache_settings.cache_users = false;
-        cache_settings.max_messages = 1;
-
-        cache_settings
-    };
-
-    let cache = serenity_prelude::Cache::new_with_settings(cache_settings);
     let database = Database::setup(&settings.database).await?;
 
     match cli.command {
