@@ -118,24 +118,28 @@ async fn get_owners(
 ) -> Result<HashMap<UserId, Vec<PartialGuild>>, Error> {
     let mut owners = HashMap::with_capacity(100);
 
-    match who {
-        ServerOwners::AllOfThem => {
-            // http.guilds
-            todo!()
-        }
-        ServerOwners::WithActiveSchedule => {
-            let active_schedules: Vec<u64> = database.active_schedules().await?;
-            println!("Known guilds = {active_schedules:?}");
+    let guild_ids: Box<dyn Iterator<Item = GuildId>> = match who {
+        ServerOwners::AllOfThem => Box::new(get_all_owners(http).await?),
+        ServerOwners::WithActiveSchedule => Box::new(get_owners_with_active_schedule(database).await?),
+    };
 
-            for guild_id in active_schedules.into_iter().map(GuildId::new) {
-                let guild = guild_id.to_partial_guild(&http).await?;
-                owners
-                    .entry(guild.owner_id)
-                    .and_modify(|e: &mut Vec<PartialGuild>| e.push(guild.clone()))
-                    .or_insert(vec![guild]);
-            }
-        }
+    for guild_id in guild_ids {
+        let guild = guild_id.to_partial_guild(&http).await?;
+        owners
+            .entry(guild.owner_id)
+            .and_modify(|e: &mut Vec<PartialGuild>| e.push(guild.clone()))
+            .or_insert(vec![guild]);
     }
 
     Ok(owners)
+}
+
+async fn get_all_owners(http: &Http) -> Result<impl Iterator<Item = GuildId>, Error> {
+    Ok(http.get_guilds(None, None).await?.into_iter().map(|info| info.id))
+}
+
+async fn get_owners_with_active_schedule(
+    database: &Database,
+) -> Result<impl Iterator<Item = GuildId>, Error> {
+    Ok(database.active_schedules().await?.into_iter().map(GuildId::new))
 }
