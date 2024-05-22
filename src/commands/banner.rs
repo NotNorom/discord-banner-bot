@@ -1,5 +1,6 @@
 use std::{num::NonZeroUsize, time::Duration};
 
+use chrono::{DateTime, Utc};
 use poise::{
     serenity_prelude::{ChannelId, CreateEmbed, EmbedMessageBuilding, GuildId, MessageBuilder},
     CreateReply,
@@ -31,11 +32,16 @@ pub async fn start(
     channel_id: ChannelId,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
+    #[description = "When to start the schedule. Default is instantly."] start_at: Option<DateTime<Utc>>,
     #[description = "How many messages to look back for images. Default is 100, maximum is 200"]
     message_limit: Option<usize>,
 ) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
-    start_banner(ctx, guild_id, channel_id, interval, message_limit).await
+    let options = StartBannerOptions::new(guild_id, channel_id)
+        .interval(interval)?
+        .start_at(start_at)?
+        .message_limit(message_limit)?;
+    start_banner(ctx, options).await
 }
 
 /// Picks a random image from the channel every n minutes and sets it as the banner for that server.
@@ -50,10 +56,16 @@ pub async fn start_for_guild(
     channel_id: ChannelId,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
+    #[description = "When to start the schedule. Default is instantly."] start_at: Option<DateTime<Utc>>,
     #[description = "How many messages to look back for images. Default is 100, maximum is 200"]
     message_limit: Option<usize>,
 ) -> Result<(), Error> {
-    start_banner(ctx, guild_id, channel_id, interval, message_limit).await
+    let options = StartBannerOptions::new(guild_id, channel_id)
+        .interval(interval)?
+        .start_at(start_at)?
+        .message_limit(message_limit)?;
+
+    start_banner(ctx, options).await
 }
 
 /// Stops picking random images
@@ -149,13 +161,74 @@ pub async fn current_banner(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-async fn start_banner(
-    ctx: Context<'_>,
+struct StartBannerOptions {
     guild_id: GuildId,
-    channel: ChannelId,
-    interval: Option<u64>,
-    message_limit: Option<usize>,
-) -> Result<(), Error> {
+    channel_id: ChannelId,
+    interval: u64,
+    start_at: Option<DateTime<Utc>>,
+    message_limit: usize,
+}
+
+impl StartBannerOptions {
+    pub fn new(guild_id: GuildId, channel_id: ChannelId) -> Self {
+        Self {
+            guild_id,
+            channel_id,
+            interval: 15,
+            start_at: None,
+            message_limit: 200,
+        }
+    }
+
+    pub fn interval(mut self, interval: Option<u64>) -> Result<Self, Error> {
+        let interval = interval.unwrap_or(DEFAULT_INTERVAL);
+        if interval < MINIMUM_INTERVAL {
+            return Err(CommandErr::BelowMinTimeout.into());
+        }
+
+        if interval > MAXIMUM_INTERVAL {
+            return Err(CommandErr::AboveMaxTimeout.into());
+        }
+
+        self.interval = interval;
+        Ok(self)
+    }
+
+    pub fn start_at(mut self, start_at: Option<DateTime<Utc>>) -> Result<Self, Error> {
+        let Some(start_at) = start_at else {
+            return Ok(self);
+        };
+
+        let in_the_past = start_at < Utc::now();
+
+        if in_the_past {
+            return Err(CommandErr::StartTimeInThePast.into());
+        }
+
+        self.start_at = Some(start_at);
+        Ok(self)
+    }
+
+    pub fn message_limit(mut self, message_limit: Option<usize>) -> Result<Self, Error> {
+        let message_limit = message_limit.unwrap_or(DEFAULT_MESSAGE_LIMIT);
+        if message_limit > MAXIMUM_MESSAGE_LIMIT {
+            return Err(CommandErr::AboveMaxMessageLimit.into());
+        }
+
+        self.message_limit = message_limit;
+        Ok(self)
+    }
+}
+
+async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(), Error> {
+    let StartBannerOptions {
+        guild_id,
+        channel_id,
+        interval,
+        start_at,
+        message_limit,
+    } = options;
+
     // disable BANNER check when dev feature is enabled
     #[cfg(not(feature = "dev"))]
     {
@@ -166,37 +239,28 @@ async fn start_banner(
         }
     }
 
-    // interval
-    let interval = interval.unwrap_or(DEFAULT_INTERVAL);
-    if interval < MINIMUM_INTERVAL {
-        return Err(CommandErr::BelowMinTimeout.into());
-    }
-
-    if interval > MAXIMUM_INTERVAL {
-        return Err(CommandErr::AboveMaxTimeout.into());
-    }
-
-    // message limit
-    let message_limit = message_limit.unwrap_or(DEFAULT_MESSAGE_LIMIT);
-    if message_limit > MAXIMUM_MESSAGE_LIMIT {
-        return Err(CommandErr::AboveMaxMessageLimit.into());
-    }
-
     let user_data = ctx.data();
+
+    let offset = start_at
+        .and_then(|start_at| start_at.signed_duration_since(Utc::now()).to_std().ok());
 
     // schedule it
     // interval is in minutes, so we multiply by 60 seconds
-    let schedule = ScheduleBuilder::new(guild_id, channel, Duration::from_secs(interval * 60))
-        .message_limit(message_limit)
-        .build();
+    let schedule_builder = match offset {
+        Some(offset) => ScheduleBuilder::new(guild_id, channel_id, Duration::from_secs(interval * 60))
+            .message_limit(message_limit)
+            .offset(offset),
+        None => ScheduleBuilder::new(guild_id, channel_id, Duration::from_secs(interval * 60))
+            .message_limit(message_limit),
+    };
 
-    user_data.enque(schedule).await?;
+    user_data.enque(schedule_builder.build()).await?;
 
     let content = MessageBuilder::new()
         .push(&*format!(
             "Scheduling banner change for every {interval} minutes using channel "
         ))
-        .channel(channel)
+        .channel(channel_id)
         .build();
 
     // answer the user

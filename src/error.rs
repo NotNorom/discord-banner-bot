@@ -58,6 +58,12 @@ pub enum Command {
     #[error("Command must be run in a server")]
     GuildOnly,
 
+    #[error("Server doesn't have a banner set")]
+    GuildHasNoBannerSet,
+
+    #[error("Server doesn't have the required boost level")]
+    GuildHasNoBannerFeature,
+
     #[error("Interval must be at least {} minutes", MINIMUM_INTERVAL)]
     BelowMinTimeout,
 
@@ -70,11 +76,8 @@ pub enum Command {
     #[error("Message limit must be at most {}", MAXIMUM_MESSAGE_LIMIT)]
     AboveMaxMessageLimit,
 
-    #[error("Server doesn't have a banner set")]
-    GuildHasNoBannerSet,
-
-    #[error("Server doesn't have the required boost level")]
-    GuildHasNoBannerFeature,
+    #[error("Start time cannot be in the past")]
+    StartTimeInThePast,
 }
 
 /// Error when sending direct messages to a user
