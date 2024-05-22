@@ -6,6 +6,7 @@ use std::{
 };
 
 use async_repeater::RepeaterHandle;
+use chrono::{DateTime, Utc};
 use poise::serenity_prelude::{
     Context, Error as SerenityError, HttpError as SerenityHttpError, MessageBuilder, User, UserId,
 };
@@ -76,8 +77,11 @@ pub enum Command {
     #[error("Message limit must be at most {}", MAXIMUM_MESSAGE_LIMIT)]
     AboveMaxMessageLimit,
 
-    #[error("Start time cannot be in the past")]
-    StartTimeInThePast,
+    #[error("Start time cannot be in the past. Now={now}, given={given}")]
+    StartTimeInThePast{
+        now: DateTime<Utc>,
+        given: DateTime<Utc>
+    },
 }
 
 /// Error when sending direct messages to a user

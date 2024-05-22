@@ -199,10 +199,11 @@ impl StartBannerOptions {
             return Ok(self);
         };
 
-        let in_the_past = start_at < Utc::now();
+        let now = Utc::now();
+        let in_the_past = start_at < now;
 
         if in_the_past {
-            return Err(CommandErr::StartTimeInThePast.into());
+            return Err(CommandErr::StartTimeInThePast { now, given: start_at }.into());
         }
 
         self.start_at = Some(start_at);
