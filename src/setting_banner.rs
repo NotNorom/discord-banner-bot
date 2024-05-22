@@ -129,8 +129,7 @@ impl BannerFromUrl for GuildId {
 
         let (image_bytes, _): (Vec<u8>, Url) = response
             .bytes_stream()
-            .map_err(|err| SetBannerError::Transport(err))
-            // .filter_map(|bytes| async move { bytes.ok() })
+            .map_err(SetBannerError::Transport)
             .try_fold(
                 (Vec::<u8>::new(), url.clone()),
                 |(mut acc, url), value: Bytes| async move {
