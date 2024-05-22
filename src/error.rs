@@ -78,9 +78,9 @@ pub enum Command {
     AboveMaxMessageLimit,
 
     #[error("Start time cannot be in the past. Now={now}, given={given}")]
-    StartTimeInThePast{
+    StartTimeInThePast {
         now: DateTime<Utc>,
-        given: DateTime<Utc>
+        given: DateTime<Utc>,
     },
 }
 
