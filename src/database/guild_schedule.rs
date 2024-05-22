@@ -21,18 +21,28 @@ pub struct GuildSchedule {
     channel_id: u64,
     /// How frequent the schudle run. In seconds
     interval: u64,
-    /// Unix timestamp since the banner was last changed
-    last_run: u64,
+    /// Unix timestamp since the banner was last changed (in seconds)
+    last_run: u64, 
+    /// When to start the schedule (in seconds)
+    start_at: u64,
     /// How many messages to look into the past for
     message_limit: u64,
 }
 
 impl GuildSchedule {
-    pub fn new(guild_id: u64, channel_id: u64, interval: u64, last_run: u64, message_limit: u64) -> Self {
+    pub fn new(
+        guild_id: u64,
+        channel_id: u64,
+        interval: u64,
+        last_run: u64,
+        start_at: u64,
+        message_limit: u64,
+    ) -> Self {
         Self {
             guild_id,
             channel_id,
             interval,
+            start_at,
             last_run,
             message_limit,
         }
@@ -58,6 +68,11 @@ impl GuildSchedule {
         self.last_run
     }
 
+    /// Get db entry's start_at.
+    pub fn start_at(&self) -> u64 {
+        self.start_at
+    }
+
     /// Get the db entry's message limit.
     pub fn message_limit(&self) -> u64 {
         self.message_limit
@@ -70,6 +85,7 @@ impl From<Schedule> for GuildSchedule {
         let channel_id = schedule.channel_id().get();
         let interval = schedule.interval().as_secs();
         let last_run = current_unix_timestamp();
+        let start_at = schedule.offset().unwrap_or_default().as_secs();
         let message_limit = schedule
             .message_limit()
             .map(NonZeroUsize::get)
@@ -82,6 +98,7 @@ impl From<Schedule> for GuildSchedule {
             channel_id,
             interval,
             last_run,
+            start_at,
             message_limit,
         }
     }
@@ -100,6 +117,7 @@ impl From<&GuildSchedule> for RedisMap {
         map.insert("channel_id", entry.channel_id.to_string());
         map.insert("interval", entry.interval.to_string());
         map.insert("last_run", entry.last_run.to_string());
+        map.insert("start_at", entry.last_run.to_string());
         map.insert("message_limit", entry.message_limit.to_string());
 
         // this cannot fail
@@ -121,6 +139,7 @@ impl FromRedis for GuildSchedule {
         let channel_id = get_from_redis_map(&value, "channel_id")?;
         let interval = get_from_redis_map(&value, "interval")?;
         let last_run = get_from_redis_map(&value, "last_run")?;
+        let start_at = get_from_redis_map(&value, "start_at")?;
         let message_limit = get_from_redis_map(&value, "message_limit")?;
 
         Ok(Self {
@@ -128,6 +147,7 @@ impl FromRedis for GuildSchedule {
             channel_id,
             interval,
             last_run,
+            start_at,
             message_limit,
         })
     }
