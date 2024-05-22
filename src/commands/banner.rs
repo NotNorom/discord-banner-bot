@@ -242,8 +242,7 @@ async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(
 
     let user_data = ctx.data();
 
-    let offset = start_at
-        .and_then(|start_at| start_at.signed_duration_since(Utc::now()).to_std().ok());
+    let offset = start_at.and_then(|start_at| start_at.signed_duration_since(Utc::now()).to_std().ok());
 
     // schedule it
     // interval is in minutes, so we multiply by 60 seconds

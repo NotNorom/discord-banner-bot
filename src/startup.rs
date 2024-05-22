@@ -128,7 +128,7 @@ pub async fn event_handler(
             // otherwise the bot might have been kicked
             data.deque(incomplete.id).await?;
             Ok(())
-        },
+        }
         _ => Ok(()),
     }
 }

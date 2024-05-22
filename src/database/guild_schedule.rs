@@ -22,7 +22,7 @@ pub struct GuildSchedule {
     /// How frequent the schudle run. In seconds
     interval: u64,
     /// Unix timestamp since the banner was last changed (in seconds)
-    last_run: u64, 
+    last_run: u64,
     /// When to start the schedule (in seconds)
     start_at: u64,
     /// How many messages to look into the past for

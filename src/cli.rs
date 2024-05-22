@@ -32,8 +32,8 @@ pub enum UtilCommand {
         #[arg(short, long)]
         channel_id: ChannelId,
         #[arg(short, long, default_value = "200")]
-        limit: usize
-    }
+        limit: usize,
+    },
 }
 
 #[derive(Debug, Clone, Subcommand)]

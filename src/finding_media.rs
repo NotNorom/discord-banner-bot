@@ -62,7 +62,7 @@ pub fn find_media_in_channel<'a>(
                 // only use embeds, don't use thumbnails
                 // this is done to avoid requests to 3rd parties
                 match (&embed.image, &embed.thumbnail) {
-                    (None, _) => continue, 
+                    (None, _) => continue,
                     (Some(img), _) => {
                         // tracing::trace!("{} - {} EMBED", message.link(), img.url);
                         result.push(Ok(MediaWithMessage::new(img.url.clone(), message.clone())))
