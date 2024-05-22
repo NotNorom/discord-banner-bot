@@ -119,10 +119,17 @@ impl From<GuildSchedule> for Schedule {
         let channel = guild_schedule.channel_id();
         let interval = guild_schedule.interval();
         let last_run = guild_schedule.last_run();
+        let start_at = guild_schedule.start_at();
         let message_limit = guild_schedule.message_limit();
 
-        let current_time = current_unix_timestamp();
-        let offset = interval - (current_time - last_run) % interval;
+        let now = current_unix_timestamp();
+        // if the start_at time is in the past use the cyclic interval calculation
+        // if the start_at time is now or in the future, the the start_at time
+        let offset = if start_at < now {
+            interval - (now - last_run) % interval
+        } else {
+            start_at
+        };
 
         Schedule {
             interval: Duration::from_secs(interval),
