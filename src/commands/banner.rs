@@ -262,6 +262,10 @@ async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(
             "Scheduling banner change for every {interval} minutes using channel "
         ))
         .channel(channel_id)
+        .push(&*format!(
+            ". Starting in {} seconds.",
+            offset.unwrap_or_default().as_secs()
+        ))
         .build();
 
     // answer the user
