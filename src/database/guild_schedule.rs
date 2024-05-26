@@ -180,7 +180,6 @@ impl Entry for GuildSchedule {
         db.client.hgetall(Self::key(db, id)).await
     }
 
-    #[instrument(skip(db, id))]
     async fn delete(db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError> {
         let id: RedisKey = id.into();
         debug!("Deleting id: {id:?}");
