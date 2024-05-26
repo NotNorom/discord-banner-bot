@@ -1,12 +1,20 @@
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand, ValueEnum};
 use poise::serenity_prelude::{ChannelId, GuildId};
 
-#[derive(Parser)]
-pub struct BotCli {}
+#[derive(Debug, Clone, Parser)]
+#[command(version, about)]
+pub struct BotCli {
+    #[arg(short, long, default_value = "./settings.toml")]
+    pub settings_file: PathBuf,
+}
 
 #[derive(Debug, Clone, Parser)]
 #[command(version, about)]
 pub struct UtilCli {
+    #[arg(short, long, default_value = "./settings.toml")]
+    pub settings_file: PathBuf,
     #[command(subcommand)]
     pub command: UtilCommand,
 }

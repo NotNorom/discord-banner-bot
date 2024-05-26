@@ -1,6 +1,6 @@
 use config::{Config, ConfigError};
 use serde::Deserialize;
-use std::sync::OnceLock;
+use std::{path::PathBuf, str::FromStr, sync::OnceLock};
 
 static SETTINGS: OnceLock<Settings> = OnceLock::new();
 
@@ -21,8 +21,15 @@ pub struct Settings {
 impl Settings {
     /// Load and deserialize settings into static struct
     pub fn init() -> Result<(), SettingsError> {
+        Self::init_from_path(PathBuf::from_str("settings").expect("hard coded"))
+    }
+
+    /// Load and deserialize settings into static struct from path
+    pub fn init_from_path(path: PathBuf) -> Result<(), SettingsError> {
+        let path = path.to_string_lossy();
+
         let settings = Config::builder()
-            .add_source(config::File::with_name("settings"))
+            .add_source(config::File::with_name(&path))
             .build()?
             .try_deserialize()?;
 
