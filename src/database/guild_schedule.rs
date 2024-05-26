@@ -112,7 +112,7 @@ impl From<GuildSchedule> for RedisMap {
 
 impl From<&GuildSchedule> for RedisMap {
     fn from(entry: &GuildSchedule) -> Self {
-        let mut map = HashMap::with_capacity(5);
+        let mut map = HashMap::with_capacity(6);
         map.insert("guild_id", entry.guild_id.to_string());
         map.insert("channel_id", entry.channel_id.to_string());
         map.insert("interval", entry.interval.to_string());
