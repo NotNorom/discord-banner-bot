@@ -117,7 +117,7 @@ impl From<&GuildSchedule> for RedisMap {
         map.insert("channel_id", entry.channel_id.to_string());
         map.insert("interval", entry.interval.to_string());
         map.insert("last_run", entry.last_run.to_string());
-        map.insert("start_at", entry.last_run.to_string());
+        map.insert("start_at", entry.start_at.to_string());
         map.insert("message_limit", entry.message_limit.to_string());
 
         // this cannot fail
