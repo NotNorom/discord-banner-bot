@@ -1,7 +1,12 @@
-use std::{fmt::Debug, num::NonZeroUsize, time::Duration};
+use std::{
+    fmt::Debug,
+    num::NonZeroUsize,
+    time::{Duration, SystemTime},
+};
 
-use async_repeater::RepeaterEntry;
+use async_repeater::{Delay, RepeaterEntry};
 use poise::serenity_prelude::{ChannelId, GuildId};
+use tracing::debug;
 
 use crate::{database::guild_schedule::GuildSchedule, utils::current_unix_timestamp};
 
@@ -10,7 +15,7 @@ pub struct Schedule {
     guild_id: GuildId,
     channel_id: ChannelId,
     interval: Duration,
-    offset: Option<Duration>,
+    offset: Delay,
     message_limit: Option<NonZeroUsize>,
 }
 
@@ -27,7 +32,7 @@ impl Schedule {
         self.interval
     }
 
-    pub fn offset(&self) -> Option<Duration> {
+    pub fn offset(&self) -> Delay {
         self.offset
     }
 
@@ -40,7 +45,7 @@ pub struct ScheduleBuilder {
     guild_id: GuildId,
     channel_id: ChannelId,
     interval: Duration,
-    offset: Option<Duration>,
+    offset: Delay,
     message_limit: Option<NonZeroUsize>,
 }
 
@@ -50,13 +55,13 @@ impl ScheduleBuilder {
             guild_id,
             channel_id,
             interval,
-            offset: None,
+            offset: Delay::None,
             message_limit: None,
         }
     }
 
-    pub fn offset(mut self, offset: Duration) -> Self {
-        self.offset = Some(offset);
+    pub fn offset(mut self, offset: Delay) -> Self {
+        self.offset = offset;
         self
     }
 
@@ -94,12 +99,12 @@ impl RepeaterEntry for Schedule {
         self.guild_id
     }
 
-    fn delay(&self) -> Option<Duration> {
+    fn delay(&self) -> Delay {
         self.offset
     }
 
     fn reset_delay(&mut self) {
-        self.offset = None;
+        self.offset = Delay::None;
     }
 }
 
@@ -123,17 +128,20 @@ impl From<GuildSchedule> for Schedule {
         let message_limit = guild_schedule.message_limit();
 
         let now = current_unix_timestamp();
-        // if the start_at time is in the past use the cyclic interval calculation
         // if the start_at time is now or in the future, the the start_at time
-        let offset = if start_at < now {
-            interval - (now - last_run) % interval
-        } else {
+        // if the start_at time is in the past use the cyclic interval calculation
+        let offset = if start_at >= now {
+            debug!("setting offset using start_at = {start_at}s");
             start_at
+        } else {
+            let offset = interval - (now - last_run) % interval;
+            debug!("setting offset using formula = {offset}s");
+            offset
         };
 
         Schedule {
             interval: Duration::from_secs(interval),
-            offset: Some(Duration::from_secs(offset)),
+            offset: Delay::Absolute(SystemTime::UNIX_EPOCH + Duration::from_secs(offset)),
             guild_id: GuildId::new(guild_id),
             channel_id: ChannelId::new(channel),
             message_limit: NonZeroUsize::new(message_limit.try_into().unwrap_or(usize::MAX)),

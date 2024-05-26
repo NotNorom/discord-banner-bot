@@ -1,5 +1,6 @@
 use std::{num::NonZeroUsize, time::Duration};
 
+use async_repeater::Delay;
 use chrono::{DateTime, Utc};
 use poise::{
     serenity_prelude::{ChannelId, CreateEmbed, EmbedMessageBuilding, GuildId, MessageBuilder},
@@ -243,16 +244,16 @@ async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(
     let user_data = ctx.data();
 
     let offset = start_at.and_then(|start_at| start_at.signed_duration_since(Utc::now()).to_std().ok());
+    let offset = match offset {
+        Some(ofs) => Delay::Relative(ofs),
+        None => Delay::None,
+    };
 
     // schedule it
     // interval is in minutes, so we multiply by 60 seconds
-    let schedule_builder = match offset {
-        Some(offset) => ScheduleBuilder::new(guild_id, channel_id, Duration::from_secs(interval * 60))
-            .message_limit(message_limit)
-            .offset(offset),
-        None => ScheduleBuilder::new(guild_id, channel_id, Duration::from_secs(interval * 60))
-            .message_limit(message_limit),
-    };
+    let schedule_builder = ScheduleBuilder::new(guild_id, channel_id, Duration::from_secs(interval * 60))
+        .message_limit(message_limit)
+        .offset(offset);
 
     user_data.enque(schedule_builder.build()).await?;
 
@@ -263,7 +264,9 @@ async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(
         .channel(channel_id)
         .push(&*format!(
             ". Starting in {} seconds.",
-            offset.unwrap_or_default().as_secs()
+            TryInto::<Duration>::try_into(offset)
+                .unwrap_or_default()
+                .as_secs()
         ))
         .build();
 
