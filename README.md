@@ -117,7 +117,7 @@ https://github.com/NotNorom/discord-banner-bot/blob/master/settings.template.tom
 - `PREFIX:active_schedules` keeps a list of currently active guild schedules.
 - `PREFIX:active_schedule:GUILD_ID` is a schedule for a specific guild. It contains the following fields:
   - `guild_id`: The guild_id
-  - `album`: The channel_id
+  - `channel_id`: The channel_id
   - `interval`: Minutes between banner changes
   - `last_run`: Unix timestamp, when the banner was last changed successfully
 
