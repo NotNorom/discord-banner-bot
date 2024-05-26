@@ -61,6 +61,12 @@ impl State {
     /// Will panic if called before initialization is complete
     pub async fn enque(&self, schedule: Schedule) -> Result<(), Error> {
         info!("Inserting {schedule:?}");
+
+        // insert into db here to make sure we don't loose it if we have to restart the bot
+        // but the start_at time has not been reached yet
+        let db_schedule = GuildSchedule::from(schedule.clone());
+        self.database.insert(&db_schedule, db_schedule.guild_id()).await?;
+
         self.repeater_handle
             .get()
             .unwrap()
