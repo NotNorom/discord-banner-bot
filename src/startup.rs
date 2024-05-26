@@ -5,6 +5,7 @@ use std::{
     sync::{Arc, OnceLock},
     time::Duration,
 };
+use tokio::time::timeout;
 use tracing::{debug, error, info};
 
 use crate::{
@@ -12,7 +13,7 @@ use crate::{
     database::{guild_schedule::GuildSchedule, Database},
     error::handle_schedule_error,
     schedule::Schedule,
-    schedule_runner::ScheduleRunner,
+    schedule_runner::{RunnerError, ScheduleRunner},
     settings::Settings,
     utils::dm_users,
     Data, Error,
@@ -148,13 +149,27 @@ async fn handle_event_ready(
     let owners = framework.options().owners.clone();
     let ctx = Arc::new(ctx.clone());
 
-    let callback = move |schedule, handle| async move {
-        let task = ScheduleRunner::new(ctx.clone(), db.clone(), http.clone(), schedule);
+    let callback = move |schedule: Schedule, handle| async move {
+        let task = ScheduleRunner::new(ctx.clone(), db.clone(), http.clone(), schedule.clone());
 
-        let Err(err) = task.run().await else {
+        let timeout_result = timeout(Duration::from_secs(60), task.run()).await;
+
+        let result = match timeout_result {
+            Ok(res) => res,
+            Err(_) => Err(RunnerError::new(
+                Error::Timeout {
+                    action: "Banner changer task".to_string(),
+                },
+                schedule.guild_id(),
+                schedule,
+            )),
+        };
+
+        let Err(err) = result else {
             debug!("Task finished successfully");
             return;
         };
+
         error!("Task had an error: {err:?}");
 
         match handle_schedule_error(&err, ctx, handle, db.clone(), owners).await {

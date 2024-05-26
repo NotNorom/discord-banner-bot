@@ -52,6 +52,9 @@ pub enum Error {
 
     #[error(transparent)]
     SetBanner(#[from] SetBannerError),
+
+    #[error("Timeout during: {action}")]
+    Timeout{ action: String },
 }
 
 #[derive(Debug, thiserror::Error)]
