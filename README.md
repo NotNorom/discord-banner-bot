@@ -19,7 +19,7 @@ When entering the commands in discord, don't actually type any brackets.
 
 
 ### /start
-`/start [CHANNEL] <INTERVAL>`
+`/start [CHANNEL] <INTERVAL> <START_AT> <MESSAGE_LIMIT>`
 Start changing banners every INTERVAL minutes.
 The banner will be picked randomly from messages in the CHANNEL.
 Note: The CHANNEL does not have to be inside the same server, it's just that the bot needs access to the channel.
@@ -27,6 +27,16 @@ Note: The CHANNEL does not have to be inside the same server, it's just that the
 Interval range:
 - minimum: 15
 - maximum: 2880 (48h)
+
+`START_AT` is a RFC 3339 formatted date and time string with a timezone.
+An example: `2016-05-28 22:25:00+02:00` would translate to: May 28th, 2016 at 10pm and 25 minutes in UTC+2 which is daylight savings time in Europe/Berlin.
+Note that the timezone part `+02:00` is _required_.
+
+`MESSAGE_LIMIT` ranges from 0 to 200 with a default of 100.
+It is the maximum number of messages the bot will look back in a channel to look for images.
+It is not the limit of images.
+A message can contain multiple images!
+A limit
 
 _Command can only be run by users with `Manage Server` permission._
 
@@ -69,7 +79,7 @@ _Command can only be run by anyone._
 
 
 ### /start_for_guild
-`/start_for_guild [GUILD_ID] [CHANNEL_ID] <INTERVAL>`
+`/start_for_guild [GUILD_ID] [CHANNEL_ID] <INTERVAL> <START_AT> <MESSAGE_LIMIT>`
 Same as `/start` but a server can be specified.
 This allows to start the bot for servers without the user being in the server.
 This is just for bot owners and intended for debugging purposes.
@@ -119,7 +129,11 @@ https://github.com/NotNorom/discord-banner-bot/blob/master/settings.template.tom
   - `guild_id`: The guild_id
   - `channel_id`: The channel_id
   - `interval`: Minutes between banner changes
+  - `start_at`: Unix timestamp, when the schedule should start
   - `last_run`: Unix timestamp, when the banner was last changed successfully
+
+If `start_at` is in the future (aka the schedule has not been started yet) then `last_run` will be set to `start_at`.
+If `start_at` is ever more in the future than `last_run` then something has gone wrong.
 
 ## Credits
 
