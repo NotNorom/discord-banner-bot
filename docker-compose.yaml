@@ -1,0 +1,16 @@
+services:
+  bot:
+    build: .
+    networks:
+      - dbb
+    depends_on:
+      - db
+    volumes:
+      - ./settings.toml:/conf/settings.toml:ro
+  db:
+    image: docker.io/redis:alpine
+    networks:
+      - dbb
+
+networks:
+  dbb:
