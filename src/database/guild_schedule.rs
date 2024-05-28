@@ -21,10 +21,10 @@ pub struct GuildSchedule {
     channel_id: u64,
     /// How frequent the schudle run. In seconds
     interval: u64,
-    /// Unix timestamp since the banner was last changed (in seconds)
-    last_run: u64,
     /// When to start the schedule (in seconds)
     start_at: u64,
+    /// Unix timestamp since the banner was last changed (in seconds)
+    last_run: u64,
     /// How many messages to look into the past for
     message_limit: u64,
 }
@@ -63,12 +63,12 @@ impl GuildSchedule {
         self.interval
     }
 
-    /// Get db entry's last run.
+    /// Get db entry's `last_run`.
     pub fn last_run(&self) -> u64 {
         self.last_run
     }
 
-    /// Get db entry's start_at.
+    /// Get db entry's `start_at`.
     pub fn start_at(&self) -> u64 {
         self.start_at
     }
@@ -101,8 +101,8 @@ impl From<Schedule> for GuildSchedule {
             guild_id,
             channel_id,
             interval,
-            last_run,
             start_at,
+            last_run,
             message_limit,
         }
     }
@@ -150,8 +150,8 @@ impl FromRedis for GuildSchedule {
             guild_id,
             channel_id,
             interval,
-            last_run,
             start_at,
+            last_run,
             message_limit,
         })
     }

@@ -65,7 +65,7 @@ pub fn find_media_in_channel<'a>(
                     (None, _) => continue,
                     (Some(img), _) => {
                         // tracing::trace!("{} - {} EMBED", message.link(), img.url);
-                        result.push(Ok(MediaWithMessage::new(img.url.clone(), message.clone())))
+                        result.push(Ok(MediaWithMessage::new(img.url.clone(), message.clone())));
                     }
                 }
             }

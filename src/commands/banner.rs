@@ -244,7 +244,7 @@ async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(
     let user_data = ctx.data();
 
     let now = current_unix_timestamp();
-    let start_at = start_at.map(|s| s.timestamp() as u64).unwrap_or(now);
+    let start_at = start_at.map_or(now, |s| s.timestamp() as u64);
     let offset_from_now = start_at - now;
 
     // schedule it

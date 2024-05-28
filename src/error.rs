@@ -260,7 +260,7 @@ pub async fn handle_schedule_error(
                             http_err => tracing::error!("unhandled http error in set_banner: {http_err:?}"),
                         },
                         serenity_err => {
-                            tracing::error!("unhandled serenity error in set_banner: {serenity_err:?}")
+                            tracing::error!("unhandled serenity error in set_banner: {serenity_err:?}");
                         }
                     }
                 }

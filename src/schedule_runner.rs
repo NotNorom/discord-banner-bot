@@ -40,10 +40,7 @@ impl ScheduleRunner {
         let schedule = self.schedule.clone();
         let mut guild_id = schedule.guild_id();
         let channel = schedule.channel_id();
-        let limit = schedule
-            .message_limit()
-            .map(NonZeroUsize::get)
-            .unwrap_or(usize::MAX);
+        let limit = schedule.message_limit().map_or(usize::MAX, NonZeroUsize::get);
 
         debug!("Fetching images, limited to {} messages", limit);
 

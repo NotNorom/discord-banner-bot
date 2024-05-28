@@ -16,7 +16,7 @@ use tracing::{error, info};
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let cli = BotCli::parse();
-    Settings::init_from_path(cli.settings_file)?;
+    Settings::init_from_path(&cli.settings_file)?;
     let settings = Settings::get();
 
     println!("Using log level: {}", settings.bot.log_level);

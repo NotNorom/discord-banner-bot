@@ -65,7 +65,7 @@ pub async fn register_commands(
     match &result {
         Ok(cmds) => match guild_or_globally {
             GuildOrGlobally::InGuild { guild } => {
-                info!("{} commands have been set in guild: {}", cmds.len(), guild)
+                info!("{} commands have been set in guild: {}", cmds.len(), guild);
             }
             GuildOrGlobally::Globally => info!("{} commands have been set globally", cmds.len()),
         },

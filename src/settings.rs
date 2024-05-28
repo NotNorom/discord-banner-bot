@@ -1,6 +1,10 @@
 use config::{Config, ConfigError};
 use serde::Deserialize;
-use std::{path::PathBuf, str::FromStr, sync::OnceLock};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::OnceLock,
+};
 
 static SETTINGS: OnceLock<Settings> = OnceLock::new();
 
@@ -19,13 +23,14 @@ pub struct Settings {
 }
 
 impl Settings {
+    #[allow(clippy::missing_panics_doc)]
     /// Load and deserialize settings into static struct
     pub fn init() -> Result<(), SettingsError> {
-        Self::init_from_path(PathBuf::from_str("settings").expect("hard coded"))
+        Self::init_from_path(&PathBuf::from_str("settings").expect("hard coded"))
     }
 
     /// Load and deserialize settings into static struct from path
-    pub fn init_from_path(path: PathBuf) -> Result<(), SettingsError> {
+    pub fn init_from_path(path: &Path) -> Result<(), SettingsError> {
         let path = path.to_string_lossy();
 
         let settings = Config::builder()

@@ -53,7 +53,7 @@ impl Schedule {
         self.message_limit
     }
 
-    /// How many seconds the last_run is late
+    /// How many seconds the `last_run` is late
     pub fn lag(&self) -> Option<u64> {
         self.last_run.map(|x| x.get() % self.interval)
     }
@@ -80,11 +80,13 @@ impl ScheduleBuilder {
         }
     }
 
+    #[must_use]
     pub fn start_at(mut self, start_at: u64) -> Self {
         self.start_at = start_at;
         self
     }
 
+    #[must_use]
     pub fn message_limit(mut self, message_limit: usize) -> Self {
         self.message_limit = NonZeroUsize::new(message_limit);
         self
