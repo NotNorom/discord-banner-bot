@@ -112,15 +112,15 @@ impl BannerFromUrl for GuildId {
         let response = reqw_client.get(url.as_ref()).send().await?;
 
         // check content length header
-        match response
+        let estimated_content_length = match response
             .content_length()
             .map(|len| usize::try_from(len).unwrap_or(usize::MAX))
         {
             Some(0) => return Err(SetBannerError::ImageIsEmpty(url.clone())),
             Some(MAXIMUM_IMAGE_SIZE..) => return Err(SetBannerError::ImageIsTooBig(url.clone())),
             None => return Err(SetBannerError::ImageUnkownSize(url.clone())),
-            Some(_) => {}
-        }
+            Some(len) => len,
+        };
 
         // Use stream to get image bytes because if using response.bytes()
         // there would be a risk of downloading huuuuuge files into RAM if for example
@@ -131,7 +131,7 @@ impl BannerFromUrl for GuildId {
             .bytes_stream()
             .map_err(SetBannerError::Transport)
             .try_fold(
-                (Vec::<u8>::new(), url.clone()),
+                (Vec::<u8>::with_capacity(estimated_content_length), url.clone()),
                 |(mut acc, url), value: Bytes| async move {
                     if acc.len() + value.len() > MAXIMUM_IMAGE_SIZE {
                         return Err(SetBannerError::ImageIsTooBig(url));
