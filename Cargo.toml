@@ -11,51 +11,46 @@ resolver = "2"
 default = []
 dev = []
 
-
 [profile.release]
 debug = true
 
-
 [dependencies]
-thiserror = "1.0.61"
-tokio-stream = "0.1.15"
-url = "2.5.0"
+async-repeater = { git = "https://github.com/NotNorom/async-repeater.git" }
+# async-repeater = { path = "/home/norom/Documents/Code/async-repeater" }
+bytes = "1.6.0"
+chrono = "0.4.38"
+clap = { version = "4.5.4", features = ["derive"] }
+config = { version = "0.14", default-features = false, features = ["toml"] }
+fred = { version = "9.0.3", default-features = false, features = [
+    "i-std",
+    "i-sets",
+    "i-hashes",
+] }
+poise = "0.6.1"
 rand = "0.8.5"
+reqwest = { version = "0.12.4", default-features = false, features = [
+    "json",
+    "native-tls-vendored",
+] }
+serde = "1.0.203"
+thiserror = "1.0.61"
+tokio = { version = "1.37.0", features = [
+    "rt-multi-thread",
+], default-features = false }
+tokio-stream = "0.1.15"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = [
     "tracing-log",
     "env-filter",
     "parking_lot",
 ] }
-fred = { version = "9.0.3", default-features = false, features = [
-    "i-std",
-    "i-sets",
-    "i-hashes",
-] }
-config = { version = "0.14", default-features = false, features = ["toml"] }
-serde = "1.0.203"
-reqwest = { version = "0.12.4", default-features = false, features = [
-    "json",
-    "native-tls-vendored",
-] }
-tokio = { version = "1.37.0", features = [
-    "rt-multi-thread",
-], default-features = false }
-async-repeater = { git = "https://github.com/NotNorom/async-repeater.git" }
-# async-repeater = { path = "/home/norom/Documents/Code/async-repeater" }
-clap = { version = "4.5.4", features = ["derive"] }
-bytes = "1.6.0"
-chrono = "0.4.38"
-# async-cron-scheduler = "2.0.1"
-poise = "0.6.1"
+url = "2.5.0"
 
 [patch.crates-io]
 poise = { git = "https://github.com/serenity-rs/poise.git", branch = "serenity-next" }
-# poise = { git = "https://github.com/serenity-rs/poise.git", rev = "47a26bdee706d47ed3bda076abea1de4a0ec568f" }
-# serenity = { path = "/home/norom/Documents/Code/serenity" }
 # poise = { path = "/home/norom/Documents/Code/poise" }
-# serenity = { git = "https://github.com/serenity-rs/serenity", rev = "de04826fea8c25d274c7080999f46c25143d87c7" }
+# serenity = { git = "https://github.com/serenity-rs/serenity" }
+# serenity = { path = "/home/norom/Documents/Code/serenity" }
 
 #[patch."https://github.com/serenity-rs/serenity.git"]
 # serenity = { path = "/home/norom/Documents/Code/serenity" }
-# serenity = { git = "https://github.com/serenity-rs/serenity/", rev="de04826fea8c25d274c7080999f46c25143d87c7" }
