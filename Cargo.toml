@@ -17,7 +17,7 @@ debug = true
 
 
 [dependencies]
-thiserror = "1.0.59"
+thiserror = "1.0.61"
 tokio-stream = "0.1.15"
 url = "2.5.0"
 rand = "0.8.5"
@@ -33,7 +33,7 @@ fred = { version = "9.0.3", default-features = false, features = [
     "i-hashes",
 ] }
 config = { version = "0.14", default-features = false, features = ["toml"] }
-serde = "1.0.200"
+serde = "1.0.203"
 reqwest = { version = "0.12.4", default-features = false, features = [
     "json",
     "native-tls-vendored",
