@@ -6,7 +6,7 @@ use poise::{
     futures_util::{stream::futures_unordered, StreamExt},
     serenity_prelude::{CacheHttp, CreateMessage, Message, UserId, UserPublicFlags},
 };
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::{constants::DISCORD_MESSAGE_CONTENT_LIMIT, error::SendDm, Error};
 
@@ -19,6 +19,21 @@ pub fn current_unix_timestamp() -> u64 {
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
         .as_secs()
+}
+
+/// Given the parameters returns the next run in seconds from now
+pub fn next_run(start_at: u64, now: u64, interval: u64) -> u64 {
+    if start_at >= now {
+        // seconds between now and stat_at
+        let delay = start_at - now;
+        debug!("start_at in the future. first run in {delay}s");
+        delay
+    } else {
+        // seconds between now and next run
+        let delay = interval - (now - start_at) % interval;
+        debug!("start_at in the past. next run in {delay}s");
+        delay
+    }
 }
 
 /// Starts logging based on `log_level` passed in.

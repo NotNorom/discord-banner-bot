@@ -108,7 +108,7 @@ dependencies = [
 [[package]]
 name = "async-repeater"
 version = "0.1.0"
-source = "git+https://github.com/NotNorom/async-repeater.git#83b1c3dd05a4a12a06ef1dd5d529aab850c14141"
+source = "git+https://github.com/NotNorom/async-repeater.git#107430635dea6179edeec25dacfe74181a3cea0e"
 dependencies = [
  "futures-core",
  "tokio",

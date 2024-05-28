@@ -1,6 +1,5 @@
-use std::{collections::HashMap, num::NonZeroUsize, time::SystemTime};
+use std::{collections::HashMap, num::NonZeroUsize};
 
-use async_repeater::Delay;
 use fred::{
     error::{RedisError, RedisErrorKind},
     interfaces::{HashesInterface, KeysInterface, SetsInterface},
@@ -84,22 +83,9 @@ impl From<Schedule> for GuildSchedule {
     fn from(schedule: Schedule) -> Self {
         let guild_id = schedule.guild_id().get();
         let channel_id = schedule.channel_id().get();
-        let interval = schedule.interval().as_secs();
-
+        let interval = schedule.interval();
+        let start_at = schedule.start_at();
         let now = current_unix_timestamp();
-        // it is okay to use now() for last_run even if start_at is in the future
-        // because when turning a databse GuildSchedule back into a Schedule
-        // it will figure out the offset correctly
-        let offset = schedule.offset();
-        debug!("Offset received from schedule: {offset:?}");
-        let start_at = match offset {
-            Delay::Relative(dur) => dur.as_secs() + now,
-            Delay::Absolute(timestamp) => timestamp
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs(),
-            Delay::None => now,
-        };
 
         let last_run = if start_at > now { start_at } else { now };
         debug!("Setting start_at={start_at}, last_run={last_run}");

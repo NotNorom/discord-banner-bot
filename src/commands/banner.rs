@@ -1,6 +1,5 @@
-use std::{num::NonZeroUsize, time::Duration};
+use std::num::NonZeroUsize;
 
-use async_repeater::Delay;
 use chrono::{DateTime, Utc};
 use poise::{
     serenity_prelude::{ChannelId, CreateEmbed, EmbedMessageBuilding, GuildId, MessageBuilder},
@@ -14,6 +13,7 @@ use crate::{
     error::Command as CommandErr,
     finding_media::last_reachable_message,
     schedule::ScheduleBuilder,
+    utils::current_unix_timestamp,
     Context, Error,
 };
 
@@ -243,17 +243,15 @@ async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(
 
     let user_data = ctx.data();
 
-    let offset = start_at.and_then(|start_at| start_at.signed_duration_since(Utc::now()).to_std().ok());
-    let offset = match offset {
-        Some(ofs) => Delay::Relative(ofs),
-        None => Delay::None,
-    };
+    let now = current_unix_timestamp();
+    let start_at = start_at.map(|s| s.timestamp() as u64).unwrap_or(now);
+    let offset_from_now = start_at - now;
 
     // schedule it
     // interval is in minutes, so we multiply by 60 seconds
-    let schedule_builder = ScheduleBuilder::new(guild_id, channel_id, Duration::from_secs(interval * 60))
+    let schedule_builder = ScheduleBuilder::new(guild_id, channel_id, interval * 60)
         .message_limit(message_limit)
-        .offset(offset);
+        .start_at(start_at);
 
     user_data.enque(schedule_builder.build()).await?;
 
@@ -263,10 +261,7 @@ async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(
         ))
         .channel(channel_id)
         .push(&*format!(
-            ". Starting in {} seconds.",
-            TryInto::<Duration>::try_into(offset)
-                .unwrap_or_default()
-                .as_secs()
+            ". Starting at {start_at} in {offset_from_now} seconds."
         ))
         .build();
 
