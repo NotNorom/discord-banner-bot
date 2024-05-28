@@ -1,7 +1,7 @@
 use clap::Parser;
 use discord_banner_bot::{
     cli::BotCli,
-    commands::commands,
+    commands::{commands, banner::{submit_image, approve_image}},
     error::{self, Error},
     startup::{event_handler, State},
     utils::start_logging,
@@ -28,7 +28,11 @@ async fn main() -> Result<(), Error> {
     // set up & start client
     let framework = poise::Framework::builder()
         .options(FrameworkOptions {
-            commands: commands(),
+            commands: vec![
+                submit_image(),
+                approve_image(),
+                // other commands...
+            ],
             on_error: |err| {
                 Box::pin(async move {
                     if let Err(e) = error::handle_framework_error(err).await {
