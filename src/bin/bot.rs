@@ -1,7 +1,7 @@
 use clap::Parser;
 use discord_banner_bot::{
     cli::BotCli,
-    commands::commands,
+    commands::{commands, banner::{submit_image, approve_image}},
     error::{self, Error},
     startup::{event_handler, State},
     utils::start_logging,
@@ -11,6 +11,7 @@ use poise::{
     serenity_prelude::{self, GatewayIntents},
     FrameworkOptions, PrefixFrameworkOptions,
 };
+use tokio::signal;
 use tracing::{error, info};
 
 #[tokio::main]
@@ -27,7 +28,11 @@ async fn main() -> Result<(), Error> {
     // set up & start client
     let framework = poise::Framework::builder()
         .options(FrameworkOptions {
-            commands: commands(),
+            commands: vec![
+                submit_image(),
+                approve_image(),
+                // other commands...
+            ],
             on_error: |err| {
                 Box::pin(async move {
                     if let Err(e) = error::handle_framework_error(err).await {
@@ -52,6 +57,14 @@ async fn main() -> Result<(), Error> {
     .data(State::new().await?.into())
     .framework(framework)
     .await?;
+
+    // Spawn a task to handle SIGINT
+    let shard_manager = client.shard_manager.clone();
+    tokio::spawn(async move {
+        signal::ctrl_c().await.expect("Failed to listen for ctrl_c");
+        shard_manager.lock().await.shutdown_all().await;
+        info!("Received SIGINT, shutting down.");
+    });
 
     // If there is an error starting up the client
     if let Err(e) = client.start_autosharded().await {
