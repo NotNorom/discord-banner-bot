@@ -54,7 +54,7 @@ pub enum Error {
     SetBanner(#[from] SetBannerError),
 
     #[error("Timeout during: {action}")]
-    Timeout{ action: String },
+    Timeout { action: String },
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -311,6 +311,9 @@ pub async fn handle_schedule_error(
                     warn!("guild_id={guild_id} with channel={} has selected an image with unknown size. url={url}", error.schedule().channel_id());
                 }
             }
+        }
+        Error::Timeout { action } => {
+            tracing::error!("Timeout in guild {guild_id} / {guild_name} with action = '{action}'.");
         }
         err => {
             tracing::error!("unhandled bot error: {err:?}");

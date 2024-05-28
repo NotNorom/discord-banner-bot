@@ -8,7 +8,7 @@ use poise::serenity_prelude;
 pub const USER_AGENT: &str = concat!(env!("CARGO_PKG_REPOSITORY"), " - ", env!("CARGO_PKG_VERSION"));
 
 /// Minimum amount of minutes between banner changes
-/// 
+///
 /// Feature "dev" is active, reducing the minimum interval.
 #[cfg(feature = "dev")]
 pub const MINIMUM_INTERVAL: u64 = 1;
