@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use clap::Parser;
 use discord_banner_bot::{
     cli::BotCli,
@@ -53,10 +55,40 @@ async fn main() -> Result<(), Error> {
     .framework(framework)
     .await?;
 
+    let shard_manager = client.shard_manager.clone();
+    let state: Arc<State> = client.data();
+
+    let shut_down_task = tokio::spawn(async move {
+        let _ = tokio::signal::ctrl_c().await;
+        info!("Received ctrl-c, shutting down");
+
+        // close connection to discord
+        shard_manager.shutdown_all().await;
+
+        // stop banner queue
+        if let Err(err) = state.repeater_handle().stop().await {
+            error!("Repeater did not shut down properly: {err:#}");
+        }
+        info!("Repeater shut down properly");
+
+        // disconnect from database
+        if let Err(err) = state.database().disconnect().await {
+            error!("Database did not shut down properly: {err:#}");
+        };
+        info!("Database shut down properly");
+    });
+
     // If there is an error starting up the client
     if let Err(e) = client.start_autosharded().await {
         error!("Startup Error: {:?}", e);
     }
+
+    // wait for shut down task to complete
+    if let Err(err) = shut_down_task.await {
+        error!("Could not shut down properly: {err:#}");
+    }
+
+    info!("Shut down complete. Goodbye.");
 
     Ok(())
 }

@@ -106,6 +106,11 @@ impl State {
         let db_entry = self.database.get::<GuildSchedule>(guild_id.get()).await?;
         Ok(db_entry.into())
     }
+
+    /// Get a clone of the repeater handle
+    pub fn repeater_handle(&self) -> RepeaterHandle<Schedule> {
+        self.repeater_handle.get().unwrap().clone()
+    }
 }
 
 pub async fn event_handler(
