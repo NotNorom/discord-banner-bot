@@ -11,6 +11,7 @@ use poise::{
     serenity_prelude::{self, GatewayIntents},
     FrameworkOptions, PrefixFrameworkOptions,
 };
+use tokio::signal;
 use tracing::{error, info};
 
 #[tokio::main]
@@ -52,6 +53,14 @@ async fn main() -> Result<(), Error> {
     .data(State::new().await?.into())
     .framework(framework)
     .await?;
+
+    // Spawn a task to handle SIGINT
+    let shard_manager = client.shard_manager.clone();
+    tokio::spawn(async move {
+        signal::ctrl_c().await.expect("Failed to listen for ctrl_c");
+        shard_manager.lock().await.shutdown_all().await;
+        info!("Received SIGINT, shutting down.");
+    });
 
     // If there is an error starting up the client
     if let Err(e) = client.start_autosharded().await {
