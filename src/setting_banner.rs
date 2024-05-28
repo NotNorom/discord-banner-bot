@@ -109,8 +109,10 @@ impl BannerFromUrl for GuildId {
             .append_pair("height", "540")
             .finish();
 
+        debug!("requesting image");
         let response = reqw_client.get(url.as_ref()).send().await?;
 
+        debug!("checking image size");
         // check content length header
         let estimated_content_length = match response
             .content_length()
@@ -127,6 +129,7 @@ impl BannerFromUrl for GuildId {
         // the content_length header would be spoofed.
         // To give me some headroom
 
+        debug!("fetching image");
         let (image_bytes, _): (Vec<u8>, Url) = response
             .bytes_stream()
             .map_err(SetBannerError::Transport)
