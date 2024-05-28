@@ -76,8 +76,7 @@ impl Database {
     }
 
     /// Shut down database
-    pub async fn shutdown(&self) -> Result<(), RedisError> {
-        self.client.shutdown(None).await?;
+    pub async fn disconnect(&self) -> Result<(), RedisError> {
         self.connection_handle.abort();
         Ok(())
     }
