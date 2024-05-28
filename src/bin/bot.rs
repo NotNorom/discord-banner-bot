@@ -1,6 +1,11 @@
 use clap::Parser;
 use discord_banner_bot::{
-    cli::BotCli, commands::commands, error::{self, Error}, startup::{event_handler, State}, utils::start_logging, Settings
+    cli::BotCli,
+    commands::commands,
+    error::{self, Error},
+    startup::{event_handler, State},
+    utils::start_logging,
+    Settings,
 };
 use poise::{
     serenity_prelude::{self, GatewayIntents},
@@ -13,7 +18,7 @@ async fn main() -> Result<(), Error> {
     let cli = BotCli::parse();
     Settings::init_from_path(cli.settings_file)?;
     let settings = Settings::get();
-    
+
     println!("Using log level: {}", settings.bot.log_level);
     start_logging(&settings.bot.log_level);
 
