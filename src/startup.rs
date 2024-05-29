@@ -90,7 +90,6 @@ impl State {
         Ok(self.database.delete::<GuildSchedule>(guild_id.get()).await?)
     }
 
-    #[allow(dead_code)]
     /// Get a reference to the user data's reqwest client.
     pub fn reqw_client(&self) -> &Client {
         &self.reqw_client
