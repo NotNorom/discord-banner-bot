@@ -108,6 +108,9 @@ impl State {
     }
 
     /// Get a clone of the repeater handle
+    /// 
+    /// # Panics
+    /// Will panic if called before initialization is complete
     pub fn repeater_handle(&self) -> RepeaterHandle<Schedule> {
         self.repeater_handle.get().unwrap().clone()
     }

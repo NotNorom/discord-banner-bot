@@ -72,10 +72,8 @@ async fn main() -> Result<(), Error> {
         info!("Repeater shut down properly");
 
         // disconnect from database
-        if let Err(err) = state.database().disconnect().await {
-            error!("Database did not shut down properly: {err:#}");
-        };
-        info!("Database shut down properly");
+        state.database().disconnect();
+        info!("Database disconnected properly");
     });
 
     // If there is an error starting up the client
