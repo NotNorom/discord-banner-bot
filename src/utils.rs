@@ -45,6 +45,7 @@ pub fn next_run(start_at: u64, now: u64, interval: u64) -> u64 {
 pub fn start_logging(log_level: &str) {
     // install global collector configured based on RUST_LOG env var.
     tracing_subscriber::fmt::Subscriber::builder()
+        .compact()
         .with_env_filter(log_level)
         .try_init()
         .expect("Set up logger");

@@ -140,7 +140,7 @@ impl State {
     }
 
     /// Get a clone of the repeater handle
-    /// 
+    ///
     /// # Panics
     /// Will panic if called before initialization is complete
     pub fn repeater_handle(&self) -> RepeaterHandle<Schedule> {
@@ -185,7 +185,7 @@ pub async fn event_handler(
             handle_event_ready(framework, data_about_bot).await
         }
         FullEvent::GuildDelete { incomplete, .. } => {
-            info!("GuildDelete: {:?}", incomplete);
+            debug!("GuildDelete: {incomplete:?}");
 
             let ctx = framework.serenity_context;
             let data: Arc<State> = ctx.data();
@@ -210,7 +210,7 @@ pub async fn event_handler(
                 return Ok(());
             }
 
-            info_span!("Loading schedules from database");
+            info!("Loading schedules from database");
             let result = data.load_schedules_from_db().await?;
             info!("{result}");
             Ok(())
