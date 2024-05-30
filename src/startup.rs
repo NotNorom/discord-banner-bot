@@ -1,7 +1,9 @@
 use async_repeater::{Repeater, RepeaterHandle};
+use fred::error::RedisError;
 use poise::serenity_prelude::{FullEvent, GuildId, Ready};
 use reqwest::Client;
 use std::{
+    fmt::Display,
     sync::{Arc, OnceLock},
     time::Duration,
 };
@@ -55,6 +57,13 @@ impl State {
         })
     }
 
+    /// Is the bot initialized?
+    ///
+    /// Returns true if it is
+    pub fn is_initialized(&self) -> bool {
+        self.repeater_handle.get().is_some()
+    }
+
     /// Enqueue a schedule for the guild at interval
     ///
     /// # Panics
@@ -90,6 +99,34 @@ impl State {
         Ok(self.database.delete::<GuildSchedule>(guild_id.get()).await?)
     }
 
+    /// Load all schedules from the database into the repeater
+    ///
+    /// # Panics
+    /// Will panic if called before initialization is complete
+    pub async fn load_schedules_from_db(&self) -> Result<LoadFromDbResult, Error> {
+        // clear everything
+        let _ = self.repeater_handle.get().unwrap().clear().await;
+
+        let known_guild_ids: Vec<u64> = self.database().active_schedules().await?;
+        info!("There are {} active schedules stored", known_guild_ids.len());
+
+        let mut result = LoadFromDbResult::default();
+
+        for id in known_guild_ids {
+            let entry = match self.database().get::<GuildSchedule>(id).await {
+                Ok(entry) => entry,
+                Err(err) => {
+                    result.failed.push((GuildId::new(id), err));
+                    continue;
+                }
+            };
+            result.successful.push(entry);
+            let schedule = entry.into();
+            self.enque(schedule).await?;
+        }
+        Ok(result)
+    }
+
     /// Get a reference to the user data's reqwest client.
     pub fn reqw_client(&self) -> &Client {
         &self.reqw_client
@@ -115,15 +152,38 @@ impl State {
     }
 }
 
+#[derive(Debug, Default)]
+pub struct LoadFromDbResult {
+    successful: Vec<GuildSchedule>,
+    failed: Vec<(GuildId, RedisError)>,
+}
+
+impl Display for LoadFromDbResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Successful:")?;
+        for guild_schedule in &self.successful {
+            writeln!(f, "- {guild_schedule:?}")?;
+        }
+
+        writeln!(f, "Failed:")?;
+        for (guild_id, err) in &self.failed {
+            writeln!(f, "{guild_id}, {err:#?}")?;
+        }
+
+        Ok(())
+    }
+}
+
 pub async fn event_handler(
     framework: poise::FrameworkContext<'_, Data, Error>,
     event: &FullEvent,
 ) -> Result<(), Error> {
     match event {
         FullEvent::Ready { data_about_bot } => {
-            let data = framework.user_data();
-            if data.repeater_handle.get().is_some() {
-                info!("Already initialized, skipping setup.");
+            if framework.user_data().is_initialized() {
+                debug!("Ready event fired but already initialized. Skipping setup, but reloading schedules");
+                let result = framework.user_data().load_schedules_from_db().await?;
+                info!("{result}");
                 return Ok(());
             }
             handle_event_ready(framework, data_about_bot).await
@@ -140,7 +200,31 @@ pub async fn event_handler(
             }
 
             // otherwise the bot might have been kicked
-            data.deque(incomplete.id).await?;
+            if !framework.user_data().is_initialized() {
+                error!("GuildDelete event fired before bot was initialized");
+            }
+
+            data.deque(incomplete.id).await
+        }
+        FullEvent::Resume { event } => {
+            debug!("Resume: {event:?}");
+            let data = framework.user_data();
+            if !data.is_initialized() {
+                error!("Resume event fired before bot was initialized");
+                return Ok(());
+            }
+
+            info_span!("Loading schedules from database");
+            let result = data.load_schedules_from_db().await?;
+            info!("{result}");
+            Ok(())
+        }
+        FullEvent::ShardStageUpdate { event } => {
+            debug!("ShardStageUpdate: {event:?}");
+            Ok(())
+        }
+        FullEvent::ShardsReady { total_shards } => {
+            debug!("ShardsReady: {total_shards:?}");
             Ok(())
         }
         _ => Ok(()),
@@ -195,33 +279,7 @@ async fn handle_event_ready(
         .set(repeater.run_with_async_callback(callback))
         .expect("run only once");
 
-    // schedule already existing guilds
-    let known_guild_ids: Vec<u64> = data.database().active_schedules().await?;
-    info!("Amount of schedules in db: {}", known_guild_ids.len());
-
-    for id in known_guild_ids {
-        let entry = match data.database().get::<GuildSchedule>(id).await {
-            Ok(entry) => entry,
-            Err(err) => {
-                let msg =
-                    format!(" - guild_id={id}, failed to fetch schedule from db: {err:#?} Skipping entry");
-                error!(msg);
-                dm_users(
-                    &framework.serenity_context,
-                    framework.options().owners.clone(),
-                    &msg,
-                )
-                .await?;
-                continue;
-            }
-        };
-
-        let schedule = entry.into();
-
-        info!(" - {schedule:?}");
-
-        data.enque(schedule).await?;
-    }
+    data.load_schedules_from_db().await?;
 
     // Notify that we're ready
     let bot_ready = "Bot ready!";

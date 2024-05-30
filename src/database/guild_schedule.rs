@@ -13,7 +13,7 @@ use crate::{schedule::Schedule, utils::current_unix_timestamp};
 use super::{get_from_redis_map, Database, Entry};
 
 /// How a schedule is stored in the database
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct GuildSchedule {
     /// The Guilds ID
     guild_id: u64,
