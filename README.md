@@ -20,6 +20,7 @@ When entering the commands in discord, don't actually type any brackets.
 
 ### /start
 `/start [CHANNEL] <INTERVAL> <START_AT> <MESSAGE_LIMIT>`
+
 Start changing banners every INTERVAL minutes.
 The banner will be picked randomly from messages in the CHANNEL.
 Note: The CHANNEL does not have to be inside the same server, it's just that the bot needs access to the channel.
@@ -29,20 +30,21 @@ Interval range:
 - maximum: 2880 (48h)
 
 `START_AT` is a RFC 3339 formatted date and time string with a timezone.
-An example: `2016-05-28 22:25:00+02:00` would translate to: May 28th, 2016 at 10pm and 25 minutes in UTC+2 which is daylight savings time in Europe/Berlin.
+An example:  
+`2016-05-28 22:25:00+02:00` would translate to: May 28th, 2016 at 10pm and 25 minutes in UTC+2 which is daylight savings time in Europe/Berlin.
 Note that the timezone part `+02:00` is _required_.
 
-`MESSAGE_LIMIT` ranges from 0 to 200 with a default of 100.
+`MESSAGE_LIMIT` ranges from 0 to 200 with a default of 100.  
 It is the maximum number of messages the bot will look back in a channel to look for images.
 It is not the limit of images.
 A message can contain multiple images!
-A limit
 
 _Command can only be run by users with `Manage Server` permission._
 
 
 ### /stop
 `/stop`
+
 Stop automatic banner changing.
 
 _Command can only be run by users with `Manage Server` permission.*_
@@ -50,6 +52,7 @@ _Command can only be run by users with `Manage Server` permission.*_
 
 ### /channel
 `/channel`
+
 Shows the channel link you are using. In case you forgot :D
 
 _Command can only be run by users with `Manage Server` permission._
@@ -57,6 +60,7 @@ _Command can only be run by users with `Manage Server` permission._
 
 ### /current
 `/current`
+
 Give you a link to the currently displayed banner.
 
 _Command can only be run by anyone._
@@ -65,6 +69,7 @@ _Command can only be run by anyone._
 
 ### /servers
 `/servers`
+
 Displays in how many servers this bot is currently in. It really is just a vanity command.
 If run by the bot owners will display private servers as well.
 
@@ -73,15 +78,27 @@ _Command can only be run by anyone._
 
 ### /help
 `/help <COMMAND>`
-Display a help message. If COMMAND is provided, display help about that command.
+
+Display a help message. If `COMMAND` is provided, display help about that command.
 
 _Command can only be run by anyone._
 
 
 ### /start_for_guild
 `/start_for_guild [GUILD_ID] [CHANNEL_ID] <INTERVAL> <START_AT> <MESSAGE_LIMIT>`
+
 Same as `/start` but a server can be specified.
 This allows to start the bot for servers without the user being in the server.
+This is just for bot owners and intended for debugging purposes.
+
+_Command can only be run by bot owners._
+
+
+### /stop_for_guild
+`/stop_for_guild [GUILD_ID] `
+
+Same as `/stop` but a server can be specified.
+This allows to stop the bot for servers without the user being in the server.
 This is just for bot owners and intended for debugging purposes.
 
 _Command can only be run by bot owners._
