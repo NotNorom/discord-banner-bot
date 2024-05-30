@@ -17,8 +17,11 @@ pub enum SettingsError {
 /// Wrapper for all settings
 #[derive(Debug, Deserialize)]
 pub struct Settings {
+    /// Bot settings
     pub bot: Bot,
+    /// Scheduler settings
     pub scheduler: Scheduler,
+    /// Database settings
     pub database: Database,
 }
 
@@ -55,23 +58,36 @@ impl Settings {
 /// Bot settings
 #[derive(Debug, Deserialize)]
 pub struct Bot {
+    /// Log level
     pub log_level: String,
+    /// Prefix
     pub prefix: String,
+    /// Token
     pub token: String,
 }
 
 /// Scheduler settings
 #[derive(Debug, Deserialize)]
 pub struct Scheduler {
+    /// How many schedules can run at the same time
     pub capacity: usize,
+    /// Minimum amount of minutes between banner changes
     pub minimum_interval: u64,
+    /// Default amount of minutes between banner changes
     pub default_interval: u64,
+    /// Maximum amount of minutes between banner changes
     pub maximum_interval: u64,
+    /// Default amount of messages to look back for
+    pub default_message_limit: usize,
+    /// Maximum amount of messages to look back for
+    pub maximum_message_limit: usize,
 }
 
 /// Database settings
 #[derive(Debug, Deserialize)]
 pub struct Database {
+    /// Host
     pub host: String,
+    /// Prefix
     pub prefix: String,
 }

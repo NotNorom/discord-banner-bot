@@ -15,13 +15,13 @@ use thiserror::Error;
 use tracing::{info, warn};
 
 use crate::{
-    constants::{MAXIMUM_INTERVAL, MAXIMUM_MESSAGE_LIMIT, MINIMUM_INTERVAL},
     database::{guild_schedule::GuildSchedule, Database},
     schedule::Schedule,
     schedule_runner::{RunnerError, ScheduleAction},
     setting_banner::SetBannerError,
     settings::SettingsError,
     utils::{dm_user, dm_users},
+    Settings,
 };
 
 #[derive(Debug, Error)]
@@ -68,16 +68,16 @@ pub enum Command {
     #[error("Server doesn't have the required boost level")]
     GuildHasNoBannerFeature,
 
-    #[error("Interval must be at least {} minutes", MINIMUM_INTERVAL)]
+    #[error("Interval must be at least {} minutes", Settings::get().scheduler.minimum_interval)]
     BelowMinTimeout,
 
-    #[error("Interval must be at most {} minutes", MAXIMUM_INTERVAL)]
+    #[error("Interval must be at most {} minutes", Settings::get().scheduler.maximum_interval)]
     AboveMaxTimeout,
 
     #[error("Message limit must be greater than 0")]
     MessageLimitIszero,
 
-    #[error("Message limit must be at most {}", MAXIMUM_MESSAGE_LIMIT)]
+    #[error("Message limit must be at most {}", Settings::get().scheduler.maximum_message_limit)]
     AboveMaxMessageLimit,
 
     #[error("Start time cannot be in the past. Now={now}, given={given}")]

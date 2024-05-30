@@ -4,10 +4,18 @@ token = "insert_discord_token_here"
 log_level = "discord_banner_bot=debug,reqwest=info,poise=info,serenity=info,warn"
 
 [scheduler]
+# How many schedules can run at the same time
 capacity = 1024
+# Minimum amount of minutes between banner changes
 minimum_interval = 15
+# Default amount of minutes between banner changes
 default_interval = 30
-maximum_interval = 2880
+# Maximum amount of minutes between banner changes
+maximum_interval = 2880 # 60min * 48 = 2880
+# Default amount of messages to look back for
+default_message_limit = 100
+# Maximum amount of messages to look back for
+maximum_message_limit = 200
 
 [database]
 host = "redis://127.0.0.1"

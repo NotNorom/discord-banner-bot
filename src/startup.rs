@@ -22,7 +22,6 @@ use crate::{
 };
 
 #[derive(Clone)]
-#[allow(dead_code)]
 /// The User data struct used in poise
 pub struct State {
     /// Used to communicate with the scheduler without needing a &mut self
@@ -31,8 +30,6 @@ pub struct State {
     reqw_client: Client,
     /// database pool
     database: Database,
-    /// settings
-    settings: &'static Settings,
 }
 
 impl State {
@@ -53,7 +50,6 @@ impl State {
             repeater_handle: OnceLock::default(),
             reqw_client,
             database,
-            settings,
         })
     }
 

@@ -7,14 +7,8 @@ use poise::{
 };
 
 use crate::{
-    constants::{
-        DEFAULT_INTERVAL, DEFAULT_MESSAGE_LIMIT, MAXIMUM_INTERVAL, MAXIMUM_MESSAGE_LIMIT, MINIMUM_INTERVAL,
-    },
-    error::Command as CommandErr,
-    finding_media::last_reachable_message,
-    schedule::ScheduleBuilder,
-    utils::current_unix_timestamp,
-    Context, Error,
+    error::Command as CommandErr, finding_media::last_reachable_message, schedule::ScheduleBuilder,
+    utils::current_unix_timestamp, Context, Error, Settings,
 };
 
 /// Picks a random image from the channel every interval minutes and sets it as the banner.
@@ -38,7 +32,7 @@ pub async fn start(
     message_limit: Option<usize>,
 ) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
-    let options = StartBannerOptions::new(guild_id, channel_id)
+    let options = StartBannerOptions::new(Settings::get(), guild_id, channel_id)
         .interval(interval)?
         .start_at(start_at)?
         .message_limit(message_limit)?;
@@ -61,7 +55,7 @@ pub async fn start_for_guild(
     #[description = "How many messages to look back for images. Default is 100, maximum is 200"]
     message_limit: Option<usize>,
 ) -> Result<(), Error> {
-    let options = StartBannerOptions::new(guild_id, channel_id)
+    let options = StartBannerOptions::new(Settings::get(), guild_id, channel_id)
         .interval(interval)?
         .start_at(start_at)?
         .message_limit(message_limit)?;
@@ -168,26 +162,28 @@ struct StartBannerOptions {
     interval: u64,
     start_at: Option<DateTime<Utc>>,
     message_limit: usize,
+    settings: &'static Settings,
 }
 
 impl StartBannerOptions {
-    pub fn new(guild_id: GuildId, channel_id: ChannelId) -> Self {
+    pub fn new(settings: &'static Settings, guild_id: GuildId, channel_id: ChannelId) -> Self {
         Self {
             guild_id,
             channel_id,
             interval: 15,
             start_at: None,
             message_limit: 200,
+            settings,
         }
     }
 
     pub fn interval(mut self, interval: Option<u64>) -> Result<Self, Error> {
-        let interval = interval.unwrap_or(DEFAULT_INTERVAL);
-        if interval < MINIMUM_INTERVAL {
+        let interval = interval.unwrap_or(self.settings.scheduler.default_interval);
+        if interval < self.settings.scheduler.minimum_interval {
             return Err(CommandErr::BelowMinTimeout.into());
         }
 
-        if interval > MAXIMUM_INTERVAL {
+        if interval > self.settings.scheduler.maximum_interval {
             return Err(CommandErr::AboveMaxTimeout.into());
         }
 
@@ -212,8 +208,8 @@ impl StartBannerOptions {
     }
 
     pub fn message_limit(mut self, message_limit: Option<usize>) -> Result<Self, Error> {
-        let message_limit = message_limit.unwrap_or(DEFAULT_MESSAGE_LIMIT);
-        if message_limit > MAXIMUM_MESSAGE_LIMIT {
+        let message_limit = message_limit.unwrap_or(self.settings.scheduler.default_message_limit);
+        if message_limit > self.settings.scheduler.maximum_message_limit {
             return Err(CommandErr::AboveMaxMessageLimit.into());
         }
 
@@ -229,6 +225,7 @@ async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(
         interval,
         start_at,
         message_limit,
+        ..
     } = options;
 
     // disable BANNER check when dev feature is enabled
