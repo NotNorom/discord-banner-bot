@@ -6,7 +6,7 @@ use poise::{
     futures_util::{stream::futures_unordered, StreamExt},
     serenity_prelude::{CacheHttp, CreateMessage, Message, UserId, UserPublicFlags},
 };
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 use crate::{constants::DISCORD_MESSAGE_CONTENT_LIMIT, error::SendDm, Error};
 
@@ -22,17 +22,17 @@ pub fn current_unix_timestamp() -> u64 {
 }
 
 /// Given the parameters returns the next run in seconds from now
+///
+/// - `start_at`: unix timestamp in seconds
+/// - `now`: unix timestamp in seconds
+/// - `interval`: in seconds
 pub fn next_run(start_at: u64, now: u64, interval: u64) -> u64 {
     if start_at >= now {
         // seconds between now and stat_at
-        let delay = start_at - now;
-        debug!("start_at in the future. first run in {delay}s");
-        delay
+        start_at - now
     } else {
         // seconds between now and next run
-        let delay = interval - (now - start_at) % interval;
-        debug!("start_at in the past. next run in {delay}s");
-        delay
+        interval - (now - start_at) % interval
     }
 }
 
