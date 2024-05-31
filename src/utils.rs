@@ -95,7 +95,19 @@ pub async fn dm_user(cache_http: &impl CacheHttp, user: UserId, content: &str) -
     }
 
     // truncate content
-    let content = if content.len() > DISCORD_MESSAGE_CONTENT_LIMIT {
+    let content = truncate_to_discord_limit(content);
+
+    let msg = user
+        .dm(cache_http.http(), CreateMessage::new().content(content))
+        .await?;
+    Ok(msg)
+}
+
+/// Truncates content to fit into discords message limit
+///
+/// The return value points to a subtring of `content`.
+pub fn truncate_to_discord_limit(content: &str) -> &str {
+    if content.len() > DISCORD_MESSAGE_CONTENT_LIMIT {
         let mut truncate_at = DISCORD_MESSAGE_CONTENT_LIMIT;
         while !content.is_char_boundary(truncate_at) {
             truncate_at -= 1;
@@ -103,10 +115,5 @@ pub async fn dm_user(cache_http: &impl CacheHttp, user: UserId, content: &str) -
         &content[0..truncate_at]
     } else {
         content
-    };
-
-    let msg = user
-        .dm(cache_http.http(), CreateMessage::new().content(content))
-        .await?;
-    Ok(msg)
+    }
 }
