@@ -6,7 +6,7 @@ use poise::{
     futures_util::{stream::futures_unordered, StreamExt},
     serenity_prelude::{CacheHttp, CreateMessage, Message, UserId, UserPublicFlags},
 };
-use tracing::{info, warn};
+use tracing::{debug, warn};
 
 use crate::{constants::DISCORD_MESSAGE_CONTENT_LIMIT, error::SendDm, Error};
 
@@ -70,7 +70,7 @@ pub async fn dm_users(
     }
 
     write!(log_msg, "). Content: {}", &content)?;
-    info!(log_msg);
+    debug!(log_msg);
 
     let finished_tasks: Vec<_> = tasks.collect().await;
 
