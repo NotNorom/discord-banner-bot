@@ -126,7 +126,12 @@ pub async fn current_schedule(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 /// Link to the banner that is currently displayed
-#[poise::command(prefix_command, slash_command, guild_only)]
+#[poise::command(
+    prefix_command,
+    slash_command,
+    required_bot_permissions = "SEND_MESSAGES | SEND_MESSAGES_IN_THREADS",
+    guild_only
+)]
 pub async fn current_banner(ctx: Context<'_>) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
 
