@@ -1,7 +1,6 @@
 use std::{num::NonZeroUsize, sync::Arc};
 
 use poise::serenity_prelude::GuildId;
-
 use tokio_stream::StreamExt;
 use tracing::{debug, error};
 use url::Url;

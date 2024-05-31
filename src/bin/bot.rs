@@ -39,7 +39,6 @@ async fn main() -> Result<(), Error> {
             },
             prefix_options: PrefixFrameworkOptions {
                 prefix: Some(settings.bot.prefix.as_str().into()),
-
                 ..Default::default()
             },
             event_handler: |framework, event| Box::pin(event_handler(framework, event)),

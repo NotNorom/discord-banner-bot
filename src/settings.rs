@@ -1,10 +1,11 @@
-use config::{Config, ConfigError};
-use serde::Deserialize;
 use std::{
     path::{Path, PathBuf},
     str::FromStr,
     sync::OnceLock,
 };
+
+use config::{Config, ConfigError};
+use serde::Deserialize;
 
 static SETTINGS: OnceLock<Settings> = OnceLock::new();
 

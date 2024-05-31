@@ -1,12 +1,13 @@
-use async_repeater::{Repeater, RepeaterHandle};
-use fred::error::RedisError;
-use poise::serenity_prelude::{FullEvent, GuildId, Ready};
-use reqwest::Client;
 use std::{
     fmt::Display,
     sync::{Arc, OnceLock},
     time::Duration,
 };
+
+use async_repeater::{Repeater, RepeaterHandle};
+use fred::error::RedisError;
+use poise::serenity_prelude::{FullEvent, GuildId, Ready};
+use reqwest::Client;
 use tokio::time::timeout;
 use tracing::{debug, error, info};
 

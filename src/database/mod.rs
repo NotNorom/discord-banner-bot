@@ -9,7 +9,6 @@ use fred::{
     prelude::*,
     types::{ConnectHandle, RedisKey, RedisMap},
 };
-
 use poise::async_trait;
 use tracing::info;
 

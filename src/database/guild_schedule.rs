@@ -8,9 +8,8 @@ use fred::{
 use poise::async_trait;
 use tracing::debug;
 
-use crate::{schedule::Schedule, utils::current_unix_timestamp};
-
 use super::{get_from_redis_map, Database, Entry};
+use crate::{schedule::Schedule, utils::current_unix_timestamp};
 
 /// How a schedule is stored in the database
 #[derive(Debug, Clone, Copy)]
