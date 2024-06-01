@@ -13,9 +13,10 @@ use poise::{
     serenity_prelude::{self, GatewayIntents},
     FrameworkOptions, PrefixFrameworkOptions,
 };
-use tracing::{error, info};
+use tracing::{error, info, instrument};
 
 #[tokio::main]
+#[instrument]
 async fn main() -> Result<(), Error> {
     let cli = BotCli::parse();
     Settings::init_from_path(&cli.settings_file)?;

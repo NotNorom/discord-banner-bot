@@ -2,7 +2,7 @@ use std::{num::NonZeroUsize, sync::Arc};
 
 use poise::serenity_prelude::GuildId;
 use tokio_stream::StreamExt;
-use tracing::{debug, error};
+use tracing::{debug, error, instrument};
 use url::Url;
 
 use crate::{
@@ -35,6 +35,7 @@ impl ScheduleRunner {
         }
     }
 
+    #[instrument(skip_all)]
     pub async fn run(self) -> Result<Url, RunnerError> {
         let schedule = self.schedule.clone();
         let mut guild_id = schedule.guild_id();

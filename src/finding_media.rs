@@ -4,6 +4,7 @@ use poise::serenity_prelude::{
     futures::stream as futures_stream, small_fixed_array::FixedString, CacheHttp, ChannelId, Error, Message,
 };
 use tokio_stream::{Stream, StreamExt};
+use tracing::instrument;
 
 use crate::schedule::Schedule;
 
@@ -40,6 +41,7 @@ impl Display for MediaWithMessage {
 }
 
 /// Creates a stream of media in a channel
+#[instrument(skip_all)]
 pub fn find_media_in_channel<'a>(
     http: &'a impl CacheHttp,
     channel_id: &ChannelId,
@@ -83,6 +85,7 @@ pub fn find_media_in_channel<'a>(
 }
 
 /// Return the last message the bot is gonna look at for that schedule
+#[instrument(skip_all)]
 pub async fn last_reachable_message<'a>(http: &'a impl CacheHttp, schedule: &Schedule) -> Option<Message> {
     let limit = schedule
         .message_limit()

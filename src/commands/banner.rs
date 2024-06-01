@@ -5,6 +5,7 @@ use poise::{
     serenity_prelude::{ChannelId, CreateEmbed, EmbedMessageBuilding, GuildId, MessageBuilder},
     CreateReply,
 };
+use tracing::instrument;
 
 use crate::{
     error::Command as CommandErr, finding_media::last_reachable_message, schedule::ScheduleBuilder,
@@ -20,6 +21,7 @@ use crate::{
     default_member_permissions = "MANAGE_GUILD",
     guild_only
 )]
+#[instrument(skip_all)]
 pub async fn start(
     ctx: Context<'_>,
     #[description = "Channel"]
@@ -41,6 +43,7 @@ pub async fn start(
 
 /// Picks a random image from the channel every n minutes and sets it as the banner for that server.
 #[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
+#[instrument(skip_all)]
 pub async fn start_for_guild(
     ctx: Context<'_>,
     #[description = "Guild ID"]
@@ -71,6 +74,7 @@ pub async fn start_for_guild(
     required_permissions = "MANAGE_GUILD",
     default_member_permissions = "MANAGE_GUILD"
 )]
+#[instrument(skip_all)]
 pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
     stop_banner(ctx, guild_id).await
@@ -78,6 +82,7 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
 
 /// Stops picking random images in that server
 #[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
+#[instrument(skip_all)]
 pub async fn stop_for_guild(
     ctx: Context<'_>,
     #[description = "Guild ID"]
@@ -96,6 +101,7 @@ pub async fn stop_for_guild(
     default_member_permissions = "MANAGE_GUILD",
     guild_only
 )]
+#[instrument(skip_all)]
 pub async fn current_schedule(ctx: Context<'_>) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
 
@@ -132,6 +138,7 @@ pub async fn current_schedule(ctx: Context<'_>) -> Result<(), Error> {
     required_bot_permissions = "SEND_MESSAGES | SEND_MESSAGES_IN_THREADS",
     guild_only
 )]
+#[instrument(skip_all)]
 pub async fn current_banner(ctx: Context<'_>) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
 
@@ -223,6 +230,7 @@ impl StartBannerOptions {
     }
 }
 
+#[instrument(skip_all)]
 async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(), Error> {
     let StartBannerOptions {
         guild_id,
@@ -273,6 +281,7 @@ async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(
     Ok(())
 }
 
+#[instrument(skip_all)]
 async fn stop_banner(ctx: Context<'_>, guild_id: GuildId) -> Result<(), Error> {
     // unschedule it!
     let user_data = ctx.data();

@@ -1,7 +1,10 @@
+use tracing::instrument;
+
 use crate::{Context, Error};
 
 /// Display a list of all available commands
 #[poise::command(slash_command, prefix_command)]
+#[instrument(skip_all)]
 pub async fn help(
     ctx: Context<'_>,
     #[description = "Specific command to show help about"] command: Option<String>,

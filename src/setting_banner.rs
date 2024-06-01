@@ -7,7 +7,7 @@ use bytes::Bytes;
 use poise::serenity_prelude::{self, futures::TryStreamExt, CreateAttachment, EditGuild, GuildId, Http};
 use rand::prelude::SliceRandom;
 use reqwest::Client;
-use tracing::{debug, info};
+use tracing::{debug, info, instrument};
 use url::Url;
 
 use crate::constants::MAXIMUM_IMAGE_SIZE;
@@ -57,6 +57,7 @@ pub(crate) trait BannerFromUrl {
 }
 
 impl BannerFromUrl for GuildId {
+    #[instrument(skip_all)]
     async fn set_banner_from_url(
         &mut self,
         http: impl AsRef<Http> + Sync + Send + 'static,
@@ -182,6 +183,7 @@ pub(crate) trait RandomBanner: BannerFromUrl {
     /// and try and set it as the guild banner
     ///
     /// Returns Ok(url) with the url being choosen
+    #[instrument(skip_all)]
     async fn set_random_banner<'url>(
         &mut self,
         http: impl AsRef<Http> + Sync + Send + 'static,

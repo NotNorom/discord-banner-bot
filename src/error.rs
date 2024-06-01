@@ -12,7 +12,7 @@ use poise::serenity_prelude::{
 };
 use reqwest::StatusCode;
 use thiserror::Error;
-use tracing::{info, warn};
+use tracing::{info, instrument, warn};
 
 use crate::{
     database::{guild_schedule::GuildSchedule, Database},
@@ -147,6 +147,7 @@ impl Display for SendDm {
 
 /// Handles framework related errors.
 /// Does __not__ handle scheduler related errors
+#[instrument(skip_all)]
 pub async fn handle_framework_error<U, E>(error: poise::FrameworkError<'_, U, E>) -> Result<(), Error>
 where
     U: Send + Sync + 'static,
@@ -172,7 +173,7 @@ where
 ///
 /// This is a needed as well as the normal error handling in [crate::error::on_error] because
 /// the scheduler is running in its own task
-#[tracing::instrument(skip(error, ctx, db, repeater_handle, owners))]
+#[instrument(skip_all)]
 pub async fn handle_schedule_error(
     error: &RunnerError,
     ctx: Arc<Context>,

@@ -2,11 +2,13 @@ pub mod banner;
 pub mod help;
 
 use poise::serenity_prelude::CacheHttp;
+use tracing::instrument;
 
 use crate::{Context, Error};
 
 /// Register application commands in this guild
 #[poise::command(prefix_command, hide_in_help, owners_only)]
+#[instrument(skip_all)]
 pub async fn register(ctx: Context<'_>) -> Result<(), Error> {
     poise::builtins::register_application_commands_buttons(ctx).await?;
     Ok(())
@@ -14,6 +16,7 @@ pub async fn register(ctx: Context<'_>) -> Result<(), Error> {
 
 /// Register application commands globally
 #[poise::command(prefix_command, hide_in_help, owners_only)]
+#[instrument(skip_all)]
 pub async fn register_globally(ctx: Context<'_>) -> Result<(), Error> {
     poise::builtins::register_application_commands(ctx, true).await?;
     Ok(())
@@ -21,6 +24,7 @@ pub async fn register_globally(ctx: Context<'_>) -> Result<(), Error> {
 
 /// Unregister application commands in this guild
 #[poise::command(prefix_command, hide_in_help, owners_only)]
+#[instrument(skip_all)]
 pub async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
     let Some(guild) = ctx.partial_guild().await else {
         ctx.say("Must be called in guild").await?;
@@ -45,12 +49,14 @@ pub async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
 
 /// List all servers tis bot is in. Only public servers are shown by name.
 #[poise::command(slash_command, prefix_command, hide_in_help, owners_only)]
+#[instrument(skip_all)]
 pub async fn servers(ctx: Context<'_>) -> Result<(), Error> {
     poise::builtins::servers(ctx).await.map_err(Into::into)
 }
 
 /// Reload schedules from database
 #[poise::command(prefix_command, hide_in_help, owners_only)]
+#[instrument(skip_all)]
 pub async fn reload(ctx: Context<'_>) -> Result<(), Error> {
     let data = ctx.data();
     if !data.is_initialized() {

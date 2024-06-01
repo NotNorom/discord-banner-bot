@@ -9,7 +9,7 @@ use fred::error::RedisError;
 use poise::serenity_prelude::{FullEvent, GuildId, Ready};
 use reqwest::Client;
 use tokio::time::timeout;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, instrument};
 
 use crate::{
     constants::USER_AGENT,
@@ -36,6 +36,7 @@ pub struct State {
 impl State {
     /// Creates a new state but does not fully initialize it yet.
     /// initialization happens when the first READY event is received
+    #[instrument(skip_all)]
     pub async fn new() -> Result<Self, Error> {
         info!("Setting up state");
         let settings = Settings::get();
@@ -65,6 +66,7 @@ impl State {
     ///
     /// # Panics
     /// Will panic if called before initialization is complete
+    #[instrument(skip_all)]
     pub async fn enque(&self, schedule: Schedule) -> Result<(), Error> {
         info!("Inserting {schedule:?}");
 
@@ -85,6 +87,7 @@ impl State {
     ///
     /// # Panics
     /// Will panic if called before initialization is complete
+    #[instrument(skip_all)]
     pub async fn deque(&self, guild_id: GuildId) -> Result<(), Error> {
         info!("Removing {guild_id:?}");
         self.repeater_handle
@@ -100,6 +103,7 @@ impl State {
     ///
     /// # Panics
     /// Will panic if called before initialization is complete
+    #[instrument(skip_all)]
     pub async fn load_schedules_from_db(&self) -> Result<LoadFromDbResult, Error> {
         // clear everything
         let _ = self.repeater_handle.get().unwrap().clear().await;
@@ -171,6 +175,7 @@ impl Display for LoadFromDbResult {
     }
 }
 
+#[instrument(skip_all)]
 pub async fn event_handler(
     framework: poise::FrameworkContext<'_, Data, Error>,
     event: &FullEvent,
@@ -228,6 +233,7 @@ pub async fn event_handler(
     }
 }
 
+#[instrument(skip_all)]
 async fn handle_event_ready(
     framework: poise::FrameworkContext<'_, Data, Error>,
     _: &Ready,
