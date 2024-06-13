@@ -1,2 +1,6 @@
 edition = "2021"
 max_width = 110
+
+# nighty
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"
