@@ -1,3 +1,4 @@
 /target
 .env
 settings.toml
+*.code-workspace
