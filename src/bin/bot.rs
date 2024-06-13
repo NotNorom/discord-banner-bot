@@ -13,6 +13,10 @@ use poise::{
     serenity_prelude::{self, GatewayIntents},
     FrameworkOptions, PrefixFrameworkOptions,
 };
+use tokio::{
+    select,
+    signal::unix::{signal, SignalKind},
+};
 use tracing::{error, info, instrument};
 
 #[tokio::main]
@@ -59,8 +63,25 @@ async fn main() -> Result<(), Error> {
     let state: Arc<State> = client.data();
 
     let shut_down_task = tokio::spawn(async move {
-        let _ = tokio::signal::ctrl_c().await;
-        info!("Received ctrl-c, shutting down");
+        let mut stream_interrupt = signal(SignalKind::interrupt()).unwrap();
+        let mut stream_terminate = signal(SignalKind::terminate()).unwrap();
+        let mut stream_quit = signal(SignalKind::quit()).unwrap();
+
+        let received_signal = {
+            select! {
+                _ = stream_interrupt.recv() => {
+                    SignalKind::interrupt()
+                },
+                _ = stream_terminate.recv() => {
+                    SignalKind::terminate()
+                },
+                _ = stream_quit.recv() => {
+                    SignalKind::quit()
+                },
+            }
+        };
+
+        info!("Received signal {received_signal:?}, shutting down");
 
         // close connection to discord
         shard_manager.shutdown_all().await;
