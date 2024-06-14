@@ -47,7 +47,7 @@ pub async fn unregister(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-/// List all servers tis bot is in. Only public servers are shown by name.
+/// List all servers this bot is in. Only public servers are shown by name.
 #[poise::command(slash_command, prefix_command, hide_in_help, owners_only)]
 #[instrument(skip_all)]
 pub async fn servers(ctx: Context<'_>) -> Result<(), Error> {
@@ -68,6 +68,13 @@ pub async fn reload(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
+/// Shut the bot down. Can only be used by bot owners
+#[poise::command(prefix_command, hide_in_help, owners_only)]
+#[instrument(skip_all)]
+pub async fn shutdown(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.data().shutdown()
+}
+
 /// Generates a vector of all the commands
 pub fn commands() -> Vec<poise::Command<crate::State, crate::Error>> {
     vec![
@@ -80,8 +87,9 @@ pub fn commands() -> Vec<poise::Command<crate::State, crate::Error>> {
         help::help(),
         register_globally(),
         register(),
-        servers(),
         unregister(),
+        servers(),
+        reload(),
         shutdown(),
     ]
 }
