@@ -82,5 +82,6 @@ pub fn commands() -> Vec<poise::Command<crate::State, crate::Error>> {
         register(),
         servers(),
         unregister(),
+        shutdown(),
     ]
 }

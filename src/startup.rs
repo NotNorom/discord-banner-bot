@@ -8,7 +8,7 @@ use async_repeater::{Repeater, RepeaterHandle};
 use fred::error::RedisError;
 use poise::serenity_prelude::{FullEvent, GuildId, Ready};
 use reqwest::Client;
-use tokio::time::timeout;
+use tokio::{sync::broadcast::Sender, time::timeout};
 use tracing::{debug, error, info, instrument};
 
 use crate::{
@@ -29,15 +29,17 @@ pub struct State {
     repeater_handle: OnceLock<RepeaterHandle<Schedule>>,
     /// Client for http request
     reqw_client: Client,
-    /// database pool
+    /// Database pool
     database: Database,
+    /// Sender for shutdown message
+    shutdown_messenger: Sender<()>,
 }
 
 impl State {
     /// Creates a new state but does not fully initialize it yet.
     /// initialization happens when the first READY event is received
     #[instrument(skip_all)]
-    pub async fn new() -> Result<Self, Error> {
+    pub async fn new(shutdown_messenger: Sender<()>) -> Result<Self, Error> {
         info!("Setting up state");
         let settings = Settings::get();
 
@@ -52,6 +54,7 @@ impl State {
             repeater_handle: OnceLock::default(),
             reqw_client,
             database,
+            shutdown_messenger,
         })
     }
 
@@ -126,6 +129,14 @@ impl State {
             self.enque(schedule).await?;
         }
         Ok(result)
+    }
+
+    /// Shut down the bot
+    pub fn shutdown(&self) -> Result<(), Error> {
+        self.shutdown_messenger
+            .send(())
+            .map(|_| ())
+            .map_err(|err| Error::Scheduler { msg: err.to_string() })
     }
 
     /// Get a reference to the user data's reqwest client.

@@ -1,10 +1,9 @@
-use std::sync::Arc;
-
 use clap::Parser;
 use discord_banner_bot::{
     cli::BotCli,
     commands::commands,
     error::{self, Error},
+    shutdown::shutdown,
     startup::{event_handler, State},
     utils::start_logging,
     Settings,
@@ -13,10 +12,7 @@ use poise::{
     serenity_prelude::{self, GatewayIntents},
     FrameworkOptions, PrefixFrameworkOptions,
 };
-use tokio::{
-    select,
-    signal::unix::{signal, SignalKind},
-};
+use tokio::sync::broadcast;
 use tracing::{error, info, instrument};
 
 #[tokio::main]
@@ -51,51 +47,21 @@ async fn main() -> Result<(), Error> {
         })
         .build();
 
+    let (shutdown_sender, shutdown_receiver) = broadcast::channel(1);
+
     let mut client = serenity_prelude::ClientBuilder::new(
         &settings.bot.token,
         GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
     )
-    .data(State::new().await?.into())
+    .data(State::new(shutdown_sender).await?.into())
     .framework(framework)
     .await?;
 
-    let shard_manager = client.shard_manager.clone();
-    let state: Arc<State> = client.data();
-
-    let shut_down_task = tokio::spawn(async move {
-        let mut stream_interrupt = signal(SignalKind::interrupt()).unwrap();
-        let mut stream_terminate = signal(SignalKind::terminate()).unwrap();
-        let mut stream_quit = signal(SignalKind::quit()).unwrap();
-
-        let received_signal = {
-            select! {
-                _ = stream_interrupt.recv() => {
-                    SignalKind::interrupt()
-                },
-                _ = stream_terminate.recv() => {
-                    SignalKind::terminate()
-                },
-                _ = stream_quit.recv() => {
-                    SignalKind::quit()
-                },
-            }
-        };
-
-        info!("Received signal {received_signal:?}, shutting down");
-
-        // close connection to discord
-        shard_manager.shutdown_all().await;
-
-        // stop banner queue
-        if let Err(err) = state.repeater_handle().stop().await {
-            error!("Repeater did not shut down properly: {err:#}");
-        }
-        info!("Repeater shut down properly");
-
-        // disconnect from database
-        state.database().disconnect();
-        info!("Database disconnected properly");
-    });
+    let shutdown_task = tokio::spawn(shutdown(
+        client.data(),
+        client.shard_manager.clone(),
+        shutdown_receiver,
+    ));
 
     // If there is an error starting up the client
     if let Err(e) = client.start_autosharded().await {
@@ -103,7 +69,7 @@ async fn main() -> Result<(), Error> {
     }
 
     // wait for shut down task to complete
-    if let Err(err) = shut_down_task.await {
+    if let Err(err) = shutdown_task.await {
         error!("Could not shut down properly: {err:#}");
     }
 

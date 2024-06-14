@@ -8,6 +8,7 @@ pub mod schedule;
 pub mod schedule_runner;
 pub mod setting_banner;
 pub mod settings;
+pub mod shutdown;
 pub mod startup;
 pub mod utils;
 
