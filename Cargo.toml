@@ -17,34 +17,34 @@ debug = true
 [dependencies]
 async-repeater = { git = "https://github.com/NotNorom/async-repeater.git" }
 # async-repeater = { path = "/home/norom/Documents/Code/async-repeater" }
-bytes = "1.6.0"
+bytes = "1.7.2"
 chrono = "0.4.38"
-clap = { version = "4.5.4", features = ["derive"] }
+clap = { version = "4.5.19", features = ["derive"] }
 config = { version = "0.14", default-features = false, features = ["toml"] }
-fred = { version = "9.0.3", default-features = false, features = [
+fred = { version = "9.2.1", default-features = false, features = [
     "i-std",
     "i-sets",
     "i-hashes",
 ] }
 poise = "0.6.1"
 rand = "0.8.5"
-reqwest = { version = "0.12.4", default-features = false, features = [
+reqwest = { version = "0.12.8", default-features = false, features = [
     "json",
     "native-tls-vendored",
 ] }
-serde = "1.0.203"
-thiserror = "1.0.61"
-tokio = { version = "1.37.0", features = [
+serde = "1.0.210"
+thiserror = "1.0.64"
+tokio = { version = "1.40.0", features = [
     "rt-multi-thread",
 ], default-features = false }
-tokio-stream = "0.1.15"
+tokio-stream = "0.1.16"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = [
     "tracing-log",
     "env-filter",
     "parking_lot",
 ] }
-url = "2.5.0"
+url = "2.5.2"
 
 [patch.crates-io]
 poise = { git = "https://github.com/serenity-rs/poise.git", branch = "serenity-next" }
