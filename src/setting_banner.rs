@@ -121,7 +121,9 @@ impl BannerFromUrl for GuildId {
         {
             Some(0) => return Err(SetBannerError::ImageIsEmpty(url.clone())),
             Some(MAXIMUM_IMAGE_SIZE..) => return Err(SetBannerError::ImageIsTooBig(url.clone())),
-            None => return Err(SetBannerError::ImageUnkownSize(url.clone())),
+            // instead of failing, return the maximum size in hopes of it working out.
+            // worst case, we've just allocated a few mb of memory that won't be used... oh well
+            None => MAXIMUM_IMAGE_SIZE, 
             Some(len) => len,
         };
 
