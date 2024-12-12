@@ -172,7 +172,7 @@ This bot is built using
 Amazing libraries, highly recommend \<3
 
 
-## Legal for my hosted bot  (draft, not applicable as of the 1st of May 2024)
+## Legal for my hosted bot ( Last Update: 12.12.2024 )
 
 By inviting the bot to your server, you agree to the privacy policy and terms of services as stated below.
 
@@ -231,7 +231,7 @@ You can also request deletion of this information via the contact information me
 These terms only apply to the discord application and bot user with this id: `586680217049759744` and when run by me.
 These terms do not apply to applications run by 3rd partys, even if the same code is run.
 
-I may change these terms any time I want.
+I may change these terms any time I want but I WILL notify you about it before I do.
 Breaking any of these terms might result in a ban in using the service.
 
 - When using this application, all of discords Terms of Services apply.
