@@ -147,12 +147,12 @@ async fn get_owners(
     Ok(owners)
 }
 
-async fn get_all_owners(http: &Http) -> Result<impl Iterator<Item = GuildId>, Error> {
+async fn get_all_owners(http: &Http) -> Result<impl Iterator<Item = GuildId> + use<>, Error> {
     Ok(http.get_guilds(None, None).await?.into_iter().map(|info| info.id))
 }
 
 async fn get_owners_with_active_schedule(
     database: &Database,
-) -> Result<impl Iterator<Item = GuildId>, Error> {
+) -> Result<impl Iterator<Item = GuildId> + use<>, Error> {
     Ok(database.active_schedules().await?.into_iter().map(GuildId::new))
 }
