@@ -1,4 +1,4 @@
-FROM docker.io/rust:1.78.0-buster as builder
+FROM docker.io/rust:1.87.0-buster as builder
 
 WORKDIR /app
 COPY . .
