@@ -145,6 +145,11 @@ Default settings.toml:
 https://github.com/NotNorom/discord-banner-bot/blob/master/settings.template.toml
 
 
+### Using Docker
+You can use docker and docker-compose to run this bot.
+A Dockerfile and a docker-compose file are available.
+
+
 ## Redis layout
 
 `PREFIX` is set in settings.toml and defaults to "dbb".
