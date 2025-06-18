@@ -9,7 +9,6 @@ use fred::{
     prelude::*,
     types::{ConnectHandle, RedisKey, RedisMap},
 };
-use poise::async_trait;
 use tracing::info;
 
 use crate::settings;
@@ -18,8 +17,7 @@ use crate::settings;
 ///
 /// Different struct have different ways of being inserted or fetched from the
 /// database. This trait allows each struct to specify how to do that.
-#[async_trait]
-pub trait Entry {
+pub(crate) trait Entry {
     /// Insert entry into database
     async fn insert(&self, db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError>;
     /// Get entry from database
@@ -124,7 +122,11 @@ impl Database {
     }
 
     /// Insert entry into database
-    pub async fn insert<T>(&self, entry: &T, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError>
+    pub(crate) async fn insert<T>(
+        &self,
+        entry: &T,
+        id: impl Into<RedisKey> + Send + Sync,
+    ) -> Result<(), RedisError>
     where
         T: Entry + Unpin + Send,
     {
@@ -132,7 +134,7 @@ impl Database {
     }
 
     /// Get entry from database
-    pub async fn get<T>(&self, id: impl Into<RedisKey> + Send + Sync) -> Result<T, RedisError>
+    pub(crate) async fn get<T>(&self, id: impl Into<RedisKey> + Send + Sync) -> Result<T, RedisError>
     where
         T: FromRedis + Entry + Unpin + Send + 'static,
     {
@@ -140,7 +142,7 @@ impl Database {
     }
 
     /// Delete entry from database
-    pub async fn delete<T>(&self, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError>
+    pub(crate) async fn delete<T>(&self, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError>
     where
         T: FromRedis + Entry + Unpin + Send + 'static,
     {

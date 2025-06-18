@@ -5,17 +5,9 @@ use crate::{Context, Error};
 /// Display a list of all available commands
 #[poise::command(slash_command, prefix_command)]
 #[instrument(skip_all)]
-pub async fn help(
-    ctx: Context<'_>,
-    #[description = "Specific command to show help about"] command: Option<String>,
-) -> Result<(), Error> {
-    let config = poise::builtins::HelpConfiguration {
-        extra_text_at_bottom: "\
-Type /help command for more info on a command.
+pub async fn help(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.reply("If you need help, join: https://discord.gg/MMJFtCtYPP and ping 'norom'")
+        .await?;
 
-For more support, join: https://discord.gg/MMJFtCtYPP",
-        ..Default::default()
-    };
-    poise::builtins::help(ctx, command.as_deref(), config).await?;
     Ok(())
 }

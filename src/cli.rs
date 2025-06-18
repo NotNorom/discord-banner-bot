@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand, ValueEnum};
-use poise::serenity_prelude::{ChannelId, GuildId};
+use poise::serenity_prelude::{GenericChannelId, GuildId};
 
 #[derive(Debug, Clone, Parser)]
 #[command(version, about)]
@@ -38,7 +38,7 @@ pub enum UtilCommand {
     },
     FindMedia {
         #[arg(short, long)]
-        channel_id: ChannelId,
+        channel_id: GenericChannelId,
         #[arg(short, long, default_value = "200")]
         limit: usize,
     },

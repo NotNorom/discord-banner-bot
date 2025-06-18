@@ -5,6 +5,7 @@ use std::{
 };
 
 use config::{Config, ConfigError};
+use poise::serenity_prelude::Token;
 use serde::Deserialize;
 
 static SETTINGS: OnceLock<Settings> = OnceLock::new();
@@ -64,7 +65,7 @@ pub struct Bot {
     /// Prefix
     pub prefix: String,
     /// Token
-    pub token: String,
+    pub token: Token,
 }
 
 /// Scheduler settings

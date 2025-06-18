@@ -24,7 +24,7 @@ async fn main() -> Result<(), Error> {
     println!("Using log level: {}", settings.bot.log_level);
 
     start_logging(&settings.bot.log_level);
-    let http = serenity_prelude::HttpBuilder::new(&settings.bot.token).build();
+    let http = serenity_prelude::HttpBuilder::new(settings.bot.token.clone()).build();
     http.set_application_id(http.get_current_application_info().await?.id);
     let database = Database::setup(&settings.database).await?;
 

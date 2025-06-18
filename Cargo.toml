@@ -16,6 +16,7 @@ debug = true
 
 [dependencies]
 async-repeater = { git = "https://github.com/NotNorom/async-repeater.git" }
+base64 = "0.22.1"
 # async-repeater = { path = "/home/norom/Documents/Code/async-repeater" }
 bytes = "1.7.2"
 chrono = "0.4.38"

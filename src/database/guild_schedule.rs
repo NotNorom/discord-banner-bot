@@ -5,7 +5,6 @@ use fred::{
     interfaces::{HashesInterface, KeysInterface, SetsInterface},
     types::{FromRedis, RedisKey, RedisMap, RedisValue},
 };
-use poise::async_trait;
 use tracing::debug;
 
 use super::{get_from_redis_map, Database, Entry};
@@ -156,13 +155,12 @@ impl FromRedis for GuildSchedule {
     }
 }
 
-#[async_trait]
 impl Entry for GuildSchedule {
     async fn insert(&self, db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError> {
         let id: RedisKey = id.into();
 
-        db.client.hset(Self::key(db, &id), self).await?;
-        db.client.sadd(db.key("active_schedules"), id).await?;
+        let _: () = db.client.hset(Self::key(db, &id), self).await?;
+        let _: () = db.client.sadd(db.key("active_schedules"), id).await?;
 
         Ok(())
     }
@@ -186,8 +184,8 @@ impl Entry for GuildSchedule {
     async fn delete(db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError> {
         let id: RedisKey = id.into();
         debug!("Deleting id: {id:?}");
-        db.client.del(Self::key(db, &id)).await?;
-        db.client.srem(db.key("active_schedules"), id.clone()).await?;
+        let _: () = db.client.del(Self::key(db, &id)).await?;
+        let _: () = db.client.srem(db.key("active_schedules"), id.clone()).await?;
         debug!("Deleted id: {id:?} successfully");
 
         Ok(())

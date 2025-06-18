@@ -2,7 +2,6 @@ use std::{
     collections::HashSet,
     fmt::{Debug, Display},
     num::NonZeroU16,
-    sync::Arc,
 };
 
 use async_repeater::RepeaterHandle;
@@ -153,18 +152,9 @@ where
     U: Send + Sync + 'static,
     E: std::fmt::Display + std::fmt::Debug,
 {
-    match &error {
-        poise::FrameworkError::EventHandler {
-            error: event_err,
-            event: poise::serenity_prelude::FullEvent::Ready { .. },
-            framework,
-            ..
-        } => {
-            tracing::error!("during startup: {event_err:?} - Shutting down!");
-            framework.shard_manager().shutdown_all().await;
-        }
-        _ => poise::builtins::on_error(error).await?,
-    }
+    tracing::error!("{}", &error);
+
+    poise::builtins::on_error(error).await?;
 
     Ok(())
 }
@@ -176,7 +166,7 @@ where
 #[instrument(skip_all)]
 pub async fn handle_schedule_error(
     error: &RunnerError,
-    ctx: Arc<Context>,
+    ctx: Context,
     repeater_handle: RepeaterHandle<Schedule>,
     db: Database,
     owners: HashSet<UserId>,
@@ -310,6 +300,9 @@ pub async fn handle_schedule_error(
                 }
                 SetBannerError::ImageUnkownSize(url) => {
                     warn!("guild_id={guild_id} with channel={} has selected an image with unknown size. url={url}", error.schedule().channel_id());
+                }
+                SetBannerError::Base64Encoding(url) => {
+                    warn!("guild_id={guild_id} with channel={} has selected an image wich could be encoded into base 64. url={url}", error.schedule().channel_id());
                 }
             }
         }

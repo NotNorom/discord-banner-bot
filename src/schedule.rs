@@ -5,7 +5,7 @@ use std::{
 };
 
 use async_repeater::{Delay, RepeaterEntry};
-use poise::serenity_prelude::{ChannelId, GuildId};
+use poise::serenity_prelude::{GenericChannelId, GuildId};
 
 use crate::{
     database::guild_schedule::GuildSchedule,
@@ -15,7 +15,7 @@ use crate::{
 #[derive(Clone)]
 pub struct Schedule {
     guild_id: GuildId,
-    channel_id: ChannelId,
+    channel_id: GenericChannelId,
     interval: u64,
     start_at: u64,
     last_run: Option<NonZeroU64>,
@@ -29,7 +29,7 @@ impl Schedule {
     }
 
     /// Which channel to source images from
-    pub fn channel_id(&self) -> ChannelId {
+    pub fn channel_id(&self) -> GenericChannelId {
         self.channel_id
     }
 
@@ -61,7 +61,7 @@ impl Schedule {
 
 pub struct ScheduleBuilder {
     guild_id: GuildId,
-    channel_id: ChannelId,
+    channel_id: GenericChannelId,
     interval: u64,
     start_at: u64,
     last_run: Option<NonZeroU64>,
@@ -69,7 +69,7 @@ pub struct ScheduleBuilder {
 }
 
 impl ScheduleBuilder {
-    pub fn new(guild_id: GuildId, channel_id: ChannelId, interval: u64) -> Self {
+    pub fn new(guild_id: GuildId, channel_id: GenericChannelId, interval: u64) -> Self {
         Self {
             guild_id,
             channel_id,
@@ -162,7 +162,7 @@ impl From<GuildSchedule> for Schedule {
 
         Schedule {
             guild_id: GuildId::new(guild_id),
-            channel_id: ChannelId::new(channel),
+            channel_id: GenericChannelId::new(channel),
             interval,
             start_at,
             last_run: NonZeroU64::new(last_run),
