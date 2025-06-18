@@ -71,7 +71,7 @@ impl BannerFromUrl for GuildId {
         let extension = url
             .path()
             .split('.')
-            .last()
+            .next_back()
             .ok_or_else(|| SetBannerError::CouldNotDeterminFileExtension)?;
 
         debug!("Found extension: {extension}");
