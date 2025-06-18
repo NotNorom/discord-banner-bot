@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use tokio::{
     select,
-    signal::unix::{signal, SignalKind},
+    signal::unix::{SignalKind, signal},
     sync::broadcast::Receiver,
 };
 use tracing::{error, info};
 
-use crate::{state::State, Error};
+use crate::{Error, state::State};
 
 /// Wait for signal and shut down bot, repeater and database connection in order.
 ///

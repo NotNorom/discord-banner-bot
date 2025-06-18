@@ -14,13 +14,13 @@ use thiserror::Error;
 use tracing::{info, instrument, warn};
 
 use crate::{
-    database::{guild_schedule::GuildSchedule, Database},
+    Settings,
+    database::{Database, guild_schedule::GuildSchedule},
     schedule::Schedule,
     schedule_runner::{RunnerError, ScheduleAction},
     setting_banner::SetBannerError,
     settings::SettingsError,
     utils::{dm_user, dm_users},
-    Settings,
 };
 
 #[derive(Debug, Error)]
@@ -231,7 +231,9 @@ pub async fn handle_schedule_error(
                                         let _ = repeater_handle.remove(guild_id).await;
                                         db.delete::<GuildSchedule>(error.schedule().guild_id().get())
                                             .await?;
-                                        warn!("Missing permissions to change banner for {guild_id}. Unscheduling.");
+                                        warn!(
+                                            "Missing permissions to change banner for {guild_id}. Unscheduling."
+                                        );
                                         return Ok(ScheduleAction::Abort);
                                     }
                                     StatusCode::NOT_FOUND => {
@@ -266,15 +268,22 @@ pub async fn handle_schedule_error(
 
                     let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
                     let guild_owner = partial_guild.owner_id;
-                    info!("Letting owner={guild_owner} of guild={guild_id} know about the missing banner feature");
+                    info!(
+                        "Letting owner={guild_owner} of guild={guild_id} know about the missing banner feature"
+                    );
 
                     dm_user(&ctx, guild_owner, "Server has lost the required boost level. Stopping schedule. You can restart the bot after gaining the required boost level.").await?;
                 }
                 SetBannerError::MissingAnimatedBannerFeature(url) => {
-                    warn!("guild_id={guild_id} with channel={} was trying to set an animated banner but does not have the feature. url={url}", error.schedule().channel_id());
+                    warn!(
+                        "guild_id={guild_id} with channel={} was trying to set an animated banner but does not have the feature. url={url}",
+                        error.schedule().channel_id()
+                    );
                     let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
                     let guild_owner = partial_guild.owner_id;
-                    info!("Letting owner={guild_owner} of guild={guild_id} know about the missing animated banner feature");
+                    info!(
+                        "Letting owner={guild_owner} of guild={guild_id} know about the missing animated banner feature"
+                    );
 
                     dm_user(&ctx, guild_owner, &format!("Tried to set an animated banner but the server '{}' does not have the required boost level for animated banners", partial_guild.name)).await?;
                 }
@@ -299,10 +308,16 @@ pub async fn handle_schedule_error(
                     dm_user(&ctx, guild_owner, &format!("The channel you've set contains an image that is too big for discord. Maximum size is 10mb. The image is: {url}")).await?;
                 }
                 SetBannerError::ImageUnkownSize(url) => {
-                    warn!("guild_id={guild_id} with channel={} has selected an image with unknown size. url={url}", error.schedule().channel_id());
+                    warn!(
+                        "guild_id={guild_id} with channel={} has selected an image with unknown size. url={url}",
+                        error.schedule().channel_id()
+                    );
                 }
                 SetBannerError::Base64Encoding(url) => {
-                    warn!("guild_id={guild_id} with channel={} has selected an image wich could be encoded into base 64. url={url}", error.schedule().channel_id());
+                    warn!(
+                        "guild_id={guild_id} with channel={} has selected an image wich could be encoded into base 64. url={url}",
+                        error.schedule().channel_id()
+                    );
                 }
             }
         }

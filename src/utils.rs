@@ -3,12 +3,12 @@
 use std::time::SystemTime;
 
 use poise::{
-    futures_util::{stream::futures_unordered, StreamExt},
+    futures_util::{StreamExt, stream::futures_unordered},
     serenity_prelude::{CacheHttp, CreateMessage, Message, UserId, UserPublicFlags},
 };
 use tracing::{debug, warn};
 
-use crate::{constants::DISCORD_MESSAGE_CONTENT_LIMIT, error::SendDm, Error};
+use crate::{Error, constants::DISCORD_MESSAGE_CONTENT_LIMIT, error::SendDm};
 
 /// Returns the amount of seconds since UNIX 0.
 ///

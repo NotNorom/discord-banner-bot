@@ -9,13 +9,13 @@ use tokio::time::timeout;
 use tracing::{debug, error, info, instrument};
 
 use crate::{
+    Error,
     error::handle_schedule_error,
     schedule::Schedule,
     schedule_runner::{RunnerError, ScheduleRunner},
     settings::Settings,
     state::State,
     utils::dm_users,
-    Error,
 };
 
 #[instrument(skip_all)]

@@ -8,10 +8,10 @@ use tokio::sync::broadcast::Sender;
 use tracing::{info, instrument};
 
 use crate::{
-    constants::USER_AGENT,
-    database::{guild_schedule::GuildSchedule, Database},
-    schedule::Schedule,
     Error, Settings,
+    constants::USER_AGENT,
+    database::{Database, guild_schedule::GuildSchedule},
+    schedule::Schedule,
 };
 
 /// The User data struct used in poise

@@ -1,8 +1,8 @@
 use std::{fmt::Display, num::NonZeroUsize};
 
 use poise::serenity_prelude::{
-    futures::stream as futures_stream, small_fixed_array::FixedString, CacheHttp, Error, GenericChannelId,
-    Message,
+    CacheHttp, Error, GenericChannelId, Message, futures::stream as futures_stream,
+    small_fixed_array::FixedString,
 };
 use tokio_stream::{Stream, StreamExt};
 use tracing::instrument;
