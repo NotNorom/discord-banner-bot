@@ -6,11 +6,11 @@ use tracing::{debug, error, instrument};
 use url::Url;
 
 use crate::{
-    database::{guild_schedule::GuildSchedule, Database},
-    finding_media::{find_media_in_channel, MediaWithMessage},
+    Error,
+    database::{Database, guild_schedule::GuildSchedule},
+    finding_media::{MediaWithMessage, find_media_in_channel},
     schedule::Schedule,
     setting_banner::RandomBanner,
-    Error,
 };
 
 pub struct ScheduleRunner {

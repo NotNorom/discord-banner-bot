@@ -7,7 +7,7 @@ use fred::{
 };
 use tracing::debug;
 
-use super::{get_from_redis_map, Database, Entry};
+use super::{Database, Entry, get_from_redis_map};
 use crate::{schedule::Schedule, utils::current_unix_timestamp};
 
 /// How a schedule is stored in the database

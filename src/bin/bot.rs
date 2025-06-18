@@ -1,16 +1,16 @@
 use clap::Parser;
 use discord_banner_bot::{
+    Settings, State,
     cli::BotCli,
     commands::commands,
     error::{self, Error},
     event_handler::Handler,
     shutdown::shutdown,
     utils::start_logging,
-    Settings, State,
 };
 use poise::{
-    serenity_prelude::{self, GatewayIntents},
     FrameworkOptions, PrefixFrameworkOptions,
+    serenity_prelude::{self, GatewayIntents},
 };
 use tokio::sync::broadcast;
 use tracing::{error, info, instrument};

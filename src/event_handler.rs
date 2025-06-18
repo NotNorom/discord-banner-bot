@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use fred::error::ErrorKind;
-use poise::serenity_prelude::{async_trait, Context, EventHandler, FullEvent};
+use poise::serenity_prelude::{Context, EventHandler, FullEvent, async_trait};
 use tracing::{debug, error, info, instrument, warn};
 
-use crate::{startup::handle_event_ready, state::State, utils::dm_users, Error};
+use crate::{Error, startup::handle_event_ready, state::State, utils::dm_users};
 
 pub struct Handler;
 

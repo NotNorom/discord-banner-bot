@@ -2,14 +2,14 @@ use std::num::NonZeroUsize;
 
 use chrono::{DateTime, Utc};
 use poise::{
-    serenity_prelude::{CreateEmbed, EmbedMessageBuilding, GenericChannelId, GuildId, MessageBuilder},
     CreateReply,
+    serenity_prelude::{CreateEmbed, EmbedMessageBuilding, GenericChannelId, GuildId, MessageBuilder},
 };
 use tracing::instrument;
 
 use crate::{
-    error::Command as CommandErr, finding_media::last_reachable_message, schedule::ScheduleBuilder,
-    utils::current_unix_timestamp, Context, Error, Settings,
+    Context, Error, Settings, error::Command as CommandErr, finding_media::last_reachable_message,
+    schedule::ScheduleBuilder, utils::current_unix_timestamp,
 };
 
 /// Picks a random image from the channel every interval minutes and sets it as the banner.

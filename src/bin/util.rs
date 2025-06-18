@@ -2,13 +2,13 @@ use std::collections::HashMap;
 
 use clap::Parser;
 use discord_banner_bot::{
+    Settings,
     cli::{GuildOrGlobally, ServerOwners, UtilCli, UtilCommand},
     commands::commands,
     database::Database,
     error::Error,
-    finding_media::{find_media_in_channel, MediaWithMessage},
+    finding_media::{MediaWithMessage, find_media_in_channel},
     utils::{dm_user, start_logging},
-    Settings,
 };
 use poise::serenity_prelude::{self, GuildId, Http, MessageBuilder, PartialGuild, UserId};
 use tokio_stream::StreamExt;
