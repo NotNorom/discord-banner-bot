@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use bytes::Bytes;
 use poise::serenity_prelude::{self, futures::TryStreamExt, EditGuild, GuildId, Http, ImageData};
-use rand::prelude::SliceRandom;
+use rand::seq::IndexedRandom;
 use reqwest::Client;
 use tracing::{debug, info, instrument};
 use url::Url;
@@ -200,7 +200,7 @@ pub(crate) trait RandomBanner: BannerFromUrl {
         urls: &'url [Url],
     ) -> Result<&'url Url, SetBannerError> {
         let url = urls
-            .choose(&mut rand::thread_rng())
+            .choose(&mut rand::rng())
             .ok_or(SetBannerError::CouldNotPickAUrl)?;
 
         self.set_banner_from_url(http, reqw_client, url).await?;

@@ -35,7 +35,7 @@ pub enum Error {
     Serenity(#[from] poise::serenity_prelude::Error),
 
     #[error(transparent)]
-    Redis(#[from] fred::error::RedisError),
+    Redis(#[from] fred::error::Error),
 
     #[error(transparent)]
     Command(#[from] Command),

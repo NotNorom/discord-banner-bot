@@ -1,9 +1,9 @@
 use std::{collections::HashMap, num::NonZeroUsize};
 
 use fred::{
-    error::{RedisError, RedisErrorKind},
+    error::{Error, ErrorKind},
     interfaces::{HashesInterface, KeysInterface, SetsInterface},
-    types::{FromRedis, RedisKey, RedisMap, RedisValue},
+    types::{FromValue, Key, Map, Value},
 };
 use tracing::debug;
 
@@ -106,13 +106,13 @@ impl From<Schedule> for GuildSchedule {
     }
 }
 
-impl From<GuildSchedule> for RedisMap {
+impl From<GuildSchedule> for Map {
     fn from(entry: GuildSchedule) -> Self {
         (&entry).into()
     }
 }
 
-impl From<&GuildSchedule> for RedisMap {
+impl From<&GuildSchedule> for Map {
     fn from(entry: &GuildSchedule) -> Self {
         let mut map = HashMap::with_capacity(6);
         map.insert("guild_id", entry.guild_id.to_string());
@@ -123,18 +123,18 @@ impl From<&GuildSchedule> for RedisMap {
         map.insert("message_limit", entry.message_limit.to_string());
 
         // this cannot fail
-        RedisMap::try_from(map).unwrap()
+        Map::try_from(map).unwrap()
     }
 }
 
-impl From<GuildSchedule> for RedisKey {
+impl From<GuildSchedule> for Key {
     fn from(schedule: GuildSchedule) -> Self {
         schedule.guild_id.into()
     }
 }
 
-impl FromRedis for GuildSchedule {
-    fn from_value(value: RedisValue) -> Result<Self, RedisError> {
+impl FromValue for GuildSchedule {
+    fn from_value(value: Value) -> Result<Self, Error> {
         let value = value.into_map()?;
 
         let guild_id = get_from_redis_map(&value, "guild_id")?;
@@ -156,8 +156,8 @@ impl FromRedis for GuildSchedule {
 }
 
 impl Entry for GuildSchedule {
-    async fn insert(&self, db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError> {
-        let id: RedisKey = id.into();
+    async fn insert(&self, db: &Database, id: impl Into<Key> + Send + Sync) -> Result<(), Error> {
+        let id: Key = id.into();
 
         let _: () = db.client.hset(Self::key(db, &id), self).await?;
         let _: () = db.client.sadd(db.key("active_schedules"), id).await?;
@@ -165,24 +165,24 @@ impl Entry for GuildSchedule {
         Ok(())
     }
 
-    async fn get<T>(db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<T, RedisError>
+    async fn get<T>(db: &Database, id: impl Into<Key> + Send + Sync) -> Result<T, Error>
     where
-        T: FromRedis + Unpin + Send + 'static,
+        T: FromValue + Unpin + Send + 'static,
     {
-        let id: RedisKey = id.into();
+        let id: Key = id.into();
 
         if !db
             .client
             .sismember(db.key("active_schedules"), id.clone())
             .await?
         {
-            return Err(RedisError::new(RedisErrorKind::NotFound, "No active schedule."));
+            return Err(Error::new(ErrorKind::NotFound, "No active schedule."));
         }
         db.client.hgetall(Self::key(db, id)).await
     }
 
-    async fn delete(db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError> {
-        let id: RedisKey = id.into();
+    async fn delete(db: &Database, id: impl Into<Key> + Send + Sync) -> Result<(), Error> {
+        let id: Key = id.into();
         debug!("Deleting id: {id:?}");
         let _: () = db.client.del(Self::key(db, &id)).await?;
         let _: () = db.client.srem(db.key("active_schedules"), id.clone()).await?;

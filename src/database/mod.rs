@@ -6,8 +6,9 @@ pub mod guild_settings;
 use std::{borrow::Cow, sync::Arc};
 
 use fred::{
+    error::Error as RedisError,
     prelude::*,
-    types::{ConnectHandle, RedisKey, RedisMap},
+    types::{ConnectHandle, FromValue, Key, Map},
 };
 use tracing::info;
 
@@ -19,20 +20,20 @@ use crate::settings;
 /// database. This trait allows each struct to specify how to do that.
 pub(crate) trait Entry {
     /// Insert entry into database
-    async fn insert(&self, db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError>;
+    async fn insert(&self, db: &Database, id: impl Into<Key> + Send + Sync) -> Result<(), RedisError>;
     /// Get entry from database
-    async fn get<T>(db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<T, RedisError>
+    async fn get<T>(db: &Database, id: impl Into<Key> + Send + Sync) -> Result<T, RedisError>
     where
-        T: FromRedis + Unpin + Send + 'static;
+        T: FromValue + Unpin + Send + 'static;
     /// Delete Entry from database
-    async fn delete(db: &Database, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError>;
+    async fn delete(db: &Database, id: impl Into<Key> + Send + Sync) -> Result<(), RedisError>;
     /// The namespace for the type
     fn namespace() -> &'static str;
 
     /// Same as [Database::key](Database::key) but namespace aware
     fn key<K>(db: &Database, key: K) -> String
     where
-        K: Into<RedisKey>,
+        K: Into<Key>,
     {
         let key = key.into();
         let key = key.into_string().unwrap();
@@ -44,7 +45,7 @@ pub(crate) trait Entry {
 #[derive(Clone)]
 pub struct Database {
     /// The redis client
-    client: RedisClient,
+    client: Client,
     /// Handle to the connection
     connection_handle: Arc<ConnectHandle>,
     /// Every redis key is prefixed with this string.
@@ -56,10 +57,10 @@ pub struct Database {
 impl Database {
     /// Sets up database connections
     pub async fn setup(settings: &settings::Database) -> Result<Self, crate::Error> {
-        let config = RedisConfig::from_url(&settings.host)?;
+        let config = Config::from_url(&settings.host)?;
         let connection = ConnectionConfig::default();
         let policy = ReconnectPolicy::new_exponential(1, 20, 100, 2);
-        let client = RedisClient::new(config, None, Some(connection), Some(policy));
+        let client = Client::new(config, None, Some(connection), Some(policy));
         info!("Connecting to database at {}", settings.host);
 
         let connection = client.init().await?;
@@ -78,7 +79,7 @@ impl Database {
     }
 
     /// Returns a reference to the `RedisClient`
-    pub fn client(&self) -> &RedisClient {
+    pub fn client(&self) -> &Client {
         &self.client
     }
 
@@ -109,7 +110,7 @@ impl Database {
     /// Manipulats the database keys to have the correct prefix
     pub(self) fn key<K>(&self, key: K) -> String
     where
-        K: Into<RedisKey>,
+        K: Into<Key>,
     {
         let key = key.into();
         let key = key.into_string().unwrap();
@@ -125,7 +126,7 @@ impl Database {
     pub(crate) async fn insert<T>(
         &self,
         entry: &T,
-        id: impl Into<RedisKey> + Send + Sync,
+        id: impl Into<Key> + Send + Sync,
     ) -> Result<(), RedisError>
     where
         T: Entry + Unpin + Send,
@@ -134,26 +135,26 @@ impl Database {
     }
 
     /// Get entry from database
-    pub(crate) async fn get<T>(&self, id: impl Into<RedisKey> + Send + Sync) -> Result<T, RedisError>
+    pub(crate) async fn get<T>(&self, id: impl Into<Key> + Send + Sync) -> Result<T, RedisError>
     where
-        T: FromRedis + Entry + Unpin + Send + 'static,
+        T: FromValue + Entry + Unpin + Send + 'static,
     {
         T::get(self, id).await
     }
 
     /// Delete entry from database
-    pub(crate) async fn delete<T>(&self, id: impl Into<RedisKey> + Send + Sync) -> Result<(), RedisError>
+    pub(crate) async fn delete<T>(&self, id: impl Into<Key> + Send + Sync) -> Result<(), RedisError>
     where
-        T: FromRedis + Entry + Unpin + Send + 'static,
+        T: FromValue + Entry + Unpin + Send + 'static,
     {
         T::delete(self, id).await
     }
 }
 
 /// Get the value with `key` from a [RedisMap](RedisMap) `map`
-fn get_from_redis_map<T: FromRedis>(map: &RedisMap, key: &str) -> Result<T, RedisError> {
-    use RedisErrorKind::NotFound;
-    map.get(&RedisKey::from(key))
+fn get_from_redis_map<T: FromValue>(map: &Map, key: &str) -> Result<T, RedisError> {
+    use ErrorKind::NotFound;
+    map.get(&Key::from(key))
         .ok_or_else(|| RedisError::new(NotFound, format!("Key {key} not found in RedisMap")))?
         .clone()
         .convert()
