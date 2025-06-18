@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use fred::error::RedisErrorKind;
+use fred::error::ErrorKind;
 use poise::serenity_prelude::{async_trait, Context, EventHandler, FullEvent};
 use tracing::{debug, error, info, instrument, warn};
 
@@ -79,7 +79,7 @@ pub async fn handle_event(context: &Context, event: &FullEvent) -> Result<(), Er
             let data: Arc<State> = context.data();
             let schedule = match data.get_schedule(channel.base.guild_id).await {
                 Ok(schedule) => schedule,
-                Err(err) if *err.kind() == RedisErrorKind::NotFound => return Ok(()),
+                Err(err) if *err.kind() == ErrorKind::NotFound => return Ok(()),
                 Err(err) => return Err(err)?,
             };
 

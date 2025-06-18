@@ -18,34 +18,34 @@ debug = true
 async-repeater = { git = "https://github.com/NotNorom/async-repeater.git" }
 base64 = "0.22.1"
 # async-repeater = { path = "/home/norom/Documents/Code/async-repeater" }
-bytes = "1.7.2"
-chrono = "0.4.38"
-clap = { version = "4.5.19", features = ["derive"] }
-config = { version = "0.14", default-features = false, features = ["toml"] }
-fred = { version = "9.2.1", default-features = false, features = [
+bytes = "1.10.1"
+chrono = "0.4.41"
+clap = { version = "4.5.40", features = ["derive"] }
+config = { version = "0.15", default-features = false, features = ["toml"] }
+fred = { version = "10.1.0", default-features = false, features = [
     "i-std",
     "i-sets",
     "i-hashes",
 ] }
 poise = "0.6.1"
-rand = "0.8.5"
-reqwest = { version = "0.12.8", default-features = false, features = [
+rand = "0.9.1"
+reqwest = { version = "0.12.20", default-features = false, features = [
     "json",
     "native-tls-vendored",
 ] }
-serde = "1.0.210"
-thiserror = "1.0.64"
-tokio = { version = "1.40.0", features = [
+serde = "1.0.219"
+thiserror = "2.0.12"
+tokio = { version = "1.45.1", features = [
     "rt-multi-thread",
 ], default-features = false }
-tokio-stream = "0.1.16"
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = [
+tokio-stream = "0.1.17"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = [
     "tracing-log",
     "env-filter",
     "parking_lot",
 ] }
-url = "2.5.2"
+url = "2.5.4"
 
 [patch.crates-io]
 poise = { git = "https://github.com/serenity-rs/poise.git", branch = "serenity-next" }

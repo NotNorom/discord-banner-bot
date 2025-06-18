@@ -1,7 +1,7 @@
 use std::{collections::HashSet, fmt::Display, sync::OnceLock, time::Duration};
 
 use async_repeater::RepeaterHandle;
-use fred::error::RedisError;
+use fred::error::Error as RedisError;
 use poise::serenity_prelude::{GuildId, UserId};
 use reqwest::Client;
 use tokio::sync::broadcast::Sender;
