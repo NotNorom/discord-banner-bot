@@ -171,6 +171,40 @@ This bot is built using
 
 Amazing libraries, highly recommend \<3
 
+## An example on how to calculate time between schedule runs
+
+`now = 1000`
+
+user's calling:
+`/start start_at=1069 interval=150`
+
+insert into database:
+`start_at=1069 interval=150 last_run=1069`
+
+bot gets turned off, gets started 100 time units later. `now = 1100`
+
+delay calculation should be:
+
+```
+if start_at < now; then
+    delay = interval - (now - start_at) % interval
+if start_at >= now; then
+    delay = start_at - now
+```
+
+so at insertion times:
+
+```
+start_at=1069 > now=1000; then
+    delay=69 = 1069 - 1000
+```
+
+and after the bot restart:
+
+```
+start_at=1069 < now=1100; then
+    delay=119 = interval=100 - (1100 - 1069) % 100
+```
 
 ## Legal for my hosted bot ( Last Update: 12.12.2024 )
 
