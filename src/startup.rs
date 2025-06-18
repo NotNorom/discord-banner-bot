@@ -32,7 +32,7 @@ pub(crate) async fn handle_event_ready(ctx: serenity_prelude::Context, _: &Ready
     insert_owners_from_http(ctx.http(), &mut owners, &None).await?;
     if let Err(err) = ctx.data::<State>().set_owners(owners) {
         error!("Owners have already been set before: {err:?}");
-    };
+    }
 
     let ctx2 = ctx.clone();
 

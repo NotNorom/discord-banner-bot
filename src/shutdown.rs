@@ -48,7 +48,7 @@ pub async fn shutdown(
     match shard_manager_shutdown_fn() {
         true => info!("Discord has shut down"),
         false => error!("Discord has shut down properly"),
-    };
+    }
 
     // stop banner queue
     if let Err(err) = state.repeater_handle().stop().await {

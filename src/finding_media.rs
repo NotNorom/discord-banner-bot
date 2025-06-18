@@ -65,7 +65,7 @@ pub fn find_media_in_channel<'a>(
                 // only use embeds, don't use thumbnails
                 // this is done to avoid requests to 3rd parties
                 match (&embed.image, &embed.thumbnail) {
-                    (None, _) => continue,
+                    (None, _) => {}
                     (Some(img), _) => {
                         // tracing::trace!("{} - {} EMBED", message.link(), img.url);
                         result.push(Ok(MediaWithMessage::new(img.url.clone(), message.clone())));
@@ -87,7 +87,7 @@ pub fn find_media_in_channel<'a>(
 
 /// Return the last message the bot is gonna look at for that schedule
 #[instrument(skip_all)]
-pub async fn last_reachable_message<'a>(http: &'a impl CacheHttp, schedule: &Schedule) -> Option<Message> {
+pub async fn last_reachable_message(http: &impl CacheHttp, schedule: &Schedule) -> Option<Message> {
     let limit = schedule
         .message_limit()
         .map(NonZeroUsize::get)

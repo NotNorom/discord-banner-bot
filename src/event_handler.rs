@@ -25,7 +25,7 @@ pub async fn handle_event(context: &Context, event: &FullEvent) -> Result<(), Er
         FullEvent::Ready { data_about_bot, .. } => {
             if context.data::<State>().is_initialized() {
                 debug!("Ready event fired but already initialized. Skipping setup, but reloading schedules");
-                let result = context.data::<State>().load_schedules_from_db().await.unwrap();
+                let result = context.data::<State>().load_schedules_from_db().await?;
                 info!("{result}");
                 return Ok(());
             }
