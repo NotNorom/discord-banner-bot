@@ -1,4 +1,4 @@
-use std::{num::NonZeroUsize, sync::Arc};
+use std::num::NonZeroUsize;
 
 use poise::serenity_prelude::GuildId;
 use tokio_stream::StreamExt;
@@ -14,7 +14,7 @@ use crate::{
 };
 
 pub struct ScheduleRunner {
-    ctx: Arc<poise::serenity_prelude::Context>,
+    ctx: poise::serenity_prelude::Context,
     database: Database,
     http_client: reqwest::Client,
     schedule: Schedule,
@@ -22,7 +22,7 @@ pub struct ScheduleRunner {
 
 impl ScheduleRunner {
     pub fn new(
-        ctx: Arc<poise::serenity_prelude::Context>,
+        ctx: poise::serenity_prelude::Context,
         database: Database,
         http_client: reqwest::Client,
         schedule: Schedule,

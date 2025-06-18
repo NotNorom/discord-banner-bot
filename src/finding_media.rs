@@ -1,7 +1,8 @@
 use std::{fmt::Display, num::NonZeroUsize};
 
 use poise::serenity_prelude::{
-    futures::stream as futures_stream, small_fixed_array::FixedString, CacheHttp, ChannelId, Error, Message,
+    futures::stream as futures_stream, small_fixed_array::FixedString, CacheHttp, Error, GenericChannelId,
+    Message,
 };
 use tokio_stream::{Stream, StreamExt};
 use tracing::instrument;
@@ -44,7 +45,7 @@ impl Display for MediaWithMessage {
 #[instrument(skip_all)]
 pub fn find_media_in_channel<'a>(
     http: &'a impl CacheHttp,
-    channel_id: &ChannelId,
+    channel_id: &GenericChannelId,
     limit: usize,
 ) -> impl Stream<Item = Result<MediaWithMessage, Error>> + 'a {
     let stream =

@@ -98,6 +98,7 @@ pub async fn dm_user(cache_http: &impl CacheHttp, user: UserId, content: &str) -
     let content = truncate_to_discord_limit(content);
 
     let msg = user
+        .id
         .dm(cache_http.http(), CreateMessage::new().content(content))
         .await?;
     Ok(msg)

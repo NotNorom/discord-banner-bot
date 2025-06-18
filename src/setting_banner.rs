@@ -3,8 +3,9 @@
 
 use std::collections::HashMap;
 
+use base64::{prelude::BASE64_STANDARD, Engine};
 use bytes::Bytes;
-use poise::serenity_prelude::{self, futures::TryStreamExt, CreateAttachment, EditGuild, GuildId, Http};
+use poise::serenity_prelude::{self, futures::TryStreamExt, EditGuild, GuildId, Http, ImageData};
 use rand::prelude::SliceRandom;
 use reqwest::Client;
 use tracing::{debug, info, instrument};
@@ -41,6 +42,9 @@ pub enum SetBannerError {
 
     #[error("Image size not provided by discord: {}", .0)]
     ImageUnkownSize(Url),
+
+    #[error("Could not encode image to base64")]
+    Base64Encoding(Url),
 }
 
 /// Trait for setting a banner from an url
@@ -123,7 +127,7 @@ impl BannerFromUrl for GuildId {
             Some(MAXIMUM_IMAGE_SIZE..) => return Err(SetBannerError::ImageIsTooBig(url.clone())),
             // instead of failing, return the maximum size in hopes of it working out.
             // worst case, we've just allocated a few mb of memory that won't be used... oh well
-            None => MAXIMUM_IMAGE_SIZE, 
+            None => MAXIMUM_IMAGE_SIZE,
             Some(len) => len,
         };
 
@@ -156,19 +160,22 @@ impl BannerFromUrl for GuildId {
             _ => {}
         }
 
-        let attachment = CreateAttachment::bytes(image_bytes, format!("banner.{extension}"));
+        let b64_encoded_bytes = BASE64_STANDARD.encode(image_bytes);
+
+        let image = ImageData::from_base64(format!("data:image/{extension};base64,{b64_encoded_bytes}"))
+            .map_err(|_| SetBannerError::Base64Encoding(url.clone()))?;
 
         let edit_guild = {
             #[cfg(feature = "dev")]
             {
                 debug!("Setting icon");
-                EditGuild::new().icon(Some(&attachment))
+                EditGuild::new().icon(Some(image))
             }
 
             #[cfg(not(feature = "dev"))]
             {
                 debug!("Setting banner");
-                EditGuild::new().banner(Some(&attachment))
+                EditGuild::new().banner(Some(image))
             }
         };
 

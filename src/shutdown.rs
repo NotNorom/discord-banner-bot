@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use poise::serenity_prelude::ShardManager;
 use tokio::{
     select,
     signal::unix::{signal, SignalKind},
@@ -8,7 +7,7 @@ use tokio::{
 };
 use tracing::{error, info};
 
-use crate::{startup::State, Error};
+use crate::{state::State, Error};
 
 /// Wait for signal and shut down bot, repeater and database connection in order.
 ///
@@ -19,7 +18,7 @@ use crate::{startup::State, Error};
 ///     - shutdown command
 pub async fn shutdown(
     state: Arc<State>,
-    shard_manager: Arc<ShardManager>,
+    shard_manager_shutdown_fn: impl FnOnce() -> bool + Send,
     mut internal_receiver: Receiver<()>,
 ) -> Result<(), Error> {
     let mut stream_interrupt = signal(SignalKind::interrupt()).unwrap();
@@ -46,7 +45,10 @@ pub async fn shutdown(
     info!("Received signal {received_signal}, shutting down");
 
     // close connection to discord
-    shard_manager.shutdown_all().await;
+    match shard_manager_shutdown_fn() {
+        true => info!("Discord has shut down"),
+        false => error!("Discord has shut down properly"),
+    };
 
     // stop banner queue
     if let Err(err) = state.repeater_handle().stop().await {
@@ -57,5 +59,7 @@ pub async fn shutdown(
     // disconnect from database
     state.database().disconnect();
     info!("Database disconnected properly");
+
+    info!("Shut down sequence done");
     Ok(())
 }

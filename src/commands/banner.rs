@@ -2,7 +2,7 @@ use std::num::NonZeroUsize;
 
 use chrono::{DateTime, Utc};
 use poise::{
-    serenity_prelude::{ChannelId, CreateEmbed, EmbedMessageBuilding, GuildId, MessageBuilder},
+    serenity_prelude::{CreateEmbed, EmbedMessageBuilding, GenericChannelId, GuildId, MessageBuilder},
     CreateReply,
 };
 use tracing::instrument;
@@ -26,11 +26,13 @@ pub async fn start(
     ctx: Context<'_>,
     #[description = "Channel"]
     #[rename = "channel"]
-    channel_id: ChannelId,
+    channel_id: GenericChannelId,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
     #[description = "When to start the schedule. Default is instantly."] start_at: Option<DateTime<Utc>>,
-    #[description = "How many messages to look back for images. Default is 100, maximum is 200"]
+    #[description = "How many messages to look back for images."]
+    #[min = 0]
+    #[max = 300]
     message_limit: Option<usize>,
 ) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
@@ -51,11 +53,13 @@ pub async fn start_for_guild(
     guild_id: GuildId,
     #[description = "Channel"]
     #[rename = "channel"]
-    channel_id: ChannelId,
+    channel_id: GenericChannelId,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     interval: Option<u64>,
     #[description = "When to start the schedule. Default is instantly."] start_at: Option<DateTime<Utc>>,
-    #[description = "How many messages to look back for images. Default is 100, maximum is 200"]
+    #[description = "How many messages to look back for images."]
+    #[min = 0]
+    #[max = 300]
     message_limit: Option<usize>,
 ) -> Result<(), Error> {
     let options = StartBannerOptions::new(Settings::get(), guild_id, channel_id)
@@ -170,7 +174,7 @@ pub async fn current_banner(ctx: Context<'_>) -> Result<(), Error> {
 
 struct StartBannerOptions {
     guild_id: GuildId,
-    channel_id: ChannelId,
+    channel_id: GenericChannelId,
     interval: u64,
     start_at: Option<DateTime<Utc>>,
     message_limit: usize,
@@ -178,7 +182,7 @@ struct StartBannerOptions {
 }
 
 impl StartBannerOptions {
-    pub fn new(settings: &'static Settings, guild_id: GuildId, channel_id: ChannelId) -> Self {
+    pub fn new(settings: &'static Settings, guild_id: GuildId, channel_id: GenericChannelId) -> Self {
         Self {
             guild_id,
             channel_id,
