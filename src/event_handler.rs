@@ -89,6 +89,22 @@ pub async fn handle_event(context: &Context, event: &FullEvent) -> Result<(), Er
 
             Ok(())
         }
+        FullEvent::ThreadDelete { thread, .. } => {
+            debug!("ThreadDelete: {thread:?}");
+
+            let data: Arc<State> = context.data();
+            let schedule = match data.get_schedule(thread.guild_id).await {
+                Ok(schedule) => schedule,
+                Err(err) if *err.kind() == ErrorKind::NotFound => return Ok(()),
+                Err(err) => return Err(err)?,
+            };
+
+            if thread.guild_id == schedule.guild_id() {
+                data.deque(thread.guild_id).await?;
+            }
+
+            Ok(())
+        }
         _ => Ok(()),
     }
 }
