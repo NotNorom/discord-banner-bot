@@ -7,7 +7,8 @@ use std::{
 use async_repeater::RepeaterHandle;
 use chrono::{DateTime, Utc};
 use poise::serenity_prelude::{
-    Context, Error as SerenityError, HttpError as SerenityHttpError, MessageBuilder, User, UserId,
+    Context, Error as SerenityError, HttpError as SerenityHttpError, JsonErrorCode, MessageBuilder, User,
+    UserId,
 };
 use reqwest::StatusCode;
 use thiserror::Error;
@@ -172,6 +173,7 @@ pub async fn handle_schedule_error(
     owners: HashSet<UserId>,
 ) -> Result<ScheduleAction, Error> {
     let guild_id = error.schedule().guild_id();
+    let channel_id = error.schedule().channel_id();
 
     let guild_name = format!("{guild_id}: {}", guild_id.name(&ctx.cache).unwrap_or_default());
 
@@ -201,7 +203,17 @@ pub async fn handle_schedule_error(
                             let _ = repeater_handle.remove(guild_id).await;
                             db.delete::<GuildSchedule>(error.schedule().guild_id().get())
                                 .await?;
-                            warn!("Guild does not exist: {guild_id}. Unscheduling.");
+
+                            if error_response.error.code == JsonErrorCode::UnknownChannel {
+                                warn!(
+                                    "Channel {channel_id} does not exist in guild: {guild_id}. Unscheduling."
+                                );
+                            }
+
+                            if error_response.error.code == JsonErrorCode::UnknownChannel {
+                                warn!("Guild does not exist: {guild_id}. Unscheduling.");
+                            }
+
                             return Ok(ScheduleAction::Abort);
                         }
                         StatusCode::GATEWAY_TIMEOUT => {
@@ -274,10 +286,9 @@ pub async fn handle_schedule_error(
 
                     dm_user(&ctx, guild_owner, "Server has lost the required boost level. Stopping schedule. You can restart the bot after gaining the required boost level.").await?;
                 }
-                SetBannerError::MissingAnimatedBannerFeature(url) => {
+                SetBannerError::MissingAnimatedBannerFeature(url, ..) => {
                     warn!(
-                        "guild_id={guild_id} with channel={} was trying to set an animated banner but does not have the feature. url={url}",
-                        error.schedule().channel_id()
+                        "guild_id={guild_id} with channel={channel_id} was trying to set an animated banner but does not have the feature. url={url}"
                     );
                     let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
                     let guild_owner = partial_guild.owner_id;
@@ -287,16 +298,14 @@ pub async fn handle_schedule_error(
 
                     dm_user(&ctx, guild_owner, &format!("Tried to set an animated banner but the server '{}' does not have the required boost level for animated banners", partial_guild.name)).await?;
                 }
-                SetBannerError::ImageIsEmpty(url) => {
+                SetBannerError::ImageIsEmpty(url, ..) => {
                     warn!(
-                        "guild_id={guild_id} with channel={} has selected an image with 0 bytes. url={url}",
-                        error.schedule().channel_id()
+                        "guild_id={guild_id} with channel={channel_id} has selected an image with 0 bytes. url={url}"
                     );
                 }
-                SetBannerError::ImageIsTooBig(url) => {
+                SetBannerError::ImageIsTooBig(url, ..) => {
                     warn!(
-                        "guild_id={guild_id} with channel={} has selecte an image that is too big. url={url}",
-                        error.schedule().channel_id()
+                        "guild_id={guild_id} with channel={channel_id} has selecte an image that is too big. url={url}"
                     );
 
                     let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
@@ -307,16 +316,14 @@ pub async fn handle_schedule_error(
 
                     dm_user(&ctx, guild_owner, &format!("The channel you've set contains an image that is too big for discord. Maximum size is 10mb. The image is: {url}")).await?;
                 }
-                SetBannerError::ImageUnkownSize(url) => {
+                SetBannerError::ImageUnkownSize(url, ..) => {
                     warn!(
-                        "guild_id={guild_id} with channel={} has selected an image with unknown size. url={url}",
-                        error.schedule().channel_id()
+                        "guild_id={guild_id} with channel={channel_id} has selected an image with unknown size. url={url}"
                     );
                 }
-                SetBannerError::Base64Encoding(url) => {
+                SetBannerError::Base64Encoding(url, ..) => {
                     warn!(
-                        "guild_id={guild_id} with channel={} has selected an image wich could be encoded into base 64. url={url}",
-                        error.schedule().channel_id()
+                        "guild_id={guild_id} with channel={channel_id} has selected an image wich could be encoded into base 64. url={url}"
                     );
                 }
             }
