@@ -28,6 +28,7 @@ pub async fn start(
     #[rename = "channel"]
     channel_id: GenericChannelId,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
+    #[min = 15]
     interval: Option<u64>,
     #[description = "When to start the schedule. Default is instantly."] start_at: Option<DateTime<Utc>>,
     #[description = "How many messages to look back for images."]
@@ -55,6 +56,7 @@ pub async fn start_for_guild(
     #[rename = "channel"]
     channel_id: GenericChannelId,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
+    #[min = 15]
     interval: Option<u64>,
     #[description = "When to start the schedule. Default is instantly."] start_at: Option<DateTime<Utc>>,
     #[description = "How many messages to look back for images."]
@@ -70,7 +72,7 @@ pub async fn start_for_guild(
     start_banner(ctx, options).await
 }
 
-/// Stops picking random images
+/// Stops the schedule
 #[poise::command(
     prefix_command,
     slash_command,
@@ -84,7 +86,7 @@ pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
     stop_banner(ctx, guild_id).await
 }
 
-/// Stops picking random images in that server
+/// Stops the schedule in that server
 #[poise::command(prefix_command, slash_command, hide_in_help, owners_only)]
 #[instrument(skip_all)]
 pub async fn stop_for_guild(
@@ -96,7 +98,7 @@ pub async fn stop_for_guild(
     stop_banner(ctx, guild_id).await
 }
 
-/// Tells you the channel that is being used right now
+/// Provides information on the currently running schedule
 #[poise::command(
     prefix_command,
     slash_command,
