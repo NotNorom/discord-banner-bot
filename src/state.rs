@@ -85,7 +85,7 @@ impl State {
     /// # Panics
     /// Will panic if called before initialization is complete
     #[instrument(skip_all)]
-    pub async fn deque(&self, guild_id: GuildId) -> Result<(), Error> {
+    pub async fn deque(&self, guild_id: GuildId) -> Result<Schedule, Error> {
         info!("Removing {guild_id:?}");
         self.repeater_handle
             .get()
@@ -93,7 +93,7 @@ impl State {
             .remove(guild_id)
             .await
             .map_err(|err| Error::Scheduler { msg: err.to_string() })?;
-        Ok(self.database.delete::<GuildSchedule>(guild_id.get()).await?)
+        Ok(self.database.delete::<GuildSchedule>(guild_id.get()).await?.into())
     }
 
     /// Load all schedules from the database into the repeater
@@ -112,7 +112,17 @@ impl State {
 
         for id in known_guild_ids {
             let entry = match self.database().get::<GuildSchedule>(id).await {
-                Ok(entry) => entry,
+                Ok(Some(entry)) => entry,
+                Ok(None) => {
+                    result.failed.push((
+                        GuildId::new(id),
+                        RedisError::new(
+                            fred::error::ErrorKind::NotFound,
+                            "schedule with guild id was not found",
+                        ),
+                    ));
+                    continue;
+                }
                 Err(err) => {
                     result.failed.push((GuildId::new(id), err));
                     continue;
@@ -144,9 +154,9 @@ impl State {
     }
 
     /// Get the schedule for the guild
-    pub async fn get_schedule(&self, guild_id: GuildId) -> Result<Schedule, RedisError> {
+    pub async fn get_schedule(&self, guild_id: GuildId) -> Result<Option<Schedule>, RedisError> {
         let db_entry = self.database.get::<GuildSchedule>(guild_id.get()).await?;
-        Ok(db_entry.into())
+        Ok(db_entry.map(Into::into))
     }
 
     /// Get a clone of the repeater handle

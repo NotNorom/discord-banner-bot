@@ -165,10 +165,7 @@ impl Entry for GuildSchedule {
         Ok(())
     }
 
-    async fn get<T>(db: &Database, id: impl Into<Key> + Send + Sync) -> Result<T, Error>
-    where
-        T: FromValue + Unpin + Send + 'static,
-    {
+    async fn get(db: &Database, id: impl Into<Key> + Send + Sync) -> Result<Option<Self>, Error> {
         let id: Key = id.into();
 
         if !db
@@ -176,19 +173,36 @@ impl Entry for GuildSchedule {
             .sismember(db.key("active_schedules"), id.clone())
             .await?
         {
-            return Err(Error::new(ErrorKind::NotFound, "No active schedule."));
+            return Ok(None);
         }
-        db.client.hgetall(Self::key(db, id)).await
+
+        match db.client.hgetall(Self::key(db, id)).await {
+            Ok(schedule) => Ok(Some(schedule)),
+            Err(err) if *err.kind() == ErrorKind::NotFound => return Ok(None),
+            Err(err) => Err(err),
+        }
     }
 
-    async fn delete(db: &Database, id: impl Into<Key> + Send + Sync) -> Result<(), Error> {
+    async fn delete(db: &Database, id: impl Into<Key> + Send + Sync) -> Result<Self, Error> {
         let id: Key = id.into();
+
+        let schedule = match Self::get(&db, id.clone()).await {
+            Ok(Some(schedule)) => schedule,
+            Ok(None) => {
+                return Err(Error::new(
+                    ErrorKind::NotFound,
+                    "schedule with guild id does not exist",
+                ));
+            }
+            Err(err) => return Err(err),
+        };
+
         debug!("Deleting id: {id:?}");
         let _: () = db.client.del(Self::key(db, &id)).await?;
         let _: () = db.client.srem(db.key("active_schedules"), id.clone()).await?;
         debug!("Deleted id: {id:?} successfully");
 
-        Ok(())
+        Ok(schedule)
     }
 
     fn namespace() -> &'static str {

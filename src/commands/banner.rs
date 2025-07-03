@@ -110,7 +110,17 @@ pub async fn current_schedule(ctx: Context<'_>) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
 
     let user_data = ctx.data();
-    let schedule = user_data.get_schedule(guild_id).await?;
+    let Some(schedule) = user_data.get_schedule(guild_id).await? else {
+        // answer the user
+        poise::send_reply(
+            ctx,
+            CreateReply::default()
+                .content("There is no schedule running")
+                .ephemeral(true),
+        )
+        .await?;
+        return Ok(());
+    };
 
     let message_limit = schedule
         .message_limit()
@@ -118,9 +128,9 @@ pub async fn current_schedule(ctx: Context<'_>) -> Result<(), Error> {
         .unwrap_or_default();
 
     let message_builder = MessageBuilder::new()
-        .push("Current channel: ")
+        .push("Channel: ")
         .channel(schedule.channel_id())
-        .push(format!(". Current message limit: {message_limit}.",).as_str());
+        .push(format!(". Message limit: {message_limit}.",).as_str());
 
     let message = match last_reachable_message(ctx.http(), &schedule).await {
         Some(msg) => message_builder
@@ -287,18 +297,44 @@ async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(
 
 #[instrument(skip_all)]
 async fn stop_banner(ctx: Context<'_>, guild_id: GuildId) -> Result<(), Error> {
+    let state = ctx.data();
+
+    let Some(schedule) = state.get_schedule(guild_id).await? else {
+        // answer the user
+        poise::send_reply(
+            ctx,
+            CreateReply::default()
+                .content("There is no schedule running")
+                .ephemeral(true),
+        )
+        .await?;
+        return Ok(());
+    };
+
     // unschedule it!
-    let user_data = ctx.data();
-    user_data.deque(guild_id).await?;
+    state.deque(guild_id).await?;
+
+    let message_limit = schedule
+        .message_limit()
+        .map(NonZeroUsize::get)
+        .unwrap_or_default();
+
+    let message_builder = MessageBuilder::new()
+        .push_bold_line("Stopping this schedule:")
+        .push("Channel: ")
+        .channel(schedule.channel_id())
+        .push(format!(". Message limit: {message_limit}.",).as_str());
+
+    let message = match last_reachable_message(ctx.http(), &schedule).await {
+        Some(msg) => message_builder
+            .push(" Last reachable message: ")
+            .push_named_link("click here", msg.link().as_str())
+            .build(),
+        None => message_builder.build(),
+    };
 
     // answer the user
-    poise::send_reply(
-        ctx,
-        CreateReply::default()
-            .content("Stopped currently running schedule")
-            .ephemeral(true),
-    )
-    .await?;
+    poise::send_reply(ctx, CreateReply::default().content(message).ephemeral(true)).await?;
 
     Ok(())
 }

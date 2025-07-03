@@ -22,11 +22,13 @@ pub(crate) trait Entry {
     /// Insert entry into database
     async fn insert(&self, db: &Database, id: impl Into<Key> + Send + Sync) -> Result<(), RedisError>;
     /// Get entry from database
-    async fn get<T>(db: &Database, id: impl Into<Key> + Send + Sync) -> Result<T, RedisError>
+    async fn get(db: &Database, id: impl Into<Key> + Send + Sync) -> Result<Option<Self>, RedisError>
     where
-        T: FromValue + Unpin + Send + 'static;
+        Self: FromValue + Unpin + Send + 'static;
     /// Delete Entry from database
-    async fn delete(db: &Database, id: impl Into<Key> + Send + Sync) -> Result<(), RedisError>;
+    async fn delete(db: &Database, id: impl Into<Key> + Send + Sync) -> Result<Self, RedisError>
+    where
+        Self: FromValue + Unpin + Send + 'static;
     /// The namespace for the type
     fn namespace() -> &'static str;
 
@@ -135,7 +137,7 @@ impl Database {
     }
 
     /// Get entry from database
-    pub(crate) async fn get<T>(&self, id: impl Into<Key> + Send + Sync) -> Result<T, RedisError>
+    pub(crate) async fn get<T>(&self, id: impl Into<Key> + Send + Sync) -> Result<Option<T>, RedisError>
     where
         T: FromValue + Entry + Unpin + Send + 'static,
     {
@@ -143,7 +145,7 @@ impl Database {
     }
 
     /// Delete entry from database
-    pub(crate) async fn delete<T>(&self, id: impl Into<Key> + Send + Sync) -> Result<(), RedisError>
+    pub(crate) async fn delete<T>(&self, id: impl Into<Key> + Send + Sync) -> Result<T, RedisError>
     where
         T: FromValue + Entry + Unpin + Send + 'static,
     {

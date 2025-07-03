@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use fred::error::ErrorKind;
 use poise::serenity_prelude::{Context, EventHandler, FullEvent, async_trait};
 use tracing::{debug, error, info, instrument, warn};
 
@@ -46,7 +45,8 @@ pub async fn handle_event(context: &Context, event: &FullEvent) -> Result<(), Er
                 error!("GuildDelete event fired before bot was initialized");
             }
 
-            data.deque(incomplete.id).await
+            data.deque(incomplete.id).await?;
+            Ok(())
         }
         FullEvent::Resume { event, .. } => {
             debug!("Resume: {event:?}");
@@ -78,8 +78,8 @@ pub async fn handle_event(context: &Context, event: &FullEvent) -> Result<(), Er
 
             let data: Arc<State> = context.data();
             let schedule = match data.get_schedule(channel.base.guild_id).await {
-                Ok(schedule) => schedule,
-                Err(err) if *err.kind() == ErrorKind::NotFound => return Ok(()),
+                Ok(Some(schedule)) => schedule,
+                Ok(None) => return Ok(()),
                 Err(err) => return Err(err)?,
             };
 
@@ -94,8 +94,8 @@ pub async fn handle_event(context: &Context, event: &FullEvent) -> Result<(), Er
 
             let data: Arc<State> = context.data();
             let schedule = match data.get_schedule(thread.guild_id).await {
-                Ok(schedule) => schedule,
-                Err(err) if *err.kind() == ErrorKind::NotFound => return Ok(()),
+                Ok(Some(schedule)) => schedule,
+                Ok(None) => return Ok(()),
                 Err(err) => return Err(err)?,
             };
 
