@@ -4,7 +4,6 @@ use std::{
     num::NonZeroU16,
 };
 
-use async_repeater::RepeaterHandle;
 use chrono::{DateTime, Utc};
 use poise::serenity_prelude::{
     Context, Error as SerenityError, HttpError as SerenityHttpError, JsonErrorCode, MessageBuilder, User,
@@ -16,8 +15,6 @@ use tracing::{info, instrument, warn};
 
 use crate::{
     Settings,
-    database::{Database, guild_schedule::GuildSchedule},
-    schedule::Schedule,
     schedule_runner::{RunnerError, ScheduleAction},
     setting_banner::SetBannerError,
     settings::SettingsError,
@@ -165,11 +162,9 @@ where
 /// This is a needed as well as the normal error handling in [crate::error::on_error] because
 /// the scheduler is running in its own task
 #[instrument(skip_all)]
-pub async fn handle_schedule_error(
+pub async fn evaluate_schedule_error(
     error: &RunnerError,
     ctx: Context,
-    repeater_handle: RepeaterHandle<Schedule>,
-    db: Database,
     owners: HashSet<UserId>,
 ) -> Result<ScheduleAction, Error> {
     let guild_id = error.schedule().guild_id();
@@ -180,7 +175,7 @@ pub async fn handle_schedule_error(
     let message = MessageBuilder::new()
         .push_bold("Error in guild: ")
         .push_mono_line_safe(&*guild_name)
-        .push_codeblock(&*error.to_string(), Some("rust"))
+        .push(&*error.to_string())
         .build();
 
     dm_users(&ctx, owners.clone(), &message).await?;
@@ -192,18 +187,10 @@ pub async fn handle_schedule_error(
                     match error_response.status_code {
                         StatusCode::FORBIDDEN => {
                             // the bot does not have permissions to change the banner.
-                            // remove guild from queue
-                            let _ = repeater_handle.remove(guild_id).await;
-                            db.delete::<GuildSchedule>(error.schedule().guild_id().get())
-                                .await?;
                             warn!("Missing permissions to change banner for {guild_id}. Unscheduling.");
                             return Ok(ScheduleAction::Abort);
                         }
                         StatusCode::NOT_FOUND => {
-                            let _ = repeater_handle.remove(guild_id).await;
-                            db.delete::<GuildSchedule>(error.schedule().guild_id().get())
-                                .await?;
-
                             if error_response.error.code == JsonErrorCode::UnknownChannel {
                                 warn!(
                                     "Channel {channel_id} does not exist in guild: {guild_id}. Unscheduling."
@@ -239,24 +226,17 @@ pub async fn handle_schedule_error(
                                 match error_response.status_code {
                                     StatusCode::FORBIDDEN => {
                                         // the bot does not have permissions to change the banner.
-                                        // remove guild from queue
-                                        let _ = repeater_handle.remove(guild_id).await;
-                                        db.delete::<GuildSchedule>(error.schedule().guild_id().get())
-                                            .await?;
                                         warn!(
                                             "Missing permissions to change banner for {guild_id}. Unscheduling."
                                         );
                                         return Ok(ScheduleAction::Abort);
                                     }
                                     StatusCode::NOT_FOUND => {
-                                        let _ = repeater_handle.remove(guild_id).await;
-                                        db.delete::<GuildSchedule>(error.schedule().guild_id().get())
-                                            .await?;
                                         warn!("Guild does not exist: {guild_id}. Unscheduling.");
                                         return Ok(ScheduleAction::Abort);
                                     }
                                     StatusCode::GATEWAY_TIMEOUT => {
-                                        warn!("Gateway timed out. Retrying once.");
+                                        warn!("Gateway timed out. Retrying");
                                         return Ok(ScheduleAction::RetrySameImage);
                                     }
                                     _ => tracing::error!("unsuccessful http request: {error_response:?}"),
@@ -269,22 +249,22 @@ pub async fn handle_schedule_error(
                         }
                     }
                 }
-                SetBannerError::CouldNotPickAUrl => warn!("guild_id={guild_id}: 'Could not pick a url'"),
-                SetBannerError::CouldNotDeterminFileExtension => {
-                    warn!("guild_id={guild_id}: 'Could not determine file extenstion'");
+                SetBannerError::CouldNotPickAUrl => {
+                    warn!("guild_id={guild_id}: 'Could not pick a url'. RNG failed")
+                }
+                SetBannerError::CouldNotDeterminFileExtension(url) => {
+                    warn!("guild_id={guild_id}: 'Could not determine file extenstion. url={url}'");
+                    return Ok(ScheduleAction::RetryNewImage);
                 }
                 SetBannerError::MissingBannerFeature => {
-                    let _ = repeater_handle.remove(guild_id).await;
-                    db.delete::<GuildSchedule>(error.schedule().guild_id().get())
-                        .await?;
-
                     let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
                     let guild_owner = partial_guild.owner_id;
-                    info!(
+                    warn!(
                         "Letting owner={guild_owner} of guild={guild_id} know about the missing banner feature"
                     );
 
                     dm_user(&ctx, guild_owner, "Server has lost the required boost level. Stopping schedule. You can restart the bot after gaining the required boost level.").await?;
+                    return Ok(ScheduleAction::Abort);
                 }
                 SetBannerError::MissingAnimatedBannerFeature(url, ..) => {
                     warn!(
@@ -292,16 +272,18 @@ pub async fn handle_schedule_error(
                     );
                     let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
                     let guild_owner = partial_guild.owner_id;
-                    info!(
+                    warn!(
                         "Letting owner={guild_owner} of guild={guild_id} know about the missing animated banner feature"
                     );
 
                     dm_user(&ctx, guild_owner, &format!("Tried to set an animated banner but the server '{}' does not have the required boost level for animated banners", partial_guild.name)).await?;
+                    return Ok(ScheduleAction::RetryNewImage);
                 }
                 SetBannerError::ImageIsEmpty(url, ..) => {
                     warn!(
                         "guild_id={guild_id} with channel={channel_id} has selected an image with 0 bytes. url={url}"
                     );
+                    return Ok(ScheduleAction::RetryNewImage);
                 }
                 SetBannerError::ImageIsTooBig(url, ..) => {
                     warn!(
@@ -315,16 +297,19 @@ pub async fn handle_schedule_error(
                     );
 
                     dm_user(&ctx, guild_owner, &format!("The channel you've set contains an image that is too big for discord. Maximum size is 10mb. The image is: {url}")).await?;
+                    return Ok(ScheduleAction::RetryNewImage);
                 }
                 SetBannerError::ImageUnkownSize(url, ..) => {
                     warn!(
                         "guild_id={guild_id} with channel={channel_id} has selected an image with unknown size. url={url}"
                     );
+                    return Ok(ScheduleAction::RetryNewImage);
                 }
                 SetBannerError::Base64Encoding(url, ..) => {
                     warn!(
                         "guild_id={guild_id} with channel={channel_id} has selected an image wich could be encoded into base 64. url={url}"
                     );
+                    return Ok(ScheduleAction::RetryNewImage);
                 }
             }
         }

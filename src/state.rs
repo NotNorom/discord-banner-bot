@@ -93,7 +93,11 @@ impl State {
             .remove(guild_id)
             .await
             .map_err(|err| Error::Scheduler { msg: err.to_string() })?;
-        Ok(self.database.delete::<GuildSchedule>(guild_id.get()).await?.into())
+        Ok(self
+            .database
+            .delete::<GuildSchedule>(guild_id.get())
+            .await?
+            .into())
     }
 
     /// Load all schedules from the database into the repeater

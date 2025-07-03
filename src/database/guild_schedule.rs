@@ -178,7 +178,7 @@ impl Entry for GuildSchedule {
 
         match db.client.hgetall(Self::key(db, id)).await {
             Ok(schedule) => Ok(Some(schedule)),
-            Err(err) if *err.kind() == ErrorKind::NotFound => return Ok(None),
+            Err(err) if *err.kind() == ErrorKind::NotFound => Ok(None),
             Err(err) => Err(err),
         }
     }
@@ -186,7 +186,7 @@ impl Entry for GuildSchedule {
     async fn delete(db: &Database, id: impl Into<Key> + Send + Sync) -> Result<Self, Error> {
         let id: Key = id.into();
 
-        let schedule = match Self::get(&db, id.clone()).await {
+        let schedule = match Self::get(db, id.clone()).await {
             Ok(Some(schedule)) => schedule,
             Ok(None) => {
                 return Err(Error::new(

@@ -26,7 +26,7 @@ pub enum SetBannerError {
     CouldNotPickAUrl,
 
     #[error("Could not determin file extenstion on image")]
-    CouldNotDeterminFileExtension,
+    CouldNotDeterminFileExtension(Url),
 
     #[error("Missing 'banner' feature")]
     MissingBannerFeature,
@@ -74,7 +74,7 @@ impl BannerFromUrl for GuildId {
             .path()
             .split('.')
             .next_back()
-            .ok_or_else(|| SetBannerError::CouldNotDeterminFileExtension)?;
+            .ok_or_else(|| SetBannerError::CouldNotDeterminFileExtension(url.clone()))?;
 
         debug!("Found extension: {extension}");
         // Disable banner feature check when in dev environment
