@@ -1,4 +1,5 @@
-FROM docker.io/rust:1.87.0-buster as builder
+######################## BUILDER IMAGE ########################
+FROM docker.io/rust:1.88.0-buster as builder
 
 WORKDIR /app
 COPY . .
@@ -7,7 +8,7 @@ COPY . .
 # RUN cargo build --release --target=x86_64-unknown-linux-musl
 RUN cargo build --release
 
-# runner image
+######################## RUNNER IMAGE ########################
 FROM docker.io/debian:buster-slim
 
 ARG APP_DIR=/app
@@ -18,6 +19,7 @@ RUN apt-get update \
     && apt-get install -y ca-certificates tzdata \
     && rm -rf /var/lib/apt/lists/*
 
+# dbb = discord banner bot
 ENV TZ=Etc/UTC \
     APP_USER=dbb
 
