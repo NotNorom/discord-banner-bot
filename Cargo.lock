@@ -132,8 +132,9 @@ dependencies = [
 
 [[package]]
 name = "async-repeater"
-version = "0.1.0"
-source = "git+https://github.com/NotNorom/async-repeater.git#107430635dea6179edeec25dacfe74181a3cea0e"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1676ee57bc8a68234f1c48d459afc80b504f24da2c061bf7a5ba97fa91eb47f"
 dependencies = [
  "futures-core",
  "tokio",
