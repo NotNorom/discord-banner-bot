@@ -174,7 +174,8 @@ pub async fn evaluate_schedule_error(
 
     let message = MessageBuilder::new()
         .push_bold("Error in guild: ")
-        .push_mono_line_safe(&*guild_name)
+        .push_line_safe(&*guild_name)
+        .push_line("")
         .push(&*error.to_string())
         .build();
 
@@ -204,7 +205,7 @@ pub async fn evaluate_schedule_error(
                             return Ok(ScheduleAction::Abort);
                         }
                         StatusCode::GATEWAY_TIMEOUT => {
-                            warn!("Gateway timed out. Retrying once.");
+                            warn!("Gateway timed out. Retrying.");
                             return Ok(ScheduleAction::RetrySameImage);
                         }
                         _ => tracing::error!("unsuccessful http request: {error_response:?}"),
@@ -285,9 +286,9 @@ pub async fn evaluate_schedule_error(
                     );
                     return Ok(ScheduleAction::RetryNewImage);
                 }
-                SetBannerError::ImageIsTooBig(url, ..) => {
+                SetBannerError::ImageIsTooBig(url, message) => {
                     warn!(
-                        "guild_id={guild_id} with channel={channel_id} has selecte an image that is too big. url={url}"
+                        "guild_id={guild_id} with channel={channel_id} has selected an image that is too big. url={url}"
                     );
 
                     let partial_guild = guild_id.to_partial_guild(&ctx.http).await?;
@@ -296,7 +297,15 @@ pub async fn evaluate_schedule_error(
                         "Letting owner={guild_owner} of guild={guild_id} know about an image that is too big"
                     );
 
-                    dm_user(&ctx, guild_owner, &format!("The channel you've set contains an image that is too big for discord. Maximum size is 10mb. The image is: {url}")).await?;
+                    let message = MessageBuilder::new()
+                        .push_line("An image is too big. Discord allows a maximum of 10mb for banners. Consider deleting it.")
+                        .push("The image is in this message: ")
+                        .push_line(message.link().as_str())
+                        .push("This is the image: ")
+                        .push_line(url.to_string().as_str())
+                        .build();
+
+                    dm_user(&ctx, guild_owner, &message).await?;
                     return Ok(ScheduleAction::RetryNewImage);
                 }
                 SetBannerError::ImageUnkownSize(url, ..) => {
