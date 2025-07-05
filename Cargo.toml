@@ -3,8 +3,12 @@ name = "discord-banner-bot"
 version = "0.6.2"
 edition = "2024"
 authors = ["Andre Julius <noromoron@gmail.com>"]
+license-file = "LICENSE"
+description = "Discord bot for changing server banners on a customizable timer"
+homepage = "https://github.com/NotNorom/discord-banner-bot"
 repository = "https://github.com/NotNorom/discord-banner-bot"
-resolver = "2"
+readme = "README.md"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
