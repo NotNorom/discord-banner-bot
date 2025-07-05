@@ -29,13 +29,13 @@ fred = { version = "10.1.0", default-features = false, features = [
 ] }
 poise = "0.6.1"
 rand = "0.9.1"
-reqwest = { version = "0.12.20", default-features = false, features = [
+reqwest = { version = "0.12.22", default-features = false, features = [
     "json",
     "native-tls-vendored",
 ] }
 serde = "1.0.219"
 thiserror = "2.0.12"
-tokio = { version = "1.45.1", features = [
+tokio = { version = "1.46.0", features = [
     "rt-multi-thread",
 ], default-features = false }
 tokio-stream = "0.1.17"
@@ -55,3 +55,6 @@ poise = { git = "https://github.com/serenity-rs/poise.git", branch = "serenity-n
 
 #[patch."https://github.com/serenity-rs/serenity.git"]
 # serenity = { path = "/home/norom/Documents/Code/serenity" }
+
+[patch."https://github.com/serenity-rs/serenity.git"]
+serenity = { git = "https://github.com/serenity-rs//serenity", rev = "a60a332d2d34e6141720ee16869b68a06dac79b6"}
