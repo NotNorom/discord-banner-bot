@@ -1,10 +1,8 @@
 use std::sync::Arc;
 
-use tokio::{
-    select,
-    signal::unix::{SignalKind, signal},
-    sync::broadcast::Receiver,
-};
+#[cfg(not(target_os = "windows"))]
+use tokio::signal::unix::{SignalKind, signal};
+use tokio::{select, sync::broadcast::Receiver};
 use tracing::{error, info};
 
 use crate::{Error, state::State};
@@ -21,11 +19,12 @@ pub async fn shutdown(
     shard_manager_shutdown_fn: impl FnOnce() -> bool + Send,
     mut internal_receiver: Receiver<()>,
 ) -> Result<(), Error> {
-    let mut stream_interrupt = signal(SignalKind::interrupt()).unwrap();
-    let mut stream_terminate = signal(SignalKind::terminate()).unwrap();
-    let mut stream_quit = signal(SignalKind::quit()).unwrap();
-
+    #[cfg(not(target_os = "windows"))]
     let received_signal = {
+        let mut stream_interrupt = signal(SignalKind::interrupt()).unwrap();
+        let mut stream_terminate = signal(SignalKind::terminate()).unwrap();
+        let mut stream_quit = signal(SignalKind::quit()).unwrap();
+
         select! {
             _ = stream_interrupt.recv() => {
                 "SIGINT"
@@ -40,6 +39,12 @@ pub async fn shutdown(
                 "INTERNAL"
             }
         }
+    };
+
+    #[cfg(target_os = "windows")]
+    let received_signal = {
+        internal_receiver.recv().await;
+        "INTERNAL"
     };
 
     info!("Received signal {received_signal}, shutting down");
