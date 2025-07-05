@@ -83,7 +83,7 @@ pub async fn handle_event(context: &Context, event: &FullEvent) -> Result<(), Er
                 Err(err) => return Err(err)?,
             };
 
-            if channel.base.guild_id == schedule.guild_id() {
+            if channel.base.guild_id == schedule.guild_id() && channel.id == schedule.channel_id() {
                 data.deque(channel.base.guild_id).await?;
             }
 
@@ -99,7 +99,7 @@ pub async fn handle_event(context: &Context, event: &FullEvent) -> Result<(), Er
                 Err(err) => return Err(err)?,
             };
 
-            if thread.guild_id == schedule.guild_id() {
+            if thread.guild_id == schedule.guild_id() && thread.id == schedule.channel_id() {
                 data.deque(thread.guild_id).await?;
             }
 
