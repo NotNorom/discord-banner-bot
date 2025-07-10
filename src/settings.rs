@@ -1,4 +1,5 @@
 use std::{
+    num::NonZeroU64,
     path::{Path, PathBuf},
     str::FromStr,
     sync::OnceLock,
@@ -74,11 +75,11 @@ pub struct Scheduler {
     /// How many schedules can run at the same time
     pub capacity: usize,
     /// Minimum amount of minutes between banner changes
-    pub minimum_interval: u64,
+    pub minimum_interval: NonZeroU64,
     /// Default amount of minutes between banner changes
-    pub default_interval: u64,
+    pub default_interval: NonZeroU64,
     /// Maximum amount of minutes between banner changes
-    pub maximum_interval: u64,
+    pub maximum_interval: NonZeroU64,
     /// Default amount of messages to look back for
     pub default_message_limit: usize,
     /// Maximum amount of messages to look back for

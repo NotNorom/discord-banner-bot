@@ -1,4 +1,4 @@
-use std::num::NonZeroUsize;
+use std::num::{NonZeroU64, NonZeroUsize};
 
 use chrono::{DateTime, Utc};
 use poise::{
@@ -29,7 +29,7 @@ pub async fn start(
     channel_id: GenericChannelId,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     #[min = 15]
-    interval: Option<u64>,
+    interval: Option<NonZeroU64>,
     #[description = "When to start the schedule. Default is instantly."] start_at: Option<DateTime<Utc>>,
     #[description = "How many messages to look back for images."]
     #[min = 0]
@@ -57,7 +57,7 @@ pub async fn start_for_guild(
     channel_id: GenericChannelId,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     #[min = 15]
-    interval: Option<u64>,
+    interval: Option<NonZeroU64>,
     #[description = "When to start the schedule. Default is instantly."] start_at: Option<DateTime<Utc>>,
     #[description = "How many messages to look back for images."]
     #[min = 0]
@@ -187,7 +187,7 @@ pub async fn current_banner(ctx: Context<'_>) -> Result<(), Error> {
 struct StartBannerOptions {
     guild_id: GuildId,
     channel_id: GenericChannelId,
-    interval: u64,
+    interval: NonZeroU64,
     start_at: Option<DateTime<Utc>>,
     message_limit: usize,
     settings: &'static Settings,
@@ -198,14 +198,14 @@ impl StartBannerOptions {
         Self {
             guild_id,
             channel_id,
-            interval: 15,
+            interval: NonZeroU64::new(15).unwrap(),
             start_at: None,
             message_limit: 200,
             settings,
         }
     }
 
-    pub fn interval(mut self, interval: Option<u64>) -> Result<Self, Error> {
+    pub fn interval(mut self, interval: Option<NonZeroU64>) -> Result<Self, Error> {
         let interval = interval.unwrap_or(self.settings.scheduler.default_interval);
         if interval < self.settings.scheduler.minimum_interval {
             return Err(CommandErr::BelowMinTimeout.into());
@@ -275,9 +275,13 @@ async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(
 
     // schedule it
     // interval is in minutes, so we multiply by 60 seconds
-    let schedule_builder = ScheduleBuilder::new(guild_id, channel_id, interval * 60)
-        .message_limit(message_limit)
-        .start_at(start_at);
+    let schedule_builder = ScheduleBuilder::new(
+        guild_id,
+        channel_id,
+        NonZeroU64::new(interval.get() * 60).unwrap(),
+    )
+    .message_limit(message_limit)
+    .start_at(start_at);
 
     state.enque(schedule_builder.build()).await?;
 

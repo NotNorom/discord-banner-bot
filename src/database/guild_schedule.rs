@@ -1,4 +1,7 @@
-use std::{collections::HashMap, num::NonZeroUsize};
+use std::{
+    collections::HashMap,
+    num::{NonZeroU64, NonZeroUsize},
+};
 
 use fred::{
     error::{Error, ErrorKind},
@@ -18,7 +21,7 @@ pub struct GuildSchedule {
     /// Channel ID to fetch images from
     channel_id: u64,
     /// How frequent the schudle run. In seconds
-    interval: u64,
+    interval: NonZeroU64,
     /// When to start the schedule (in seconds)
     start_at: u64,
     /// Unix timestamp since the banner was last changed (in seconds)
@@ -31,7 +34,7 @@ impl GuildSchedule {
     pub fn new(
         guild_id: u64,
         channel_id: u64,
-        interval: u64,
+        interval: NonZeroU64,
         last_run: u64,
         start_at: u64,
         message_limit: u64,
@@ -57,7 +60,7 @@ impl GuildSchedule {
     }
 
     /// Get the db entry's interval.
-    pub fn interval(&self) -> u64 {
+    pub fn interval(&self) -> NonZeroU64 {
         self.interval
     }
 
@@ -139,7 +142,9 @@ impl FromValue for GuildSchedule {
 
         let guild_id = get_from_redis_map(&value, "guild_id")?;
         let channel_id = get_from_redis_map(&value, "channel_id")?;
-        let interval = get_from_redis_map(&value, "interval")?;
+        let interval = get_from_redis_map::<u64>(&value, "interval")?
+            .try_into()
+            .map_err(|_| Error::new(ErrorKind::Parse, "value is zero"))?;
         let last_run = get_from_redis_map(&value, "last_run")?;
         let start_at = get_from_redis_map(&value, "start_at")?;
         let message_limit = get_from_redis_map(&value, "message_limit")?;

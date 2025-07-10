@@ -16,7 +16,7 @@ use crate::{
 pub struct Schedule {
     guild_id: GuildId,
     channel_id: GenericChannelId,
-    interval: u64,
+    interval: NonZeroU64,
     start_at: u64,
     last_run: Option<NonZeroU64>,
     message_limit: Option<NonZeroUsize>,
@@ -34,7 +34,7 @@ impl Schedule {
     }
 
     /// How many seconds in between schedules
-    pub fn interval(&self) -> u64 {
+    pub fn interval(&self) -> NonZeroU64 {
         self.interval
     }
 
@@ -62,14 +62,14 @@ impl Schedule {
 pub struct ScheduleBuilder {
     guild_id: GuildId,
     channel_id: GenericChannelId,
-    interval: u64,
+    interval: NonZeroU64,
     start_at: u64,
     last_run: Option<NonZeroU64>,
     message_limit: Option<NonZeroUsize>,
 }
 
 impl ScheduleBuilder {
-    pub fn new(guild_id: GuildId, channel_id: GenericChannelId, interval: u64) -> Self {
+    pub fn new(guild_id: GuildId, channel_id: GenericChannelId, interval: NonZeroU64) -> Self {
         Self {
             guild_id,
             channel_id,
@@ -116,7 +116,7 @@ impl RepeaterEntry for Schedule {
     type Key = GuildId;
 
     fn interval(&self) -> Duration {
-        Duration::from_secs(self.interval)
+        Duration::from_secs(self.interval.get())
     }
 
     fn key(&self) -> Self::Key {

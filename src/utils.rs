@@ -1,6 +1,6 @@
 //! Collecting of functions that don't fit anywhere else
 
-use std::time::SystemTime;
+use std::{num::NonZeroU64, time::SystemTime};
 
 use poise::{
     futures_util::{StreamExt, stream::futures_unordered},
@@ -26,13 +26,13 @@ pub fn current_unix_timestamp() -> u64 {
 /// - `start_at`: unix timestamp in seconds
 /// - `now`: unix timestamp in seconds
 /// - `interval`: in seconds
-pub fn next_run(start_at: u64, now: u64, interval: u64) -> u64 {
+pub fn next_run(start_at: u64, now: u64, interval: NonZeroU64) -> u64 {
     if start_at >= now {
         // seconds between now and stat_at
         start_at - now
     } else {
         // seconds between now and next run
-        interval - (now - start_at) % interval
+        interval.get() - (now - start_at) % interval.get()
     }
 }
 
