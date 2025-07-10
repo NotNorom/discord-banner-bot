@@ -178,11 +178,11 @@ impl RunnerError {
 }
 
 pub async fn schedule_callback(ctx: serenity_prelude::Context, schedule: Schedule) {
-    let data: Arc<State> = ctx.data();
+    let state: Arc<State> = ctx.data();
     let task = ScheduleRunner::new(
         ctx.clone(),
-        data.database().to_owned(),
-        data.reqw_client().to_owned(),
+        state.database().to_owned(),
+        state.reqw_client().to_owned(),
         schedule.clone(),
     );
 
@@ -218,7 +218,7 @@ pub async fn schedule_callback(ctx: serenity_prelude::Context, schedule: Schedul
 
         error!("Task had an error: {err:?}");
 
-        let error_handling_result = evaluate_schedule_error(&err, ctx.clone(), data.owners()).await;
+        let error_handling_result = evaluate_schedule_error(&err, ctx.clone(), state.owners()).await;
 
         match error_handling_result {
             Ok(action) => {
@@ -236,7 +236,7 @@ pub async fn schedule_callback(ctx: serenity_prelude::Context, schedule: Schedul
                         }
                     }
                     ScheduleAction::Abort => {
-                        let _ = data.deque(schedule.guild_id()).await;
+                        let _ = state.deque(schedule.guild_id()).await;
                         return;
                     }
                 }
@@ -245,8 +245,8 @@ pub async fn schedule_callback(ctx: serenity_prelude::Context, schedule: Schedul
                 let message = format!("CRITICAL ERROR schedule={schedule:?}: {critical_err:?}");
                 error!(message);
                 // if we encounter an error _now_ it's over anyways
-                let _ = data.deque(schedule.guild_id()).await;
-                let _ = dm_users(&ctx, data.owners(), &message).await;
+                let _ = state.deque(schedule.guild_id()).await;
+                let _ = dm_users(&ctx, state.owners(), &message).await;
 
                 return;
             }

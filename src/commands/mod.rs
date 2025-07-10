@@ -58,12 +58,12 @@ pub async fn servers(ctx: Context<'_>) -> Result<(), Error> {
 #[poise::command(prefix_command, hide_in_help, owners_only)]
 #[instrument(skip_all)]
 pub async fn reload(ctx: Context<'_>) -> Result<(), Error> {
-    let data = ctx.data();
-    if !data.is_initialized() {
+    let state = ctx.data();
+    if !state.is_initialized() {
         ctx.say("Called reload before bot was initialized").await?;
         return Ok(());
     }
-    let msg = data.load_schedules_from_db().await.map(|res| res.to_string())?;
+    let msg = state.load_schedules_from_db().await.map(|res| res.to_string())?;
     ctx.say(msg).await?;
     Ok(())
 }

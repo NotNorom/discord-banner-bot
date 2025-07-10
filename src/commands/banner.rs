@@ -111,8 +111,8 @@ pub async fn stop_for_guild(
 pub async fn current_schedule(ctx: Context<'_>) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
 
-    let user_data = ctx.data();
-    let Some(schedule) = user_data.get_schedule(guild_id).await? else {
+    let state = ctx.data();
+    let Some(schedule) = state.get_schedule(guild_id).await? else {
         // answer the user
         poise::send_reply(
             ctx,
@@ -267,7 +267,7 @@ async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(
         }
     }
 
-    let user_data = ctx.data();
+    let state = ctx.data();
 
     let now = current_unix_timestamp();
     let start_at = start_at.map_or(now, |s| s.timestamp() as u64);
@@ -279,7 +279,7 @@ async fn start_banner(ctx: Context<'_>, options: StartBannerOptions) -> Result<(
         .message_limit(message_limit)
         .start_at(start_at);
 
-    user_data.enque(schedule_builder.build()).await?;
+    state.enque(schedule_builder.build()).await?;
 
     let content = MessageBuilder::new()
         .push(&*format!(

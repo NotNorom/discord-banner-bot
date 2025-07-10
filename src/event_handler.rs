@@ -33,7 +33,7 @@ pub async fn handle_event(context: &Context, event: &FullEvent) -> Result<(), Er
         FullEvent::GuildDelete { incomplete, .. } => {
             debug!("GuildDelete: {incomplete:?}");
 
-            let data: Arc<State> = context.data();
+            let state: Arc<State> = context.data();
 
             // do nothing if guild has gone offline. could just be a temporary outtage
             if incomplete.unavailable {
@@ -45,20 +45,20 @@ pub async fn handle_event(context: &Context, event: &FullEvent) -> Result<(), Er
                 error!("GuildDelete event fired before bot was initialized");
             }
 
-            data.deque(incomplete.id).await?;
+            state.deque(incomplete.id).await?;
             Ok(())
         }
         FullEvent::Resume { event, .. } => {
             debug!("Resume: {event:?}");
-            let data = context.data::<State>();
+            let state = context.data::<State>();
 
-            if !data.is_initialized() {
+            if !state.is_initialized() {
                 warn!("Resume event fired before bot was initialized");
                 return Ok(());
             }
 
             info!("Loading schedules from database");
-            let result = data.load_schedules_from_db().await?;
+            let result = state.load_schedules_from_db().await?;
             info!("{result}");
             Ok(())
         }
@@ -76,15 +76,15 @@ pub async fn handle_event(context: &Context, event: &FullEvent) -> Result<(), Er
 
             debug!("ChannelDelete: {channel:?}");
 
-            let data: Arc<State> = context.data();
-            let schedule = match data.get_schedule(channel.base.guild_id).await {
+            let state: Arc<State> = context.data();
+            let schedule = match state.get_schedule(channel.base.guild_id).await {
                 Ok(Some(schedule)) => schedule,
                 Ok(None) => return Ok(()),
                 Err(err) => return Err(err)?,
             };
 
             if channel.base.guild_id == schedule.guild_id() && channel.id.widen() == schedule.channel_id() {
-                data.deque(channel.base.guild_id).await?;
+                state.deque(channel.base.guild_id).await?;
             }
 
             Ok(())
@@ -92,15 +92,15 @@ pub async fn handle_event(context: &Context, event: &FullEvent) -> Result<(), Er
         FullEvent::ThreadDelete { thread, .. } => {
             debug!("ThreadDelete: {thread:?}");
 
-            let data: Arc<State> = context.data();
-            let schedule = match data.get_schedule(thread.guild_id).await {
+            let state: Arc<State> = context.data();
+            let schedule = match state.get_schedule(thread.guild_id).await {
                 Ok(Some(schedule)) => schedule,
                 Ok(None) => return Ok(()),
                 Err(err) => return Err(err)?,
             };
 
             if thread.guild_id == schedule.guild_id() && thread.id.widen() == schedule.channel_id() {
-                data.deque(thread.guild_id).await?;
+                state.deque(thread.guild_id).await?;
             }
 
             Ok(())
