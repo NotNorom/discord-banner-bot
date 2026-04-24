@@ -42,6 +42,10 @@ pub enum UtilCommand {
         #[arg(short, long, default_value = "200")]
         limit: usize,
     },
+    LeaveGuild {
+        #[arg(short, long)]
+        guild_id: GuildId,
+    },
 }
 
 #[derive(Debug, Clone, Subcommand)]

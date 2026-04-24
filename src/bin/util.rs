@@ -47,6 +47,12 @@ async fn main() -> Result<(), Error> {
                 println!("{}:\n\t{}\n", media.message.link(), media.media);
             }
         }
+        UtilCommand::LeaveGuild { guild_id } => {
+            match http.leave_guild(guild_id).await {
+                Ok(_) => info!("Successfully left guild: {}", guild_id),
+                Err(err) => error!("Failed to leave guild {}: {err:#}", guild_id),
+            }
+        }
     };
 
     Ok(())
