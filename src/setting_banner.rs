@@ -3,9 +3,10 @@
 
 use std::collections::HashMap;
 
-use base64::{Engine, prelude::BASE64_STANDARD};
 use bytes::Bytes;
-use poise::serenity_prelude::{self, EditGuild, GuildId, Http, ImageData, Message, futures::TryStreamExt};
+use poise::serenity_prelude::{
+    self, CreateAttachment, EditGuild, GuildId, Http, Message, futures::TryStreamExt,
+};
 use rand::seq::IndexedRandom;
 use reqwest::Client;
 use tracing::{debug, info, instrument};
@@ -177,9 +178,10 @@ impl BannerFromUrl for GuildId {
             _ => {}
         }
 
-        let b64_encoded_bytes = BASE64_STANDARD.encode(image_bytes);
-
-        let image = ImageData::from_base64(format!("data:image/{extension};base64,{b64_encoded_bytes}"))
+        let image_bytes_2 = CreateAttachment::bytes(image_bytes, "");
+        let image = image_bytes_2
+            .encode(&format!("image/{extension}"))
+            .await
             .map_err(|_| SetBannerError::Base64Encoding(url.clone(), Box::new(message.clone())))?;
 
         let edit_guild = {
