@@ -148,7 +148,7 @@ impl Display for SendDm {
 pub async fn handle_framework_error<U, E>(error: poise::FrameworkError<'_, U, E>) -> Result<(), Error>
 where
     U: Send + Sync + 'static,
-    E: std::fmt::Display + std::fmt::Debug,
+    E: Into<Box<dyn std::error::Error + Send + Sync>> + std::fmt::Display,
 {
     tracing::error!("{}", &error);
 
@@ -300,7 +300,7 @@ pub async fn evaluate_schedule_error(
                     let message = MessageBuilder::new()
                         .push_line("An image is too big. Discord allows a maximum of 10mb for banners. Consider deleting it.")
                         .push("The image is in this message: ")
-                        .push_line(message.link().as_str())
+                        .push_line(message.link().to_string().as_str())
                         .push("This is the image: ")
                         .push_line(url.to_string().as_str())
                         .build();

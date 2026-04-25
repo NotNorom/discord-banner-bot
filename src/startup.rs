@@ -28,10 +28,12 @@ pub(crate) async fn handle_event_ready(ctx: serenity_prelude::Context, _: &Ready
     let repeater = Repeater::with_capacity(Settings::get().scheduler.capacity);
     let repeater_ctx = ctx.clone();
 
-    state.set_repeater_handle(
-        repeater.run_with_async_callback(move |schedule, _handle| schedule_callback(repeater_ctx, schedule)),
-    )
-    .expect("run only once");
+    state
+        .set_repeater_handle(
+            repeater
+                .run_with_async_callback(move |schedule, _handle| schedule_callback(repeater_ctx, schedule)),
+        )
+        .expect("run only once");
 
     state.load_schedules_from_db().await?;
 

@@ -12,6 +12,7 @@ use poise::{
     FrameworkOptions, PrefixFrameworkOptions,
     serenity_prelude::{self, GatewayIntents},
 };
+use std::sync::Arc;
 use tokio::sync::broadcast;
 use tracing::{error, info, instrument};
 
@@ -55,8 +56,8 @@ async fn main() -> Result<(), Error> {
         GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
     )
     .data(State::new(shutdown_sender).await?.into())
-    .framework(framework)
-    .event_handler(Handler)
+    .framework(Box::new(framework))
+    .event_handler(Arc::new(Handler))
     .await?;
 
     let shutdown_task = tokio::spawn(shutdown(

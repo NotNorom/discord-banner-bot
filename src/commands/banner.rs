@@ -31,7 +31,9 @@ pub async fn start(
     #[min = 15]
     #[string]
     interval: Option<Interval>,
-    #[description = "When to start the schedule. Default is instantly."] start_at: Option<DateTime<Utc>>,
+    #[description = "When to start the schedule. Default is instantly."]
+    #[string]
+    start_at: Option<DateTime<Utc>>,
     #[description = "How many messages to look back for images."]
     #[min = 0]
     #[max = 300]
@@ -60,7 +62,9 @@ pub async fn start_for_guild(
     #[min = 15]
     #[string]
     interval: Option<Interval>,
-    #[description = "When to start the schedule. Default is instantly."] start_at: Option<DateTime<Utc>>,
+    #[description = "When to start the schedule. Default is instantly."]
+    #[string]
+    start_at: Option<DateTime<Utc>>,
     #[description = "How many messages to look back for images."]
     #[min = 0]
     #[max = 300]
@@ -136,7 +140,7 @@ pub async fn current_schedule(ctx: Context<'_>) -> Result<(), Error> {
     let message = match last_reachable_message(ctx.http(), &schedule).await {
         Some(msg) => message_builder
             .push(" Last reachable message: ")
-            .push_named_link("click here", msg.link().as_str())
+            .push_named_link("click here", msg.link().to_string().as_str())
             .build(),
         None => message_builder.build(),
     };
@@ -330,7 +334,7 @@ async fn stop_banner(ctx: Context<'_>, guild_id: GuildId) -> Result<(), Error> {
     let message = match last_reachable_message(ctx.http(), &schedule).await {
         Some(msg) => message_builder
             .push(" Last reachable message: ")
-            .push_named_link("click here", msg.link().as_str())
+            .push_named_link("click here", msg.link().to_string().as_str())
             .build(),
         None => message_builder.build(),
     };
