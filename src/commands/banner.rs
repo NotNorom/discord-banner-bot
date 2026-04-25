@@ -1,4 +1,4 @@
-use std::num::{NonZeroU64, NonZeroUsize};
+use std::num::{NonZeroU32, NonZeroU64};
 
 use chrono::{DateTime, Utc};
 use poise::{
@@ -34,7 +34,7 @@ pub async fn start(
     #[description = "How many messages to look back for images."]
     #[min = 0]
     #[max = 300]
-    message_limit: Option<usize>,
+    message_limit: Option<u32>,
 ) -> Result<(), Error> {
     let guild_id = ctx.guild_id().ok_or(CommandErr::GuildOnly)?;
     let options = StartBannerOptions::new(Settings::get(), guild_id, channel_id)
@@ -62,7 +62,7 @@ pub async fn start_for_guild(
     #[description = "How many messages to look back for images."]
     #[min = 0]
     #[max = 300]
-    message_limit: Option<usize>,
+    message_limit: Option<u32>,
 ) -> Result<(), Error> {
     let options = StartBannerOptions::new(Settings::get(), guild_id, channel_id)
         .interval(interval)?
@@ -124,10 +124,7 @@ pub async fn current_schedule(ctx: Context<'_>) -> Result<(), Error> {
         return Ok(());
     };
 
-    let message_limit = schedule
-        .message_limit()
-        .map(NonZeroUsize::get)
-        .unwrap_or_default();
+    let message_limit = schedule.message_limit().map(NonZeroU32::get).unwrap_or_default();
 
     let message_builder = MessageBuilder::new()
         .push("Channel: ")
@@ -189,7 +186,7 @@ struct StartBannerOptions {
     channel_id: GenericChannelId,
     interval: NonZeroU64,
     start_at: Option<DateTime<Utc>>,
-    message_limit: usize,
+    message_limit: u32,
     settings: &'static Settings,
 }
 
@@ -235,7 +232,7 @@ impl StartBannerOptions {
         Ok(self)
     }
 
-    pub fn message_limit(mut self, message_limit: Option<usize>) -> Result<Self, Error> {
+    pub fn message_limit(mut self, message_limit: Option<u32>) -> Result<Self, Error> {
         let message_limit = message_limit.unwrap_or(self.settings.scheduler.default_message_limit);
         if message_limit > self.settings.scheduler.maximum_message_limit {
             return Err(CommandErr::AboveMaxMessageLimit.into());
@@ -320,10 +317,7 @@ async fn stop_banner(ctx: Context<'_>, guild_id: GuildId) -> Result<(), Error> {
     // unschedule it!
     state.deque(guild_id).await?;
 
-    let message_limit = schedule
-        .message_limit()
-        .map(NonZeroUsize::get)
-        .unwrap_or_default();
+    let message_limit = schedule.message_limit().map(NonZeroU32::get).unwrap_or_default();
 
     let message_builder = MessageBuilder::new()
         .push_bold_line("Stopping this schedule:")

@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    num::{NonZeroU64, NonZeroUsize},
+    num::{NonZeroU32, NonZeroU64},
 };
 
 use fred::{
@@ -93,7 +93,7 @@ impl From<Schedule> for GuildSchedule {
 
         let message_limit = schedule
             .message_limit()
-            .map(NonZeroUsize::get)
+            .map(NonZeroU32::get)
             .unwrap_or_default()
             .try_into()
             .expect("If the limit does not fit in  a 64 bit uint may god help us all");

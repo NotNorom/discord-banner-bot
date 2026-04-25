@@ -1,6 +1,6 @@
 use std::{
     fmt::Debug,
-    num::{NonZeroU64, NonZeroUsize},
+    num::{NonZeroU32, NonZeroU64},
     time::Duration,
 };
 
@@ -19,7 +19,7 @@ pub struct Schedule {
     interval: NonZeroU64,
     start_at: u64,
     last_run: Option<NonZeroU64>,
-    message_limit: Option<NonZeroUsize>,
+    message_limit: Option<NonZeroU32>,
 }
 
 impl Schedule {
@@ -49,7 +49,7 @@ impl Schedule {
     }
 
     /// Message limit
-    pub fn message_limit(&self) -> Option<NonZeroUsize> {
+    pub fn message_limit(&self) -> Option<NonZeroU32> {
         self.message_limit
     }
 
@@ -65,7 +65,7 @@ pub struct ScheduleBuilder {
     interval: NonZeroU64,
     start_at: u64,
     last_run: Option<NonZeroU64>,
-    message_limit: Option<NonZeroUsize>,
+    message_limit: Option<NonZeroU32>,
 }
 
 impl ScheduleBuilder {
@@ -87,8 +87,8 @@ impl ScheduleBuilder {
     }
 
     #[must_use]
-    pub fn message_limit(mut self, message_limit: usize) -> Self {
-        self.message_limit = NonZeroUsize::new(message_limit);
+    pub fn message_limit(mut self, message_limit: u32) -> Self {
+        self.message_limit = NonZeroU32::new(message_limit);
         self
     }
 
@@ -142,7 +142,7 @@ impl Debug for Schedule {
         } = self;
 
         let last_run = last_run.map(NonZeroU64::get).unwrap_or_default();
-        let message_limit = message_limit.map(NonZeroUsize::get).unwrap_or_default();
+        let message_limit = message_limit.map(NonZeroU32::get).unwrap_or_default();
 
         write!(
             f,
@@ -166,7 +166,7 @@ impl From<GuildSchedule> for Schedule {
             interval,
             start_at,
             last_run: NonZeroU64::new(last_run),
-            message_limit: NonZeroUsize::new(message_limit.try_into().unwrap_or(usize::MAX)),
+            message_limit: NonZeroU32::new(message_limit.try_into().unwrap_or(u32::MAX)),
         }
     }
 }

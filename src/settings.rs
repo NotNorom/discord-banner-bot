@@ -1,5 +1,4 @@
 use std::{
-    num::NonZeroU64,
     path::{Path, PathBuf},
     str::FromStr,
     sync::OnceLock,
@@ -81,9 +80,9 @@ pub struct Scheduler {
     /// Maximum amount of minutes between banner changes
     pub maximum_interval: NonZeroU64,
     /// Default amount of messages to look back for
-    pub default_message_limit: usize,
+    pub default_message_limit: u32,
     /// Maximum amount of messages to look back for
-    pub maximum_message_limit: usize,
+    pub maximum_message_limit: u32,
 }
 
 /// Database settings

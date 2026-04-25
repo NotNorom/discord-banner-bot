@@ -1,4 +1,4 @@
-use std::{fmt::Display, num::NonZeroUsize};
+use std::{fmt::Display, num::NonZeroU32};
 
 use poise::serenity_prelude::{
     CacheHttp, Error, GenericChannelId, Message, futures::stream as futures_stream,
@@ -88,15 +88,12 @@ pub fn find_media_in_channel<'a>(
 /// Return the last message the bot is gonna look at for that schedule
 #[instrument(skip_all)]
 pub async fn last_reachable_message(http: &impl CacheHttp, schedule: &Schedule) -> Option<Message> {
-    let limit = schedule
-        .message_limit()
-        .map(NonZeroUsize::get)
-        .unwrap_or_default();
+    let limit = schedule.message_limit().map(NonZeroU32::get).unwrap_or_default();
 
     let messages: Vec<Message> = schedule
         .channel_id()
         .messages_iter(http)
-        .take(limit)
+        .take(limit as usize)
         .filter_map(Result::ok)
         .collect()
         .await;

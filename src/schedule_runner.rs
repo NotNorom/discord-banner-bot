@@ -1,4 +1,4 @@
-use std::{num::NonZeroUsize, sync::Arc, time::Duration};
+use std::{num::NonZeroU32, sync::Arc, time::Duration};
 
 use poise::serenity_prelude::{self, GuildId, Message};
 use tokio::{
@@ -69,11 +69,11 @@ impl ScheduleRunner {
         };
 
         let channel = schedule.channel_id();
-        let limit = schedule.message_limit().map_or(usize::MAX, NonZeroUsize::get);
+        let limit = schedule.message_limit().map_or(u32::MAX, NonZeroU32::get);
 
         debug!("Fetching images, limited to {} messages", limit);
 
-        let stream_of_media = find_media_in_channel(&self.ctx, &channel, limit);
+        let stream_of_media = find_media_in_channel(&self.ctx, &channel, limit as usize);
         pin!(stream_of_media);
 
         let mut images = Vec::new();
