@@ -9,7 +9,7 @@ use tracing::instrument;
 
 use crate::{
     Context, Error, Settings, error::Command as CommandErr, finding_media::last_reachable_message,
-    schedule::ScheduleBuilder, utils::current_unix_timestamp,
+    interval::Interval, schedule::ScheduleBuilder, utils::current_unix_timestamp,
 };
 
 /// Picks a random image from the channel every interval minutes and sets it as the banner.
@@ -29,7 +29,8 @@ pub async fn start(
     channel_id: GenericChannelId,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     #[min = 15]
-    interval: Option<NonZeroU64>,
+    #[string]
+    interval: Option<Interval>,
     #[description = "When to start the schedule. Default is instantly."] start_at: Option<DateTime<Utc>>,
     #[description = "How many messages to look back for images."]
     #[min = 0]
@@ -57,7 +58,8 @@ pub async fn start_for_guild(
     channel_id: GenericChannelId,
     #[description = "After how many minutes the image should change. Default is 30, minimum 15."]
     #[min = 15]
-    interval: Option<NonZeroU64>,
+    #[string]
+    interval: Option<Interval>,
     #[description = "When to start the schedule. Default is instantly."] start_at: Option<DateTime<Utc>>,
     #[description = "How many messages to look back for images."]
     #[min = 0]
@@ -184,7 +186,7 @@ pub async fn current_banner(ctx: Context<'_>) -> Result<(), Error> {
 struct StartBannerOptions {
     guild_id: GuildId,
     channel_id: GenericChannelId,
-    interval: NonZeroU64,
+    interval: Interval,
     start_at: Option<DateTime<Utc>>,
     message_limit: u32,
     settings: &'static Settings,
@@ -195,14 +197,14 @@ impl StartBannerOptions {
         Self {
             guild_id,
             channel_id,
-            interval: NonZeroU64::new(15).unwrap(),
+            interval: Interval::from_minutes(15).unwrap(),
             start_at: None,
             message_limit: 200,
             settings,
         }
     }
 
-    pub fn interval(mut self, interval: Option<NonZeroU64>) -> Result<Self, Error> {
+    pub fn interval(mut self, interval: Option<Interval>) -> Result<Self, Error> {
         let interval = interval.unwrap_or(self.settings.scheduler.default_interval);
         if interval < self.settings.scheduler.minimum_interval {
             return Err(CommandErr::BelowMinTimeout.into());

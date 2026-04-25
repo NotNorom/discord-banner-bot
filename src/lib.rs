@@ -5,6 +5,7 @@ pub mod database;
 pub mod error;
 pub mod event_handler;
 pub mod finding_media;
+pub mod interval;
 pub mod schedule;
 pub mod schedule_runner;
 pub mod setting_banner;

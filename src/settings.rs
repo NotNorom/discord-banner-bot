@@ -8,6 +8,8 @@ use config::{Config, ConfigError};
 use poise::serenity_prelude::Token;
 use serde::Deserialize;
 
+use crate::interval::Interval;
+
 static SETTINGS: OnceLock<Settings> = OnceLock::new();
 
 #[derive(Debug, thiserror::Error)]
@@ -74,11 +76,11 @@ pub struct Scheduler {
     /// How many schedules can run at the same time
     pub capacity: usize,
     /// Minimum amount of minutes between banner changes
-    pub minimum_interval: NonZeroU64,
+    pub minimum_interval: Interval,
     /// Default amount of minutes between banner changes
-    pub default_interval: NonZeroU64,
+    pub default_interval: Interval,
     /// Maximum amount of minutes between banner changes
-    pub maximum_interval: NonZeroU64,
+    pub maximum_interval: Interval,
     /// Default amount of messages to look back for
     pub default_message_limit: u32,
     /// Maximum amount of messages to look back for
