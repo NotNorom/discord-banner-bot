@@ -21,38 +21,39 @@ debug = true
 [dependencies]
 async-repeater = "1.0.0"
 base64 = "0.22.1"
-bytes = "1.10.1"
-chrono = "0.4.41"
-clap = { version = "4.5.40", features = ["derive"] }
+bytes = "1.11.1"
+chrono = "0.4"
+clap = { version = "4.6.1", features = ["derive"] }
 config = { version = "0.15", default-features = false, features = ["toml"] }
 fred = { version = "10.1.0", default-features = false, features = [
     "i-std",
     "i-sets",
     "i-hashes",
 ] }
-poise = "0.6.1"
-rand = "0.9.1"
-reqwest = { version = "0.12.22", default-features = false, features = [
+poise = "=0.6.1"
+rand = "0.10.1"
+reqwest = { version = "0.13.2", default-features = false, features = [
     "json",
     "native-tls-vendored",
+    "stream",
 ] }
-serde = "1.0.219"
-thiserror = "2.0.12"
-tokio = { version = "1.46.0", features = [
+serde = "1.0.228"
+thiserror = "2.0.18"
+tokio = { version = "1.52.1", features = [
     "rt-multi-thread",
 ], default-features = false }
-tokio-stream = "0.1.17"
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = [
+tokio-stream = "0.1.18"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = [
     "tracing-log",
     "env-filter",
     "parking_lot",
 ] }
-url = "2.5.4"
+url = "2.5.8"
 
 [patch.crates-io]
 # async-repeater = { git = "https://github.com/NotNorom/async-repeater.git" }
-poise = { git = "https://github.com/serenity-rs/poise.git", branch = "serenity-next" }
+poise = { git = "https://github.com/serenity-rs/poise.git", rev = "b0915b695028f7525aa599148428aca8625416d4" } #, branch = "serenity-next" }
 # poise = { path = "/home/norom/Documents/Code/poise" }
 # serenity = { git = "https://github.com/serenity-rs/serenity" }
 # serenity = { path = "/home/norom/Documents/Code/serenity" }
@@ -61,4 +62,4 @@ poise = { git = "https://github.com/serenity-rs/poise.git", branch = "serenity-n
 # serenity = { path = "/home/norom/Documents/Code/serenity" }
 
 [patch."https://github.com/serenity-rs/serenity.git"]
-serenity = { git = "https://github.com/serenity-rs//serenity", rev = "a60a332d2d34e6141720ee16869b68a06dac79b6"}
+serenity = { git = "https://github.com/serenity-rs//serenity", rev = "3c08f63f119679e2b6a3bb6f5c6af22d999111a0" }
