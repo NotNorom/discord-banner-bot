@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
+use tokio::sync::broadcast::Receiver;
 #[cfg(not(target_os = "windows"))]
-use tokio::signal::unix::{SignalKind, signal};
-use tokio::{select, sync::broadcast::Receiver};
+use tokio::{
+    select,
+    signal::unix::{SignalKind, signal},
+};
 use tracing::{error, info};
 
 use crate::{Error, state::State};
@@ -43,7 +46,7 @@ pub async fn shutdown(
 
     #[cfg(target_os = "windows")]
     let received_signal = {
-        internal_receiver.recv().await;
+        let _ = internal_receiver.recv().await;
         "INTERNAL"
     };
 
