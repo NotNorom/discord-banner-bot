@@ -1,5 +1,5 @@
 ######################## BUILDER IMAGE ########################
-FROM docker.io/rust:1.95.0-bullseye as builder
+FROM docker.io/rust:1.98.1-bookworm as builder
 
 WORKDIR /app
 COPY . .
@@ -9,7 +9,7 @@ COPY . .
 RUN cargo build --release
 
 ######################## RUNNER IMAGE ########################
-FROM docker.io/debian:bullseye-slim
+FROM docker.io/debian:bookworm-slim
 
 ARG APP_DIR=/app
 ARG CONFIG_DIR=/conf
