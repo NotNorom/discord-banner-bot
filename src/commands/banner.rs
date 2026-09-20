@@ -180,7 +180,7 @@ pub async fn current_banner(ctx: Context<'_>) -> Result<(), Error> {
         CreateReply::default()
             .content(&banner)
             .ephemeral(true)
-            .embed(CreateEmbed::new().image(&banner).colour((255, 0, 255))),
+            .embed(CreateEmbed::new().image(&banner, None).colour((255, 0, 255))),
     )
     .await?;
 
