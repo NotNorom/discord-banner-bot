@@ -1,6 +1,6 @@
 [package]
 name = "discord-banner-bot"
-version = "0.7.1"
+version = "0.7.2"
 edition = "2024"
 authors = ["Andre Julius <noromoron@gmail.com>"]
 license-file = "LICENSE"
