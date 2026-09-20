@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use clap::Parser;
 use discord_banner_bot::{
     Settings, State,
@@ -12,7 +14,6 @@ use poise::{
     FrameworkOptions, PrefixFrameworkOptions,
     serenity_prelude::{self, GatewayIntents},
 };
-use std::sync::Arc;
 use tokio::sync::broadcast;
 use tracing::{error, info, instrument};
 
