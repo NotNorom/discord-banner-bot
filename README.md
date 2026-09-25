@@ -140,6 +140,7 @@ The following commands can only be run by users with the `Manage Server` permiss
 - Clone the project & compile
 - Add discord token into settings.toml
 - Run
+- Use the `$(PREFIX)register` or `$(PREFIX)register_globally` commands to register slash commands in either one guild or all guilds. See below for more commands
 
 Default settings.toml:
 https://github.com/NotNorom/discord-banner-bot/blob/master/settings.template.toml
@@ -149,6 +150,59 @@ https://github.com/NotNorom/discord-banner-bot/blob/master/settings.template.tom
 You can use docker and docker-compose to run this bot.
 A Dockerfile and a docker-compose file are available.
 
+
+### Useful self host commands (they are all prefix commands)
+### register
+`$(PREFIX)register `
+
+Register all bot commands in the current guild/ server.
+
+> [!NOTE]
+> _Command can only be run by bot owners._
+
+
+### unregister
+`$(PREFIX)unregister `
+
+Delete all bot commands in the current guild/ server.
+
+> [!NOTE]
+> _Command can only be run by bot owners._
+
+### register_globally
+`$(PREFIX)register_globally `
+
+Register all bot commands for all guilds/ servers.
+
+> [!NOTE]
+> _Command can only be run by bot owners._
+
+
+### unregister_globally
+`$(PREFIX)unregister_globally `
+
+Delete all bot commands for all guilds/ servers.
+
+> [!NOTE]
+> _Command can only be run by bot owners._
+
+
+### reload
+`$(PREFIX)reload `
+
+Reloads all schedules from the database
+
+> [!NOTE]
+> _Command can only be run by bot owners._
+
+
+### shutdown
+`$(PREFIX)shutdown `
+
+Shuts down the bot. This does not ask for confirmation!
+
+> [!NOTE]
+> _Command can only be run by bot owners._
 
 ## Redis layout
 
